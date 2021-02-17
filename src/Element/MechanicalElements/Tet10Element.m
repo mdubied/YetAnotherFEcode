@@ -56,20 +56,12 @@ classdef Tet10Element < Element
             self.initialization.H = H;          % linear strain
         end
         
-        function xe = extract_element_data(self, x)
-            % x is a vector of full DOFs
-            index = get_index(self.nodeIDs, self.nDOFPerNode);
-            xe = x(index,:);
-        end
-        
         function Mel = mass_matrix(self)
             % _____________________________________________________________
             %
             % Mel = mass_matrix_global(self,nodes,~);
             % Mel: element-level mass matrix (in global coordinates)
-            % nodes: [x1 y1 z1; ... ; x10 y10 z10] (coordinates)
             %______________________________________________________________
-            
             X = self.quadrature.X;
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
@@ -78,18 +70,8 @@ classdef Tet10Element < Element
                 g = X(1,ii);
                 h = X(2,ii);
                 r = X(3,ii);
-                % shape functions and detJ (ABAQUS ORDER)
-                N = [(2*(1-g-h-r)-1)*(1-g-h-r)
-                    (2*g-1)*g
-                    (2*h-1)*h
-                    (2*r-1)*r
-                    4*(1-g-h-r)*g
-                    4*g*h
-                    4*(1-g-h-r)*h
-                    4*(1-g-h-r)*r
-                    4*g*r
-                    4*h*r];
-                [~,detJ] = G_TET10(self,g,h,r); % <------- FUNCTION
+                N = self.shape_functions(g,h,r);
+                [~,detJ] = shape_function_derivatives(self,g,h,r);
                 NN(1,1:3:30) = N;
                 NN(2,2:3:30) = N;
                 NN(3,3:3:30) = N;
@@ -113,7 +95,7 @@ classdef Tet10Element < Element
                 h = X(2,ii);
                 r = X(3,ii);
                 we = W(ii); % weights
-                [G,detJ,dH] = G_TET10(self,g,h,r); % <---- FUNCTION
+                [G,detJ,dH] = shape_function_derivatives(self,g,h,r);
                 th  = G*displ;
                 A = self.initialization.A;
                 A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
@@ -132,22 +114,18 @@ classdef Tet10Element < Element
                 int_K1 = Bnl'*C*Bnl;
                 HSH = dH'*S*dH;
                 int_Ks = [HSH ZZ ZZ; ZZ HSH ZZ; ZZ ZZ HSH]; % (faster than blkdiag)
-                int_K = (int_K1 + int_Ks)*detJ;
-                int_F = (Bnl'*s)*detJ;
+                int_K = int_K1 + int_Ks;
+                int_F = Bnl'*s;
                 % integration of K and F through Gauss quadrature
-                K = K + we*int_K;
-                F = F + we*int_F;
+                K = K + (we * detJ) * int_K;
+                F = F + (we * detJ) * int_F;
             end
         end
-        
-        %% Local methods
-        function [K,F] = tangent_stiffness_and_force_local(self)
-            % I have to include this to make the classdef happy...
-            a=self.nDim; K=0*a; F=0;
-            disp(' [tangent_stiffness_and_force_local]: I''m useless! :(')
-            % ... but is useless for continuum elements (they're directly
-            % computed in the global reference frame through isoparametric
-            % mapping)
+         
+        function xe = extract_element_data(self, x)
+            % x is a vector of full DOFs
+            index = get_index(self.nodeIDs, self.nDOFPerNode);
+            xe = x(index,:);
         end
         
         function  f = get.uniformBodyForce(self)
@@ -159,22 +137,29 @@ classdef Tet10Element < Element
             f(3:3:end) = self.vol/10; % uniformly distributed pressure on the structure
         end
         
-        
         % ANCILLARY FUNCTIONS _____________________________________________
         
         function V = get.vol(self)
-            xyz = self.nodes(1:4,:);
-            x = xyz(:,1); y = xyz(:,2); z = xyz(:,3);
-            dx = max(x)-min(x); dy = max(y)-min(y); dz = max(z)-min(z);
-            alphaRadius = max([dx,dy,dz])+1;
-            shp = alphaShape(x,y,z,alphaRadius);
-            V = volume(shp);
+            % volume is given by the integral of detJ (jacobian from 
+            % isoparametric to physical space) over the volume of the
+            % isoparametric element
+            detJ = 0;
+            W = self.quadrature.W;
+            X = self.quadrature.X;
+            for ii = 1 : length( w )
+                g = X(1,ii);
+                h = X(2,ii);
+                r = X(3,ii);
+                [~, detJ_i] = shape_function_derivatives(self,g,h,r);
+                detJ = detJ + detJ_i * W(ii);
+            end
+            V = detJ;
         end
         
-        function [G,detJ,dH] = G_TET10(self,g,h,r)
+        function [G,detJ,dH] = shape_function_derivatives(self,g,h,r)
             %______________________________________________________________
             %
-            % [G,detJ,dH] = G_TET10(self,g,h,r)
+            % [G,detJ,dH] = shape_function_derivatives(self,g,h,r)
             % G = shape function derivatives in physical coordinates, s.t.
             % th=G*p with th={ux uy uz vx vy vz wx wy wz}' (ux=du/dx...)
             % and p={u1,v1,w1,...,u10,v10,w10}' (nodal displacements).
@@ -204,9 +189,9 @@ classdef Tet10Element < Element
             J1(3,3) = J(1,1)*J(2,2) - J(1,2)*J(2,1);
             detJ = J(1,1)*J1(1,1) + J(1,2)*J1(2,1) + J(1,3)*J1(3,1);
             J1 = J1/detJ;
-            dH = J1*dHn;        % derivatives in physical coordinates,
-            % 3x10 matrix, [dNi_dx; dNi_dy; dNi_dz]
-            % with i = 1...10
+            dH = J1*dHn;   	% derivatives in physical coordinates,
+                            % 3x10 matrix, [dNi_dx; dNi_dy; dNi_dz]
+                            % with i = 1...10
             G = self.initialization.G;
             G(1:3,1:3:30) = dH;
             G(4:6,2:3:30) = dH;
@@ -214,6 +199,28 @@ classdef Tet10Element < Element
         end
         
     end % methods
+    
+    methods (Static)
+        
+        function N = shape_functions(g,h,r)
+            % N = shape_functions(g,h,r)
+            % SHAPE FUNCTIONS FOR A 10-NODED TETRAHEDRON
+            % - see Abaqus documentation:
+            % Abaqus theory guide > Elements > Continuum elements > ...
+            % ... > 3.2.6 Triangular, tetrahedral, and wedge elements
+            N = [(2*(1-g-h-r)-1)*(1-g-h-r)
+                    (2*g-1)*g
+                    (2*h-1)*h
+                    (2*r-1)*r
+                    4*(1-g-h-r)*g
+                    4*g*h
+                    4*(1-g-h-r)*h
+                    4*(1-g-h-r)*r
+                    4*g*r
+                    4*h*r];
+        end
+        
+    end
 
         
 end % classdef
