@@ -3,11 +3,12 @@ clear;
 close all;
 clc
 
-elementType = 'HEX20';
+% elementType = 'HEX20';
 % elementType = 'TET10';
+elementType = 'WED15';
 
 
-%% PREPARE MODEL
+%% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
 E       = 70e9;     % Young's modulus [Pa]
@@ -23,13 +24,17 @@ switch elementType
         myElementConstructor = @()Hex20Element(myMaterial);
     case 'TET10'
         myElementConstructor = @()Tet10Element(myMaterial);
+    case 'WED15'
+        myElementConstructor = @()Wed15Element(myMaterial);
+%         quadrature = struct('lin', 5, 'tri', 12);
+%         myElementConstructor = @()Wed15Element(myMaterial, quadrature);
 end
 
 % MESH_____________________________________________________________________
 l = 3;
 w = .3;
-t = .1;
-nx = 10;
+t = .05;
+nx = 30;
 ny = 3;
 nz = 2;
 [nodes, elements, nset]=mesh_3Dparallelepiped(elementType,l,w,t,nx,ny,nz);
@@ -48,11 +53,15 @@ myMesh.set_essential_boundary_condition([nset{1} nset{4}],1:3,0)
 BeamAssembly = Assembly(myMesh);
 M = BeamAssembly.mass_matrix();
 nNodes = size(nodes,1);
-u0 = zeros(nNodes*nDOFPerNode,1);
+u0 = zeros( myMesh.nDOFs, 1);
 [K,~] = BeamAssembly.tangent_stiffness_and_force(u0);
 
+% store matrices
+BeamAssembly.DATA.K = K;
+BeamAssembly.DATA.M = M;
 
-%% EXAMPLE 1
+
+%% EXAMPLE 1                                                        
 
 % Eigenvalue problem_______________________________________________________
 n_VMs = 3; % first n_VMs modes with lowest frequency calculated
@@ -72,26 +81,26 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMesh(nodes,elements,0);
 v1 = reshape(V0(:,mod),3,[]).';
 PlotFieldonDeformedMesh(nodes,elements,v1,'factor',1)
-title(['$$\Phi_' num2str(mod) '$$ - Frequency = ' num2str(f0(mod),3) ' Hz'])
+title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
+drawnow
+return
 
+%% EXAMPLE 2                                                        
 
-%% EXAMPLE 2
-
-% Define external force:
+% % Define external force:
 % % Body force
-% Pressure = 1e6;
-% F = Pressure*BeamAssembly.uniform_body_force();
+% Pressure = 1e5;
+% F = Pressure * BeamAssembly.uniform_body_force();
 
 % Nodal force
 F = zeros(myMesh.nDOFs,1);
 nf = find_node(l/2,w/2,t/2,nodes); % node where to put the force
+node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
+F(node_force_dofs(3)) = 1e3;
 
-node_force_dofs = get_index(nf,nDOFPerNode);
-F(node_force_dofs(3)) = 10e3;
-
-u_lin = BeamAssembly.solve_system(K,F);
+u_lin = BeamAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,3,[]).';	% Linear response
-u = static_equilibrium(BeamAssembly, u_lin/2, F);
+u = static_equilibrium(BeamAssembly, F);
 UNL = reshape(u,3,[]).';        % Nonlinear response
 
 fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
@@ -99,7 +108,7 @@ fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
 
 % PLOT
 figure('units','normalized','position',[.2 .1 .6 .8])
-scale = 100;
+scale = 10;
 PlotMesh(nodes,elements,0);
 PlotFieldonDeformedMesh(nodes,elements,UNL,'factor',scale,'color','w')
 colormap jet

@@ -22,37 +22,25 @@ classdef Tet10Element < Element
         
         % MINIMUM REQUIRED FUNCTIONS ______________________________________
         
-        function self = Tet10Element(Material,Ngauss)
+        function self = Tet10Element(Material, Ngauss)
             % _____________________________________________________________
             %
             % SELF-FUNCTION
-            % self = Hex20Element(Material,Ngauss)
+            % self = Tet10Element(Material,Ngauss)
             % defines element's properties
             %______________________________________________________________
+            self.Material = Material;
             if nargin == 1
-                self.Material = Material;
                 Ngauss = 2;
-                [x,w] = inttet(Ngauss);
-                self.quadrature.Ng = Ngauss;
-                self.quadrature.X = x;	% gauss integration points
-                self.quadrature.W = w;	% gauss integration weights
-            elseif nargin==2
-                self.Material = Material;
-                [x,w] = inttet(Ngauss);
-                self.quadrature.Ng = Ngauss;
-                self.quadrature.X = x;
-                self.quadrature.W = w;
             end
+            [x,w] = inttet(Ngauss);
+            self.quadrature.Ng = Ngauss;
+            self.quadrature.X = x;	% gauss integration points
+            self.quadrature.W = w;	% gauss integration weights
+            
             % INIZIALIZATION of some matrices (this should speedup
             % numerical integration)
-            v = self.Material.POISSONS_RATIO;
-            E = self.Material.YOUNGS_MODULUS;
-            C = [1-v v v 0 0 0; % isotropic material assumption
-                v 1-v v 0 0 0;
-                v v 1-v 0 0 0;
-                0 0 0 .5*(1-2*v) 0 0;
-                0 0 0 0 .5*(1-2*v) 0;
-                0 0 0 0 0 .5*(1-2*v)]*E/((1+v)*(1-2*v));
+            C = self.Material.get_stress_strain_matrix_3D;
             H = [1 0 0 0 0 0 0 0 0;
                 0 0 0 0 1 0 0 0 0;
                 0 0 0 0 0 0 0 0 1;
@@ -68,9 +56,9 @@ classdef Tet10Element < Element
             self.initialization.H = H;          % linear strain
         end
         
-        function xe = extract_element_data(self,x)
+        function xe = extract_element_data(self, x)
             % x is a vector of full DOFs
-            index = get_index(self.nodeIDs,self.nDOFPerNode);
+            index = get_index(self.nodeIDs, self.nDOFPerNode);
             xe = x(index,:);
         end
         
@@ -111,7 +99,7 @@ classdef Tet10Element < Element
             Mel = sparse(rho*Mel);
         end
         
-        function [K,F] = tangent_stiffness_and_force(self,x)
+        function [K,F] = tangent_stiffness_and_force(self, x)
             displ = self.extract_element_data(x);
             X = self.quadrature.X;
             W = self.quadrature.W;
@@ -164,8 +152,8 @@ classdef Tet10Element < Element
         
         function  f = get.uniformBodyForce(self)
             % This function computes a load along direction=3(Z) by
-            % dividing the load on the 20 nodes according to the element
-            % volume (V/20) [it might not be the best way, but still...]
+            % dividing the load on the 10 nodes according to the element
+            % volume (V/10) [it might not be the best way, but still...]
             %______________________________________________________________
             f = sparse(30,1);
             f(3:3:end) = self.vol/10; % uniformly distributed pressure on the structure
