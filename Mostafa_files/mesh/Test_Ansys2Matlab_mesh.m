@@ -1,7 +1,7 @@
 clear all
 close all
-meshfile='MeshFreqDividerFull_QUAD4.dat';
-meshtype='QUAD4';
+meshfile='MeshBeam2D_QUAD8_metric.dat';
+meshtype='QUAD8';
 
 model=Ansys2Matlab_mesh(meshfile,meshtype);
 
