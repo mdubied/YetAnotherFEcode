@@ -74,12 +74,12 @@ ULIN = reshape(u_lin,6,[]);
 figure(2); PlotMesh(Nodes,Elements,0);
 hold on; PlotFieldonDeformedMesh(Nodes,Elements,ULIN(1:3,:).','factor',1)
 
-% Nonlinear response
-u = static_equilibrium( PlateAssembly, u_lin, F );
-U = reshape(u,6,[]);
-hold on
-PlotFieldonDeformedMesh(Nodes,Elements,U(1:3,:).','factor',1, 'color', 'w' )
-colormap gray
+% % Nonlinear response
+% u = static_equilibrium( PlateAssembly, u_lin, F );
+% U = reshape(u,6,[]);
+% hold on
+% PlotFieldonDeformedMesh(Nodes,Elements,U(1:3,:).','factor',1, 'color', 'w' )
+% colormap gray
 
 %% Dynamic response using Implicit Newmark
 % forcing frequency of the average of first two natural frequencies
@@ -123,7 +123,7 @@ TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 TI_lin.Solution.u = PlateAssembly.unconstrain_vector(TI_lin.Solution.q);
 
 % Animate solution on Mesh (very slow)
-% AnimateFieldonDeformedMesh(myMesh.Nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:3,'filename','lineardisp')
+%  AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:3,'filename','lineardisp')
 
 % Instantiate object for nonlinear time integration
 TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
