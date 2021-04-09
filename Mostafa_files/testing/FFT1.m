@@ -1,14 +1,14 @@
 %  close all
 %  clear all
 
-% Ts = h;     
-% t=TI_NL.Solution.time(:);
-% x=TI_NL.Solution.u(dof,:)';
+Ts = h;     
+t=TI_NL.Solution.time(:);
+x=TI_NL.Solution.u(dof,:)';
 
 
-t=t1;
-x=x1;
-Ts=5.93568E-05;
+% t=t1;
+% x=x1;
+% Ts=5.93568E-05;
 figure(1000)
 hold on
 plot(t,x)

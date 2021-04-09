@@ -114,7 +114,7 @@ title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
 
 %% Dynamic response using Implicit Newmark
 % forcing frequency of the average of first two natural frequencies
-omega_ext = 2*pi*2*f0(2); 
+omega_ext = 2*2*pi*f0(2); 
 T =  2*pi/omega_ext; % time period of forcing
 
 % load amplification factor
@@ -164,13 +164,13 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Nonlinear Time Integration
- tmax = 100*T; 
+ tmax = 20*T; 
 %tmax=0.002;
 
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
 TI_NL.Solution.u = BeamAssembly.unconstrain_vector(TI_NL.Solution.q);
 
- save('TI_NL.mat','TI_NL');
+%  save('TI_NL.mat','TI_NL');
 %% Generalized alpha scheme
 % linear
 TI_lin_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);

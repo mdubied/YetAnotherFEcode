@@ -75,7 +75,7 @@ u0 = zeros( myMesh.nDOFs, 1);
 
 % store matrices
 FreqDivAssembly.DATA.K = K;
-FreqDivAssembly.DATA.M = M;
+FreqDivAssembly.DATA.M = M
 
 
 %% EXAMPLE 1
@@ -115,7 +115,7 @@ F = zeros(myMesh.nDOFs,1);
 nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
 %nf=33;
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = -30e-6;
+F(node_force_dofs(2)) = 3e-4;
 
 u_lin = FreqDivAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -154,7 +154,7 @@ qd0 = FreqDivAssembly.constrain_vector(v0);
 qdd0 = FreqDivAssembly.constrain_vector(a0);
 
 % time step for integration
-h = T/50;
+h = T/20;
 
 % Precompute data for Assembly object
 FreqDivAssembly.DATA.M = M;
@@ -185,13 +185,14 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivAssembly,F_ext);
 
 % Nonlinear Time Integration
- tmax = 10*T; 
-%tmax=0.002;
+%  tmax = 10*T; 
+tmax=0.0016;
 
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
 TI_NL.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL.Solution.q);
 
-save('TI_NL.mat','TI_NL');
+NL_SOLUTION=TI_NL.Solution;
+save('TI_NL','-struct','NL_SOLUTION');
 %% Generalized alpha scheme
 % linear
 TI_lin_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);
