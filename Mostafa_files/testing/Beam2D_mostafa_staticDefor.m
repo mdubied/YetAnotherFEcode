@@ -147,7 +147,7 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 10*T; 
+tmax = 100*T; 
 %tmax=0.002;
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
@@ -164,7 +164,7 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Nonlinear Time Integration
- tmax = 20*T; 
+ tmax = 100*T; 
 %tmax=0.002;
 
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);

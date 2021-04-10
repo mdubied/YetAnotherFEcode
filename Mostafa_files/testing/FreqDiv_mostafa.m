@@ -81,7 +81,7 @@ FreqDivAssembly.DATA.M = M
 %% EXAMPLE 1
 
 % Eigenvalue problem_______________________________________________________
-n_VMs = 5; % first n_VMs modes with lowest frequency calculated
+n_VMs = 8; % first n_VMs modes with lowest frequency calculated
 Kc = FreqDivAssembly.constrain_matrix(K);
 Mc = FreqDivAssembly.constrain_matrix(M);
 [V0,om] = eigs(Kc, Mc, n_VMs, 'SM');

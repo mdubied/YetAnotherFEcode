@@ -12,17 +12,17 @@
 dofM=[];
 nfsense = find_node(9.25e-07,91.5e-6,[],nodes); % node where to see the results
 DOF = get_index(nfsense, myMesh.nDOFPerNode );
-dofM(1)=DOF(1);
+dofM(2)=DOF(1);
 nfsense = find_node(148.85e-6,182.07e-6,[],nodes); % node where to see the results
 DOF = get_index(nfsense, myMesh.nDOFPerNode );
-dofM(2)=DOF(2);
+dofM(4)=DOF(2);
 nfsense = find_node(16.775e-6,22.85e-6,[],nodes); % node where to see the results
 DOF = get_index(nfsense, myMesh.nDOFPerNode );
 dofM(3)=DOF(1);
 
 nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-dofM(4)=node_force_dofs(2);
+dofM(1)=node_force_dofs(2);
 
 %%
 Ts = h;    
@@ -44,14 +44,14 @@ ylabel('Amplitude')
 y = fft(x);   
 fs = 1/Ts;
 f = (0:length(y)-1)*fs/length(y);
-
+legend('Force','A','C','B')
 figure(2000)
 hold on
 plot(f,abs(y))
 xlabel('Frequency (Hz)')
 ylabel('Magnitude')
 title('Magnitude')
-
+legend('Force','A','C','B')
 % figure(3000)
 % hold on
 % loglog(f,abs(y))
@@ -66,7 +66,7 @@ loglog(f1,abs(y1(:,2)))
 xlabel('Frequency (Hz)')
 ylabel('Magnitude')
 title('Magnitude')
-
+legend('Force','A','C','B')
 % figure(5000)
 % hold on
 % plot(f1,abs(y1(:,2)))
