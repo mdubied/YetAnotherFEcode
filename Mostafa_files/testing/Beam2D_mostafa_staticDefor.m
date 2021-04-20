@@ -76,7 +76,7 @@ V0 = BeamAssembly.unconstrain_vector(V0);
 mod = 2;
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
 figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMesh(nodes, elementPlot, 0);
+PlotMesh(nodes, elementPlot, 1);
 v1 = reshape(V0(:,mod), 2, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', Ly*1.1);
 title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
@@ -110,6 +110,14 @@ PlotMesh(nodes, elementPlot, 0);
 PlotFieldonDeformedMesh(nodes,elementPlot,UNL,'factor',scale,'color','k');
 colormap jet
 title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
+
+figure('units','normalized','position',[.2 .1 .6 .8])
+scale = 5;
+PlotMesh(nodes, elementPlot, 0);
+PlotFieldonDeformedMesh(nodes,elementPlot,ULIN,'factor',scale,'color','k');
+colormap jet
+title(['LINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
+
 
 
 %% Dynamic response using Implicit Newmark
@@ -207,7 +215,7 @@ plot(TI_lin_alpha.Solution.time, TI_lin_alpha.Solution.u(dof,:),'DisplayName', '
 xlabel('q'); ylabel('time'); grid on; axis tight; legend('show')
 
 % Nonlinear
-figure;
+% figure;
 plot(TI_NL.Solution.time, TI_NL.Solution.u(dof,:),'DisplayName', 'Full nonlinear (Newmark)')
 hold on
 plot(TI_NL_alpha.Solution.time, TI_NL_alpha.Solution.u(dof,:),'DisplayName', 'Full nonlinear (Generalized-$$\alpha$$)')

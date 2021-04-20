@@ -33,7 +33,7 @@ switch upper( whichModel )
     case 'ANSYS'
         % Alternatively, one can write an input file in ANSYS and read it as:
         
-        meshfile='MeshFreqDividerFull_QUAD8_metric.dat';
+        meshfile='MeshFreqFull_QUAD8_metric.dat';
         meshtype='QUAD8';
         model=Ansys2Matlab_mesh(meshfile,meshtype);
         nodes=model.nodes(:,2:3);          % 2:3 because 2D
@@ -71,7 +71,7 @@ u0 = zeros( myMesh.nDOFs, 1);
 [K,~] = FreqDivAssembly.tangent_stiffness_and_force(u0);
 
  C = 761*M + 1.96e-10*K;
-
+% C=0*K+0*M;
 
 % store matrices
 FreqDivAssembly.DATA.K = K;
@@ -115,7 +115,7 @@ F = zeros(myMesh.nDOFs,1);
 nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
 %nf=33;
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = 3e-4;
+F(node_force_dofs(2)) = -30;
 
 u_lin = FreqDivAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -135,7 +135,7 @@ title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
 
 %% Dynamic response using Implicit Newmark
 % forcing frequency of the average of first two natural frequencies
-omega_ext = 2*pi*2*f0(4); 
+omega_ext = 8*pi*2*1.02e5; 
 T =  2*pi/omega_ext; % time period of forcing
 
 % load amplification factor
@@ -154,7 +154,7 @@ qd0 = FreqDivAssembly.constrain_vector(v0);
 qdd0 = FreqDivAssembly.constrain_vector(a0);
 
 % time step for integration
-h = T/20;
+h = T/250;
 
 % Precompute data for Assembly object
 FreqDivAssembly.DATA.M = M;
@@ -168,16 +168,20 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,FreqDivAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 10*T; 
+tmax = 3000*T; 
 %tmax=0.002;
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
 % obtain full solution
 TI_lin.Solution.u = FreqDivAssembly.unconstrain_vector(TI_lin.Solution.q);
 
+lin_SOLUTION=TI_lin.Solution;
+save('TI_lin_FREQ(-30)','-struct','lin_SOLUTION','-v7.3');
+
 % Animate solution on Mesh (very slow)
 %AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:2,'filename','lineardisp')
 %%
+
 % Instantiate object for nonlinear time integration
 TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 
@@ -185,14 +189,15 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivAssembly,F_ext);
 
 % Nonlinear Time Integration
-%  tmax = 10*T; 
-tmax=0.0016;
-
+  tmax = 1*T; 
+%  tmax=0.0015;
+tic
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
 TI_NL.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL.Solution.q);
-
+toc
 NL_SOLUTION=TI_NL.Solution;
-save('TI_NL','-struct','NL_SOLUTION');
+ save('TI_NL_FREQ(-30)','-struct','NL_SOLUTION','-v7.3');
+
 %% Generalized alpha scheme
 % linear
 TI_lin_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);

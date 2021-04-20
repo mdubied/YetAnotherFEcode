@@ -52,7 +52,7 @@ end
 function [nsteps,tol,method,displayoption] = parse_inputs(varargin)
 %% parsing inputs
 defaultnsteps = 100;
-defaulttol = 1e-6;
+defaulttol = 1e-10;
 defaultmethod = 'fsolve';
 defaultdisplay = 'final';
 
