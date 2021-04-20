@@ -38,13 +38,20 @@ classdef KirchoffMaterial < Material
         end
         
         function D = get_stress_strain_matrix_3D(self)
-            D =[self.lambda + 2*self.mu, self.lambda, self.lambda, 0, 0, 0;
-                self.lambda, self.lambda + 2*self.mu, self.lambda, 0, 0, 0;
-                self.lambda, self.lambda, self.lambda + 2*self.mu, 0, 0, 0;
-                0, 0, 0, self.mu, 0, 0;
-                0, 0, 0, 0, self.mu, 0;
-                0, 0, 0, 0, 0, self.mu];
-        
+%             D =[self.lambda + 2*self.mu, self.lambda, self.lambda, 0, 0, 0;
+%                 self.lambda, self.lambda + 2*self.mu, self.lambda, 0, 0, 0;
+%                 self.lambda, self.lambda, self.lambda + 2*self.mu, 0, 0, 0;
+%                 0, 0, 0, self.mu, 0, 0;
+%                 0, 0, 0, 0, self.mu, 0;
+%                 0, 0, 0, 0, 0, self.mu];
+            nu = self.POISSONS_RATIO;
+            E = self.YOUNGS_MODULUS;
+            D = [1-nu nu nu 0 0 0; % isotropic material assumption
+                nu 1-nu nu 0 0 0;
+                nu nu 1-nu 0 0 0;
+                0 0 0 .5*(1-2*nu) 0 0;
+                0 0 0 0 .5*(1-2*nu) 0;
+                0 0 0 0 0 .5*(1-2*nu)]*E/((1+nu)*(1-2*nu));
         end
     end
 end
