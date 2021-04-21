@@ -93,7 +93,7 @@ title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
 F = zeros(myMesh.nDOFs,1);
 nf = find_node(Lx/2,Ly/2,[],nodes); % node where to put the force
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = 10e6;
+F(node_force_dofs(2)) = 15e6;
 
 u_lin = BeamAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -155,7 +155,7 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 100*T; 
+tmax = 1000*T; 
 %tmax=0.002;
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
@@ -172,7 +172,7 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Nonlinear Time Integration
- tmax = 100*T; 
+ tmax = 1000*T; 
 %tmax=0.002;
 
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);

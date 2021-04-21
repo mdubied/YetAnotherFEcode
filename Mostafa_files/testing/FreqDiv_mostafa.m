@@ -115,7 +115,7 @@ F = zeros(myMesh.nDOFs,1);
 nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
 %nf=33;
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = -30;
+F(node_force_dofs(2)) = -11.5;
 
 u_lin = FreqDivAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -168,15 +168,15 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,FreqDivAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 3000*T; 
-%tmax=0.002;
+% tmax = 3000*T; 
+tmax=100*T;
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
 % obtain full solution
 TI_lin.Solution.u = FreqDivAssembly.unconstrain_vector(TI_lin.Solution.q);
 
 lin_SOLUTION=TI_lin.Solution;
-save('TI_lin_FREQ(-30)','-struct','lin_SOLUTION','-v7.3');
+save('TI_lin_FREQ_test','-struct','lin_SOLUTION','-v7.3');
 
 % Animate solution on Mesh (very slow)
 %AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:2,'filename','lineardisp')
@@ -189,14 +189,14 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivAssembly,F_ext);
 
 % Nonlinear Time Integration
-  tmax = 1*T; 
+  tmax = 20*T; 
 %  tmax=0.0015;
 tic
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
 TI_NL.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL.Solution.q);
 toc
 NL_SOLUTION=TI_NL.Solution;
- save('TI_NL_FREQ(-30)','-struct','NL_SOLUTION','-v7.3');
+ save('TI_NL_FREQ_test','-struct','NL_SOLUTION','-v7.3');
 
 %% Generalized alpha scheme
 % linear
