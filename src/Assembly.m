@@ -40,7 +40,6 @@ classdef Assembly < handle
                         varargin{:});
         end
 
-
         function [f] = internal_force(self, varargin)
             f = self.vector('internal_force',varargin{:});
         end
