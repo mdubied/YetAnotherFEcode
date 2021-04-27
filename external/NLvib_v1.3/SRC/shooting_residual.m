@@ -264,10 +264,12 @@ for nl=1:length(nonlinear_elements)
 %         case 'elasticdryfriction': Hysteretic nonlinearities require
 %         special treatment!
             
-        case 'fem'
+        case 'fe'
             myAssembly = nonlinear_elements{nl}.assembly;
             [dfnl_dq, fnl] = myAssembly.tangent_stiffness_and_force(...
                         myAssembly.unconstrain_vector(q) );
+            dfnl_dq = myAssembly.constrain_matrix( dfnl_dq );
+            fnl = myAssembly.constrain_vector( fnl );
             
             % remove linear terms
             K0 = nonlinear_elements{nl}.K;
