@@ -27,15 +27,16 @@ dofM(1)=node_force_dofs(2);
 %%
 Ts = h;    
 
-for i=1:4
+for i=2
     dof=dofM(i)
 t=TI_NL.Solution.time(:);
 x=TI_NL.Solution.u(dof,:)';
-
-% t=TI_lin.Solution.time(:);
-% x=TI_lin.Solution.u(dof,:)';
-% % x=TI_NL_alpha.Solution.u(dof,:)
 % 
+% t=TI_lin.Solution.time(:);
+% x=10^6*TI_lin.Solution.u(dof,:)';
+% % x=TI_NL_alpha.Solution.u(dof,:)
+% t=time(:);
+% x=10^6*u(dof,:)';
 % t=time(:);
 % x=u(dof,:)';
 

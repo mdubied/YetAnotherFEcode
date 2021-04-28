@@ -1,4 +1,4 @@
-% EXAMPLE: beam meshed with 3D element
+      % EXAMPLE: beam meshed with 3D element
 clear;
 close all;
 clc
@@ -115,7 +115,7 @@ F = zeros(myMesh.nDOFs,1);
 nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
 %nf=33;
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = -11.5;
+F(node_force_dofs(2)) = -13.5;
 
 u_lin = FreqDivAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -127,7 +127,7 @@ fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
 
 % PLOT
 figure('units','normalized','position',[.2 .1 .6 .8])
-scale = 7.9e3;
+scale = 1500;
 PlotMesh(nodes, elementPlot, 0);
 PlotFieldonDeformedMesh(nodes,elementPlot,UNL,'factor',scale,'color','k');
 colormap jet
@@ -168,7 +168,7 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,FreqDivAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 1000*T; 
+tmax = 10*T; 
 % tmax=0.004;
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
@@ -176,7 +176,7 @@ TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 TI_lin.Solution.u = FreqDivAssembly.unconstrain_vector(TI_lin.Solution.q);
 
 lin_SOLUTION=TI_lin.Solution;
-save('TI_lin_FREQ_test','-struct','lin_SOLUTION','-v7.3');
+save('TI_lin_FREQ_0.005time_11.5Force','-struct','lin_SOLUTION','-v7.3');
 
 % Animate solution on Mesh (very slow)
 %AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:2,'filename','lineardisp')
