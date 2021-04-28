@@ -60,29 +60,12 @@ classdef FE_system < MechanicalSystem
         % Constructor
         function obj = FE_system(myAssembly, Fext, nonlinearity_type)
             
-            % K: stiffness matrix, M: mass matrix, D: damping matrix
-            K = myAssembly.DATA.K;
-            M = myAssembly.DATA.M;
-            D = myAssembly.DATA.D;
-            
-            % check sizes (constrained matrices are used)
-            nk = size(K,1);
-            nm = size(K,1);
-            nd = size(K,1);
-            ntot = myAssembly.Mesh.EBC.nDOFs;            
-            if nk == ntot
-                K = myAssembly.constrain_matrix(K);
-            end
-            if nm == ntot
-                M = myAssembly.constrain_matrix(M);
-            end
-            if nd == ntot
-                D = myAssembly.constrain_matrix(D);
-            end
+            ntot = myAssembly.Mesh.nDOFs;
+            n = length(myAssembly.Mesh.EBC.unconstrainedDOFs);
             
             % Handle incomplete input
             if nargin < 2
-                Fext = zeros(size(M,1),1);
+                Fext = zeros(n, 1);
                 nonlinearity_type = 'fe';
             elseif nargin < 3
                 nonlinearity_type = 'fe';
@@ -93,6 +76,25 @@ classdef FE_system < MechanicalSystem
                         ',specific functions must be defined outside of'...
                         ' this class.'])
                 end
+            end
+            
+            % K: stiffness matrix, M: mass matrix, D: damping matrix
+            K = myAssembly.DATA.K;
+            M = myAssembly.DATA.M;
+            D = myAssembly.DATA.D;
+            
+            % check sizes (constrained matrices are used)        
+            if size(K,1) == ntot
+                K = myAssembly.constrain_matrix(K);
+            end
+            if size(M,1) == ntot
+                M = myAssembly.constrain_matrix(M);
+            end
+            if size(D,1) == ntot
+                D = myAssembly.constrain_matrix(D);
+            end
+            if length(Fext) == ntot
+                Fext = myAssembly.constrain_vector(Fext);
             end
             
             % Define nonlinearity
