@@ -79,7 +79,14 @@ for i = 1 : nw
     % solution is stable, if all eigenvalues of the monodromy matrix remain
     % within the unit circle in the complex plane
     mucrit(i) = eigs(dye_dys,1,'lm');	% leading Floquet multiplier
-    stable(i) = abs(mucrit(i))<=1;      % allow for some tolerance
+    if isnan(mucrit(i))
+        % some times eigs do not converge is asked only 1 eigenvalue. Here
+        % we ask to compute 20 (this number can be changed if needed).
+        mutemp = eigs(dye_dys, min([size(dye_dys,1) 20]), 'lm');
+        mucrit(i) = mutemp(1);
+        fprintf(' \b\b Adjusted mucrit = %.2f + %.2f i\n', real(mucrit(i)), imag(mucrit(i)))
+    end
+    stable(i) = abs(mucrit(i))<=1;    	% allow for some tolerance
 end
 t1 = toc(t0);
 
