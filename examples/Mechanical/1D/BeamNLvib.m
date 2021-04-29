@@ -14,10 +14,6 @@ close all
 
 imod = 1; % mode analyze
 
-% NOTE: you can load "BeamNLvib.mat" which contains the results for the
-% beam meshed with 8 elements (all other parameters set as in this script).
-% Run the PLOT sections to inspect the results.
-
 %% Parameters                                                       
 % geometry
 len = 1;        	% length
@@ -25,7 +21,7 @@ height = 1e-2;    	% height in the bending direction
 thickness = 1e-2;	% thickness in the third dimension
 
 % mesh
-nElements = 4;
+nElements = 8;
 dx = len / nElements;
 
 % material properties
@@ -276,21 +272,20 @@ xlabel('\omega [rad/s]')
 ylabel('|Q_1| / height [-]')
 title('FRF with Harmonic Balance')
 
-try
-    % LINEAR RESPONSE
-    % compute the linear FRF for comparison
-    nw = 201;
-    w_linear = linspace(Om_s, Om_e, nw);
-    for iex = 1 : length(exc_lev)
-        fr_linear = zeros(nw, ndofs);
-        for ii = 1:nw
-            w = w_linear(ii);
-            fr_linear(ii,:) = (-w^2*Mc + 1i*w*Dc + Kc) \ Fextc * exc_lev(iex);
-        end
-        plot(w_linear, abs(fr_linear(:, forced_dof_c))/height, 'k--')
+% LINEAR RESPONSE
+% compute the linear FRF for comparison
+nw = 201;
+w_linear = linspace(Om_s, Om_e, nw);
+for iex = 1 : length(exc_lev)
+    fr_linear = zeros(nw, ndofs);
+    for ii = 1:nw
+        w = w_linear(ii);
+        fr_linear(ii,:) = (-w^2*Mc + 1i*w*Dc + Kc) \ Fextc * exc_lev(iex);
     end
-    drawnow
+    plot(w_linear, abs(fr_linear(:, forced_dof_c))/height, 'k--')
 end
+drawnow
+
 
 
 %% (3) NLvib: NMA - shooting                                        
@@ -306,7 +301,7 @@ us = 0*phi(nnorm);            	% u starting guess (remaining modes only)
 x0 = [qs; us; omi; 0];         	% initial guess
 
 log10a_s2 = -5;   	% start vibration level (as log10 of qs(inorm))
-log10a_e2 = -3;    	% end   vibration level (as log10 of qs(inorm))
+log10a_e2 = -2;    	% end   vibration level (as log10 of qs(inorm))
 
 % NOTE: q(imod) = a = 10.^X(end,:)
 %       u(imod) = 0
@@ -314,11 +309,11 @@ qscl = max([10^log10a_s2, 10^log10a_e2]);	% scaling factor
 
 % Solve and continue w.r.t. Om ____________________________________________
 Np = 1;                         % seek period-Np solutions
-Ns = 2^08-1;                   	% time samples for integration
-ds = 1e-2;                    	% Path continuation step size 
-Sopt = struct('stepmax', 1e4, 'dsmax', ds*10, 'dsmin', ds/1000, ...
-            'dynamicDscale', 1);
-
+Ns = 2^7;                   	% time samples for integration
+ds = 1e-3;                    	% Path continuation step size 
+Sopt = struct('stepmax', 1e4, 'dsmax', ds*5, 'dsmin', ds/5, ...
+            'dynamicDscale',0);
+ 
 % *** PostProcessing function
 % from X we get the INITIAL CONDITIONS (ICs) in displacement and speed for
 % the orbit. If we want to compute the harmonics, we need to run a 
@@ -341,7 +336,7 @@ results.NMA.SH = r3;
 
 r3 = results.NMA.SH;
 
-fig3 = figure('units', 'normalized', 'position', [.33 .1 .33 .8]);
+figNMAsh = figure('units', 'normalized', 'position', [.33 .1 .33 .8]);
 subplot 311
 semilogy(r3.omega, r3.a, '.-')
     xlabel('\omega [rad/s]')
@@ -370,19 +365,19 @@ drawnow
 omi = om(imod);   	% mode frequency imod
 
 % Analysis parameters _____________________________________________________
-Om_s =  .90* omi; 	% start frequency
-Om_e = 1.05* omi;   	% end frequency
-Ns = 2^8-1;       	% Number of time samples per period
+Om_s =  .95* omi; 	% start frequency
+Om_e = 1.1* omi;   	% end frequency
+Ns = 2^9-1;       	% Number of time samples per period
 fprintf('\n\n FRF from %.2f to %.2f rad/s \n\n', Om_s, Om_e)
 
 BeamSystem.Fex1 = Fextc * exc_lev(end);
 
 % Initial guess (solution of underlying linear system) ____________________
-Q1 = (-Om_s^2*Mc + 1i*Om_s*Dc + Kc)\BeamSystem.Fex1;
+Q1 = (-Om_s^2*Mc + 1i*Om_s*Dc + Kc)\Fextc;
 y0 = [real(Q1); -Om_s*imag(Q1)];
 
 % Solve and continue w.r.t. Om ____________________________________________
-ds = .1;
+ds = .3;
 Sopt = struct('Dscale',[1e0*ones(size(y0)); Om_s],'dynamicDscale',1);
 Np = 1; % we seek period-one solutions
 
@@ -406,18 +401,14 @@ r4 = results.FRF.SH;
 wp = r4.omega;
 Q1 = r4.harmonics.Qabs.displ(:, :, 1+1);   % first harmonic
 q1 = squeeze(Q1(forced_dof_c, :));
-stable = boolean(r4.floquet.stable);
 
-if exist('fig3','var') && isvalid(fig3)
-    figure(fig3)
+if isvalid(figNMAsh)
+    figure(figNMAsh)
     subplot 313; hold on
 else
-    figure;
+    figure
 end
-q1u = q1; q1u( stable) = NaN;
-plot(wp, q1 / height, 'b.-', 'linewidth', 1)
-hold on;
-plot(wp, q1u / height, 'r.-', 'linewidth', 1)
+plot(wp, q1 / height, 'b', 'linewidth', 1)
 grid on
 xlabel('\omega [rad/s]')
 ylabel('Q_1 / height [-]')
