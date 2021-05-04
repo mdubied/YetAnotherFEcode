@@ -34,10 +34,20 @@ classdef Quad8Element < Element
             if nargin == 2
                 Ngauss = 2;
             end
-            [x, w] = lgwt(Ngauss,-1,1);
+            [x,w]=lgwt(Ngauss,-1,1);
+            X = zeros(2,Ngauss^2);
+            W = zeros(Ngauss^2,1);
+            cont = 1;
+            for ii = 1:Ngauss
+                for jj = 1:Ngauss
+                    X(:,cont) = [x(ii) x(jj)].';
+                    W(cont) = w(ii)*w(jj);
+                    cont = cont+1;
+                end
+            end
             self.quadrature.Ng = Ngauss;
-            self.quadrature.X = x;      % gauss integration points
-            self.quadrature.W = w;      % gauss integration weights
+            self.quadrature.X = X;      % gauss integration points
+            self.quadrature.W = W;      % gauss integration weights
             self.thickness = thickness;
             % INIZIALIZATION of some matrices (this should speedup
             % numerical integration)
@@ -64,17 +74,16 @@ classdef Quad8Element < Element
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
             Mel = zeros(16);
-           for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    % shape functions and detJ (ABAQUS ORDER)
-                    N = self.shape_functions(g,h);
-                    [~,detJ] = shape_function_derivatives(self,g,h);
-                    NN = kron(N', eye(2));
-                    % integration of K and M through GAUSS QUADRATURE
-                    Mel = Mel + ( NN' * NN )*( W(ii) * W(jj) * detJ );
-                end
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
+                % shape functions and detJ (ABAQUS ORDER)
+                N = self.shape_functions(g,h);
+                [~,detJ] = shape_function_derivatives(self,g,h);
+                NN = kron(N', eye(2));
+                % integration of K and M through GAUSS QUADRATURE
+                Mel = Mel + ( NN' * NN )*( we * detJ );
             end
             Mel = sparse(rho*Mel);
         end
@@ -88,32 +97,30 @@ classdef Quad8Element < Element
             C = self.initialization.C;
             H = self.initialization.H;
             ZZ = self.initialization.Z;
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    we = W(ii)*W(jj); % weights
-                    [G,detJ,dH] = shape_function_derivatives(self,g,h);
-                    th  = G*displ;
-                    A =	[th(1)	0     th(3) 0;
-                      	 0    	th(2) 0     th(4);
-                         th(2)	th(1) th(4) th(3)];
-                    % Green Strain tensor
-                    E = (H + 1/2*A)*th;
-                    % second Piola-Kirchhoff stress tensor
-                    s = C*E; % s = [S11 S22 S12]
-                    S = [s(1), s(3); s(3), s(2)];
-                    Bnl = (H + A)*G;
-                    % functions to integrate over volume
-                    int_K1 = Bnl'*C*Bnl;
-                    HSH = dH'*S*dH;
-                    int_Ks = [HSH ZZ; ZZ HSH]; % (faster than blkdiag)
-                    int_K = int_K1 + int_Ks;
-                    int_F = Bnl'*s;
-                    % integration of K and F through Gauss quadrature
-                    K = K + int_K * (we * detJ);
-                    F = F + int_F * (we * detJ);
-                end
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
+                [G,detJ,dH] = shape_function_derivatives(self,g,h);
+                th  = G*displ;
+                A =	[th(1)	0     th(3) 0;
+                     0    	th(2) 0     th(4);
+                     th(2)	th(1) th(4) th(3)];
+                % Green Strain tensor
+                E = (H + 1/2*A)*th;
+                % second Piola-Kirchhoff stress tensor
+                s = C*E; % s = [S11 S22 S12]
+                S = [s(1), s(3); s(3), s(2)];
+                Bnl = (H + A)*G;
+                % functions to integrate over volume
+                int_K1 = Bnl'*C*Bnl;
+                HSH = dH'*S*dH;
+                int_Ks = [HSH ZZ; ZZ HSH]; % (faster than blkdiag)
+                int_K = int_K1 + int_Ks;
+                int_F = Bnl'*s;
+                % integration of K and F through Gauss quadrature
+                K = K + int_K * (we * detJ);
+                F = F + int_F * (we * detJ);
             end
         end
         
