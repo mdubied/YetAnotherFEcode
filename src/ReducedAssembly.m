@@ -41,9 +41,10 @@ classdef ReducedAssembly < Assembly
                 Ve = V(index,:);
                 fe = thisElement.uniformBodyForce;
                 f = f + elementWeights(j) * (Ve.' * fe);
-            end
+            end 
         end
-
+        
+     
 
         function [K] = matrix(self,elementMethodName,varargin)
             % This function assembles a generic finite element matrix from

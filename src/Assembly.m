@@ -1,20 +1,22 @@
 classdef Assembly < handle
     properties
-        parallelized % whether to compute element contributions in parallel        
+        parallelized % whether to compute element contributions in parallel
         Mesh    % Object of Mesh class (handle to it)
-        DATA    % Miscellaneous data structure with arbitrary, user-defined 
-                % fields, which may be useful to precompute and store in  
-                % the Assembly Object e.g. DATA.K, DATA.M, DATA.C etc.
+        DATA    % Miscellaneous data structure with arbitrary, user-defined
+        % fields, which may be useful to precompute and store in
+        % the Assembly Object e.g. DATA.K, DATA.M, DATA.C etc.
+        
     end
-
+    
     methods
         function self = Assembly(Mesh,varargin)
-            self.Mesh = Mesh;   
+            self.Mesh = Mesh;
             if nargin == 2
                 self.parallelized = varargin{1};
             else
                 self.parallelized = false;
             end
+             
         end
         
         function set.parallelized(self,val)
@@ -31,19 +33,19 @@ classdef Assembly < handle
                 poolobj = gcp('nocreate');
                 delete(poolobj);
                 % prevent autocreation
-                ps.Pool.AutoCreate = false;               
-            end                
+                ps.Pool.AutoCreate = false;
+            end
         end
         
         function [K, f] = tangent_stiffness_and_force(self, varargin)
             [K, f] = self.matrix_and_vector('tangent_stiffness_and_force',...
-                        varargin{:});
+                varargin{:});
         end
-
+        
         function [f] = internal_force(self, varargin)
             f = self.vector('internal_force',varargin{:});
         end
-
+        
         function [F] = uniform_body_force(self,varargin)
             n_e = self.Mesh.nElements;
             F = cell(n_e,1); % values
@@ -60,30 +62,30 @@ classdef Assembly < handle
             Elements = self.Mesh.Elements;
             parfor j = elementSet(domainElements)
                 thisElement = Elements(j).Object;
-                index{j} = thisElement.iDOFs;            
+                index{j} = thisElement.iDOFs;
                 F{j} = thisElement.uniformBodyForce;
             end
             index = vertcat(index{:});
             F = vertcat(F{:});
             F = sparse(index, ones(length(index),1), F, self.Mesh.nDOFs, 1);
         end
-
+        
         function M = mass_matrix(self, varargin)
             M = self.matrix('mass_matrix',varargin{:});
         end
-
+        
         function C = damping_matrix(self, varargin)
             C = self.matrix('damping_matrix',varargin{:});
         end
-
+        
         function K = stiffness_matrix(self, varargin)
             K = self.matrix('stiffness_matrix',varargin{:});
         end
-
+        
         function [Kd] = stiffness_derivative(self, varargin)
             Kd = self.matrix('stiffness_derivative',varargin{:});
         end
-
+        
         function [K] = matrix(self,elementMethodName,varargin)
             % This function assembles a generic finite element matrix from
             % its element level counterpart.
@@ -92,9 +94,9 @@ classdef Assembly < handle
             % For this to work, a method named elementMethodName which
             % returns the appropriate matrix must be defined for all
             % element types in the FE Mesh.
-
+            
             n_e = self.Mesh.nElements;
-
+            
             I = cell(n_e,1); % row indices
             J = cell(n_e,1); % column indices
             K = cell(n_e,1); % values
@@ -106,7 +108,8 @@ classdef Assembly < handle
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);
             
-            % Computing element level contributions            
+            % Computing element level contributions
+            %change to parfor
             parfor j = elementSet
                 thisElement = Elements(j).Object;
                 
@@ -114,18 +117,18 @@ classdef Assembly < handle
                 d = length(index);
                 I{j} = kron(true(d,1), index);
                 J{j} = kron(index, true(d,1));
-
+                
                 [Ke] = elementWeights(j) * thisElement.(elementMethodName)(inputs{:});
                 K{j} = Ke(:);
             end
-
+            
             I = vertcat(I{:});
             J = vertcat(J{:});
             K = vertcat(K{:});
-
+            
             K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
         end
-
+        
         function [F] = vector(self,elementMethodName,varargin)
             % This function assembles a generic finite element vector from
             % its element level counterpart.
@@ -134,8 +137,8 @@ classdef Assembly < handle
             % For this to work, a method named elementMethodName which
             % returns the appropriate vector must be defined for all
             % element types in the FE Mesh.
-
-            n_e = self.Mesh.nElements;            
+            
+            n_e = self.Mesh.nElements;
             index = cell(n_e,1); % indices
             F = cell(n_e,1); % values
             Elements = self.Mesh.Elements; % Elements array
@@ -158,12 +161,12 @@ classdef Assembly < handle
             index = vertcat(index{:});
             F = vertcat(F{:});
             F = sparse(index, ones(length(index),1), F, self.Mesh.nDOFs, 1);
-
+            
         end
         
         function [S] = scalar(self,elementMethodName,varargin)
             % This function assembles a generic finite element scalar from
-            % its element level. 
+            % its element level.
             % elementMethodName is a string input containing the name of
             % the method that returns the element level scalar.
             % For this to work, a method named elementMethodName which
@@ -173,7 +176,7 @@ classdef Assembly < handle
             n_e = self.Mesh.nElements;
             
             S = zeros(n_e,1); % values
-            Elements = self.Mesh.Elements; % Elements array            
+            Elements = self.Mesh.Elements; % Elements array
             
             % parsing element weights
             [elementWeights,inputs] = obj.parse_inputs(varargin{:});
@@ -186,11 +189,11 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 S(j) = elementWeights(j) * thisElement.(elementMethodName)(inputs{:});
-            end            
+            end
         end
         
         function [K, f] = matrix_and_vector(self,elementMethodName, varargin)
-            % This function assembles a generic finite element matrix and 
+            % This function assembles a generic finite element matrix and
             % vector from its element level counterpart.
             % elementMethodName is a string input containing the name of
             % the method that returns the element level matrix Ke.
@@ -236,6 +239,8 @@ classdef Assembly < handle
             f = sparse(index, ones(length(index),1), f, self.Mesh.nDOFs, 1);
         end
         
+        
+        
         function [T] = tensor(self,elementMethodName,SIZE,sumDIMS,varargin)
             % This function assembles a generic finite element vector from
             % its element level counterpart.
@@ -244,9 +249,9 @@ classdef Assembly < handle
             % For this to work, a method named elementMethodName which
             % returns the appropriate vector must be defined for all
             % element types in the FE Mesh.
-
+            
             n_e = self.Mesh.nElements;
-
+            
             subs = cell(n_e,1);
             T = cell(n_e,1); % values
             
@@ -259,25 +264,25 @@ classdef Assembly < handle
             elementSet = find(elementWeights);
             
             % Computing element level contributions
-
+            
             parfor j = elementSet
                 thisElement = Elements(j).Object;
                 
                 [Te, globalSUBS] = thisElement.(elementMethodName)(inputs{:});
-
+                
                 [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, globalSUBS, sumDIMS);
             end
-
+            
             subs = vertcat(subs{:});
             if ~isempty(sumDIMS)
                 subs(:,sumDIMS) = sort(subs(:,sumDIMS),2);
             end
-            T = vertcat(T{:});
-            T = sptensor(subs, T, SIZE);
-
+             T = vertcat(T{:});
+             T = sptensor(subs, T, SIZE);
+            
         end
-
-
+        
+        
         function Kc = constrain_matrix(self,K)
             if ~isempty(self.Mesh.EBC)
                 Kc = K(self.Mesh.EBC.unconstrainedDOFs,self.Mesh.EBC.unconstrainedDOFs);
@@ -285,7 +290,7 @@ classdef Assembly < handle
                 Kc = K;
             end
         end
-
+        
         function vc = constrain_vector(self,v)
             if ~isempty(self.Mesh.EBC)
                 vc = v(self.Mesh.EBC.unconstrainedDOFs,:);
@@ -294,29 +299,29 @@ classdef Assembly < handle
             end
         end
         
-        function Tc = constrain_tensor(self,T,varargin)            
+        function Tc = constrain_tensor(self,T,varargin)
             if ~isempty(self.Mesh.EBC)
                 narginchk(2,3)
                 n = ndims(T);
                 SIZE = size(T);
                 if nargin>2
-                    constrainedDIMS = varargin{1}; 
+                    constrainedDIMS = varargin{1};
                 else
                     constrainedDIMS = 1:n;
-                end                
-                unchangedDIMS = setdiff(1:n,constrainedDIMS);                
+                end
+                unchangedDIMS = setdiff(1:n,constrainedDIMS);
                 dofs = self.Mesh.EBC.unconstrainedDOFs;
                 subs = cell(1,n);
-                subs(constrainedDIMS) = {dofs}; 
+                subs(constrainedDIMS) = {dofs};
                 for j = unchangedDIMS
                     subs{j} = 1:SIZE(j);
                 end
-                Tc = T(subs{:});                
+                Tc = T(subs{:});
             else
                 Tc = T;
             end
         end
-
+        
         function v = unconstrain_vector(self,vc)
             if ~isempty(self.Mesh.EBC)
                 v = self.Mesh.EBC.B * vc;
@@ -342,7 +347,7 @@ classdef Assembly < handle
                 ind_cons(ii) = find( self.Mesh.EBC.unconstrainedDOFs == ind_free(ii));
             end
         end
-
+        
         function u = solve_system(self,K,f)
             if ~isempty(self.Mesh.EBC)
                 [K_bc, f_bc] = self.Mesh.EBC.apply(K,f);
@@ -361,9 +366,9 @@ classdef Assembly < handle
             n_e = obj.Mesh.nElements;
             
             % locate position of 'weights' string
-            iWeights = find(strcmpi(varargin,'weights'));            
+            iWeights = find(strcmpi(varargin,'weights'));
             
-
+            
             if ~isempty(iWeights)
                 % extract user-supplied value of weights
                 weights = varargin{iWeights + 1};
@@ -377,13 +382,121 @@ classdef Assembly < handle
                 if iscolumn(weights)
                     weights = transpose(weights);
                 end
-
+                
                 % extract the remaining input
                 input = varargin([1:iWeights-1,iWeights+2:end]);
             else
                 input = varargin;
                 weights = true(1,n_e);
             end
+        end
+        
+        function [VMs,f0,time] = VMs_compute(self,Nm,showeig) %put unconstrain K
+            
+            Kf=self.DATA.K;
+            Mf=self.DATA.M;
+            K=self.constrain_matrix(Kf);                              %constrain
+            M=self.constrain_matrix(Mf);
+            % Compute eigenmodes
+            t0 = tic;
+            fprintf(' VIBRATION MODES ... ')
+            [Phi,D] = eigs(K,M,Nm,'SM');
+            [f0,ind] = sort(sqrt(diag(D))/2/pi);
+            VMs = Phi(:,ind);
+            time = toc(t0);
+            fprintf('%.2f\n\n',time)
+            
+            % check on imaginary modes
+            if ~isreal(f0)
+                warning(' Complex eigenfrequencies')
+                disp(' ')
+            end
+            
+            if showeig == 1
+                disp(' Eigenfrequencies:')
+                fprintf(' %.4f Hz \n',f0(1:Nm))
+                disp(' ')
+            end
+%                         for ii = 1:Nm
+%                             VMs(:,ii) = VMs(:,ii)/max(sqrt(sum(VMs(:,ii).^2,2)));
+%                         end
+%                         VMs = self.unconstrain_vector(VMs);
+            
+%             for ii = 1:size(VMs,2)
+%                 % mass normalization
+%                 vm = VMs(:,ii);
+%                 vm = sqrt(vm'*M*vm);
+%                 VMs(:,ii) = VMs(:,ii)/max(vm);
+%             end
+            VMs = self.unconstrain_vector(VMs);
+            
+            
+        end
+        function [MDs,MDs_names,time] = MDs_compute(self,Nv,NMDs,u0)
+            
+            Kf=self.DATA.K;
+            %             Mf=self.DATA.M;
+            K=self.constrain_matrix(Kf);                              %constrain
+            %             M=self.constrain_matrix(Mf);
+            
+            
+            freedofs = self.Mesh.EBC.unconstrainedDOFs;
+            nDOFs=self.Mesh.nDOFs;
+            
+            [VMs,f0,time_VM]=self.VMs_compute(Nv,0);
+            % check dimensions
+            if length(NMDs)==1
+                NMDs = [1 NMDs];
+            end
+            if ~(size(VMs,1)==nDOFs)
+                U = zeros(nDOFs,size(VMs,2));
+                U(freedofs,:) = VMs;
+                VMs = U;
+            end
+            if size(K,1)==nDOFs
+                K = K(freedofs,freedofs);
+            end
+            
+            VMs = VMs(:,NMDs(1):NMDs(end));
+            
+            Nm = NMDs(end)-(NMDs(1)-1);
+            MDs = zeros(length(freedofs),Nm*(Nm+1)/2);
+            MDs_names = cell(size(MDs,2),1);
+            
+            disp(' MODAL DERIVATIVES:')
+            t0 = tic;
+            
+            count = 0;
+            for ii = 1:size(VMs,2)
+                
+                VM_i = VMs(:,ii);
+                
+                str = pad(sprintf(' dKdq_%d: ',ii),10);
+                fprintf(str)
+                dKdq_i = self.stiffness_derivative(u0,VM_i);
+                
+                t1 = tic;
+                fprintf('\b, MDs computation ...')
+                dKdq_i = dKdq_i(freedofs,freedofs);
+                
+                for jj = 1:size(VMs,2)
+                    if jj<ii
+                        continue
+                    end
+                    count = count + 1;
+                    MDs(:,count) = -K\(dKdq_i*VMs(freedofs,jj));
+                    MDs_names{count} = sprintf('i=%d,j=%d',ii,jj);
+                end
+                fprintf(' %.2f s\n',toc(t1))
+                
+            end
+            fprintf(' %d MDs computed in %.2f s \n\n',count,toc(t0))
+            time = toc(t0);
+%             for ii = 1:count
+%                 MDs(:,ii) = MDs(:,ii)/max(sqrt(sum(MDs(:,ii).^2,2)));
+%             end
+            MDs = self.unconstrain_vector(MDs);
+            
         end
     end
 end

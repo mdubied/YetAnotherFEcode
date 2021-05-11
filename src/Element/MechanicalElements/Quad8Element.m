@@ -11,7 +11,7 @@ classdef Quad8Element < Element
         thickness = 0	% element thickness, by default zero
         Material       	% Object of class Material
         quadrature    	% weights and points for gauss quadrature
-        initialization 	% some 0-matrices to speedup numerical integration     
+        initialization 	% some 0-matrices to speedup numerical integration
     end
     
     properties (Dependent)
@@ -42,9 +42,14 @@ classdef Quad8Element < Element
             % INIZIALIZATION of some matrices (this should speedup
             % numerical integration)
             C = self.Material.get_stress_strain_matrix_2D;
-            H = [1 0 0 0; 
-                0 0 0 1; 
+            H = [1 0 0 0;
+                0 0 0 1;
                 0 1 1 0];
+            % Quadratic strain matrix: A = L.th, eps_quad = A*th
+            L(1,1,1)=1; L(3,2,1)=1; L(3,1,2)=1; L(2,2,2)=1; L(1,2,3)=1;
+            L(3,4,3)=1; L(3,2,4)=1; L(2,4,4)=1;
+            L = tensor(L);
+            
             self.initialization.A = zeros(3,4); % nonlinear strain
             self.initialization.G = zeros(4,16);% shape function derivatives
             self.initialization.Z = zeros(8);   % zero-matrix
@@ -52,6 +57,7 @@ classdef Quad8Element < Element
             self.initialization.F = zeros(16,1);% internal forces (element)
             self.initialization.C = C;          % constitutive law matrix
             self.initialization.H = H;          % linear strain
+            self.initialization.L=L;            %Quadratic strain matrix: A = L.th,
         end
         
         function Mel = mass_matrix(self)
@@ -64,7 +70,7 @@ classdef Quad8Element < Element
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
             Mel = zeros(16);
-           for ii = 1:self.quadrature.Ng
+            for ii = 1:self.quadrature.Ng
                 for jj = 1:self.quadrature.Ng
                     g = X(ii);
                     h = X(jj);
@@ -77,6 +83,15 @@ classdef Quad8Element < Element
                 end
             end
             Mel = sparse(rho*Mel);
+        end
+        function Cel = damping_matrix(self,alfa,beta,u0)
+            [Kel Fel]=self.tangent_stiffness_and_force(u0);
+            
+            Cel=alfa*self.mass_matrix()+beta*Kel;
+        end
+        function Kel = stiffness_matrix(self,u0)
+            [Kel Fel]=self.tangent_stiffness_and_force(u0);
+            
         end
         
         function [K,F] = tangent_stiffness_and_force(self, x)
@@ -96,8 +111,8 @@ classdef Quad8Element < Element
                     [G,detJ,dH] = shape_function_derivatives(self,g,h);
                     th  = G*displ;
                     A =	[th(1)	0     th(3) 0;
-                      	 0    	th(2) 0     th(4);
-                         th(2)	th(1) th(4) th(3)];
+                        0    	th(2) 0     th(4);
+                        th(2)	th(1) th(4) th(3)];
                     % Green Strain tensor
                     E = (H + 1/2*A)*th;
                     % second Piola-Kirchhoff stress tensor
@@ -137,7 +152,7 @@ classdef Quad8Element < Element
         
         % ANCILLARY FUNCTIONS _____________________________________________
         
-        function A = get.area(self)
+        function A = get_area(self)
             % Integrate detJ (jacobian from isoparametric to physical
             % coordinates) over the area to get A
             detJ = 0;
@@ -166,23 +181,205 @@ classdef Quad8Element < Element
             xy = self.nodes;
             % shape function derivatives in natural coordinates
             dHn = [ ...
-                    -((h - 1)*(g + h + 1))/4 - ((g - 1)*(h - 1))/4, -((g - 1)*(g + h + 1))/4 - ((g - 1)*(h - 1))/4;
-                    ((h - 1)*(h - g + 1))/4 - ((g + 1)*(h - 1))/4,   ((g + 1)*(h - g + 1))/4 + ((g + 1)*(h - 1))/4;
-                    ((h + 1)*(g + h - 1))/4 + ((g + 1)*(h + 1))/4,   ((g + 1)*(g + h - 1))/4 + ((g + 1)*(h + 1))/4;
-                    ((h + 1)*(g - h + 1))/4 + ((g - 1)*(h + 1))/4,   ((g - 1)*(g - h + 1))/4 - ((g - 1)*(h + 1))/4;
-                                                        g*(h - 1),                                     g^2/2 - 1/2;
-                                                      1/2 - h^2/2,                                      -h*(g + 1);
-                                                       -g*(h + 1),                                     1/2 - g^2/2;
-                                                      h^2/2 - 1/2,                                       h*(g - 1)]';
+                -((h - 1)*(g + h + 1))/4 - ((g - 1)*(h - 1))/4, -((g - 1)*(g + h + 1))/4 - ((g - 1)*(h - 1))/4;
+                ((h - 1)*(h - g + 1))/4 - ((g + 1)*(h - 1))/4,   ((g + 1)*(h - g + 1))/4 + ((g + 1)*(h - 1))/4;
+                ((h + 1)*(g + h - 1))/4 + ((g + 1)*(h + 1))/4,   ((g + 1)*(g + h - 1))/4 + ((g + 1)*(h + 1))/4;
+                ((h + 1)*(g - h + 1))/4 + ((g - 1)*(h + 1))/4,   ((g - 1)*(g - h + 1))/4 - ((g - 1)*(h + 1))/4;
+                g*(h - 1),                                     g^2/2 - 1/2;
+                1/2 - h^2/2,                                      -h*(g + 1);
+                -g*(h + 1),                                     1/2 - g^2/2;
+                h^2/2 - 1/2,                                       h*(g - 1)]';
             J = dHn*xy;
             detJ = det(J);
             dH = J\dHn;	% derivatives in physical coordinates,
-                      	% 2x16 matrix, [dNi_dx; dNi_dy]
-                       	% with i = 1...10
+            % 2x16 matrix, [dNi_dx; dNi_dy]
+            % with i = 1...10
             G = self.initialization.G;
             G(1:2,1:2:end) = dH;
             G(3:4,2:2:end) = dH;
         end
+        
+        function dKdq= stiffness_derivative(self,u0,VMs)
+            
+            X=self.quadrature.X;  %g=X(ii) h=X(jj);
+            %             g  = X(1);
+            %             h = X(2);
+            W=self.quadrature.W;  %weights
+            H=self.initialization.H;
+            C=self.Material.get_stress_strain_matrix_2D;
+            A=self.initialization.A;
+            
+            K = self.stiffness_matrix(u0);
+            M=self.mass_matrix();
+            
+            %           %nnodes = size(xyz,1); %get Phi_i_elem
+            %             [Phi,D] = eigs(K,M,Nm,'SM'); [f0,ind] =
+            %             sort(sqrt(diag(D))/2/pi); VMs = Phi(:,ind);
+            
+            %normalize
+            %             for ii = 1:Nm
+            %                 VMs(:,ii) =
+            %                 VMs(:,ii)/max(sqrt(sum(VMs(:,ii).^2,2)));
+            %             end
+            Phi_i_el=VMs(self.iDOFs);
+            
+            %             [G,detJ,dH] = self.shape_function_derivatives(g,h);
+            dKdq=0;
+            for ii = 1:self.quadrature.Ng
+                for jj = 1:self.quadrature.Ng
+                    g = X(ii);
+                    h = X(jj);
+                    we = W(ii)*W(jj); % weights
+                    [G,detJ,dH] = shape_function_derivatives(self,g,h);
+                    
+                    
+                    G=sparse(G);
+                    % dK(q)/dq_i
+                    th = G*Phi_i_el; % displacement derivatives vector
+                    
+                    A =	[th(1)	0     th(3) 0;
+                        0    	th(2) 0     th(4);
+                        th(2)	th(1) th(4) th(3)];
+                    int_dKdq = G'*(H'*C*A + 2*A'*C*H)*G*detJ;
+                    dKdq=dKdq+we*int_dKdq;
+                    
+                end
+            end
+        end
+        
+        function [Q3 globalSubs]= tensor_Q3(self)
+            X=self.quadrature.X;  %g=X(ii) h=X(jj);
+            W=self.quadrature.W;  %weights
+            H=self.initialization.H;
+            C=self.Material.get_stress_strain_matrix_2D;
+            %             A=self.initialization.A;
+            L=self.initialization.L;
+            
+                         % Phi_i_el=V(self.iDOFs);
+            
+            m=numel(self.nodes);
+            Q3h = zeros(m,m,m);
+            
+            for ii = 1:self.quadrature.Ng
+                for jj = 1:self.quadrature.Ng
+                    g = X(ii);
+                    h = X(jj);
+                    we = W(ii)*W(jj); % weights
+                    [G,detJ,dH] = shape_function_derivatives(self,g,h);
+                    
+                    %                     GHC = tensor((C*H*G)');
+                    %
+                    %                     C = tensor(C);
+                    %                     G = tensor(G);
+                    %
+                    %                     LGG = ttt(ttt(L,G,3,1),G,2,1);
+                    %
+                    %                     Q3h_int = ttt(GHC,LGG,2,1);
+                    %
+                    Q3h_int = self.tensors_Q3_hat(G,H,L,C);
+                    
+                    
+                    Q3h = Q3h + Q3h_int*detJ*we;
+                    
+                    
+                end
+            end
+            % build third order tensors using Q3h
+            Q3ht = permute(Q3h,[3 2 1]);
+            Q3 = Q3h./2 + Q3ht;
+            
+%                            Vt = tensor(Phi_i_el');    % reduction basis (transpose)
+%                            V  = tensor(Phi_i_el);     % reduction basis
+% %             
+%             % third order tensor projections
+                          %  Q3  = ttt(ttt(ttt(Vt,Q3 ,2,1),V,3,1),V ,2,1);
+%             %               % Taken from rectangular plate file
+            % global DOFs associated to the element nodes
+            index = get_index(self.nodeIDs,self.nDOFPerNode);
+            
+            % location of each dimension of tensor in global DOFs
+            globalSubs = {index, index, index};
+            
+            
+            
+        end
+        
+        function [Q3h] = tensors_Q3_hat(self,G,H,L,C)
+            
+            GHC = tensor((C*H*G)');
+            C = tensor(C);
+            G = tensor(G);
+            L=tensor(L);
+            LGG = tensor(ttt(ttt(L,G,3,1),G,2,1));
+            
+            Q3h = ttt(GHC,LGG,2,1);
+        end
+        function [Q4 globalSubs]= tensor_Q4(self)
+            X=self.quadrature.X;  %g=X(ii) h=X(jj);
+            W=self.quadrature.W;  %weights
+            H=self.initialization.H;
+            C=self.Material.get_stress_strain_matrix_2D;
+            %             A=self.initialization.A;
+            L=self.initialization.L;
+            
+            %Phi_i_el=V(self.iDOFs);
+            
+            m=numel(self.nodes);
+            Q4h = zeros(m,m,m,m);
+            for ii = 1:self.quadrature.Ng
+                for jj = 1:self.quadrature.Ng
+                    g = X(ii);
+                    h = X(jj);
+                    we = W(ii)*W(jj); % weights
+                    [G,detJ,dH] = shape_function_derivatives(self,g,h);
+                    %                     G=sparse(G);
+                    %
+                    %                     GHC = tensor((C*H*G)');
+                    %                     C = tensor(C);
+                    %                     G = tensor(G);
+                    %
+                    %                     LGG = ttt(ttt(L,G,3,1),G,2,1);
+                    %
+                    %
+                    %                     Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),C,2,1),LGG,3,1);
+                    %
+                    Q4h_int = self.tensors_Q4_hat(G,H,L,C);
+                    
+                    
+                    Q4h = Q4h + Q4h_int*detJ*we;
+                    
+                end
+            end
+            Q4=Q4h./2;
+%             Vt = tensor(V');    % reduction basis (transpose)
+%             V  = tensor(V);     % reduction basis
+%             
+%             
+%             % fourth order tensor projections
+%             Q4   = ttt(ttt(ttt(ttt(Vt,Q4  ,2,1),V,4,1),V ,3,1),V ,2,1);
+%             
+%             
+            % global DOFs associated to the element nodes
+            index = get_index(self.nodeIDs,self.nDOFPerNode);
+            
+            % location of each dimension of tensor in global DOFs
+            globalSubs = cell(4,1);
+            globalSubs(:) = {index};
+        end
+        function [Q4h] = tensors_Q4_hat(self,G,H,L,C)
+            
+           
+            C = tensor(C);
+            G = tensor(G);
+            L=tensor(L);
+
+            LGG = tensor(ttt(ttt(L,G,3,1),G,2,1));
+            
+            
+            Q4h = ttt(ttt(permute(LGG,[2 1 3]),C,2,1),LGG,3,1);
+            
+        end
+        
         
     end % methods
     
@@ -195,14 +392,14 @@ classdef Quad8Element < Element
             % Abaqus theory guide > Elements > Continuum elements > ...
             % ... > 3.2.4 Solid isoparametric quadrilaterals and hexahedra
             N = 1/4*[...
-                    -(1-g)*(1-h)*(1+g+h); 
-                    -(1+g)*(1-h)*(1-g+h);
-                    -(1+g)*(1+h)*(1-g-h); 
-                    -(1-g)*(1+h)*(1+g-h);
-                    2*(1-g)*(1+g)*(1-h);  
-                    2*(1-h)*(1+h)*(1+g);
-                    2*(1-g)*(1+g)*(1+h);  
-                    2*(1-h)*(1+h)*(1-g)];
+                -(1-g)*(1-h)*(1+g+h);
+                -(1+g)*(1-h)*(1-g+h);
+                -(1+g)*(1+h)*(1-g-h);
+                -(1-g)*(1+h)*(1+g-h);
+                2*(1-g)*(1+g)*(1-h);
+                2*(1-h)*(1+h)*(1+g);
+                2*(1-g)*(1+g)*(1+h);
+                2*(1-h)*(1+h)*(1-g)];
         end
         
         function X = natural_coordinates
@@ -218,6 +415,6 @@ classdef Quad8Element < Element
         end
         
     end
-        
-end % classdef
     
+end % classdef
+

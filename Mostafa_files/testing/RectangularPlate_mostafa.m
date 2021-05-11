@@ -159,7 +159,7 @@ PlateReducedAssembly.DATA.C = PlateReducedAssembly.damping_matrix();
 PlateReducedAssembly.DATA.K =  PlateReducedAssembly.stiffness_matrix();
 
 q0 = zeros(m,1);
-qd0 = zeros(m,1);
+qd0 = zeros(m,1); 
 qdd0 = zeros(m,1);
 
 TI_lin_red = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
@@ -170,6 +170,20 @@ Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear(q,qd,qdd,t,PlateReducedA
 % time integration
 TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
 TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+%% Reduced solution Noninear
+
+
+
+TI_NL_newmark_red = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% Modal nonlinear Residual evaluation function handle
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear(q,qd,qdd,t,PlateReducedAssembly,F_ext);
+
+% time integration
+TI_NL_newmark_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
+
+
 
 %% Reduced solution Noninear
 % For demonstration purposes, we simply reduce the nonlinear system using
@@ -203,5 +217,6 @@ plot(TI_NL.Solution.time, TI_NL.Solution.u(dof,:),'DisplayName', 'Full nonlinear
 hold on
 plot(TI_NL_alpha.Solution.time, TI_NL_alpha.Solution.u(dof,:),'DisplayName', 'Full nonlinear (Generalized-$$\alpha$$)')
 plot(TI_NL_alpha_red.Solution.time, TI_NL_alpha_red.Solution.u(dof,:),'DisplayName', 'Reduced nonlinear (Generalized-$$\alpha$$)')
+plot(TI_NL_newmark_red.Solution.time, TI_NL_newmark_red.Solution.u(dof,:),'DisplayName', 'Reduced nonlinear (Newmark)')
 xlabel('q'); ylabel('time'); grid on; axis tight; legend('show')
 

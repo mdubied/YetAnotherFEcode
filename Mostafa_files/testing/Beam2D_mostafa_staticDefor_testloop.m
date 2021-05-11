@@ -86,7 +86,7 @@ C= 0*M+0*K;
  Kc = BeamAssembly.constrain_matrix(K);
  Mc = BeamAssembly.constrain_matrix(M);
  
- n_VMs = 8;
+ n_VMs = 15;
 [VMs,f0,time_vm]=BeamAssembly.VMs_compute(n_VMs,1);
 %figure('units','normalized','position',[.2 .1 .6 .8])
 
@@ -100,22 +100,27 @@ elseif PNx==2
     PNy=1;
 end
 
+% normalization
+for ii = 1:size(VMs,2)
+    VMs(:,ii) = VMs(:,ii)/max(sqrt(sum(VMs(:,ii).^2,2)));
+end
+
 % PLOT
-for mod=1
+for mod=3
 % mod = 4;
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-%subplot(PNx,PNy,mod)
+%subplot(4,3,mod)
 figure('units','normalized','position',[.2 .1 .6 .8])
 
 PlotMesh(nodes, elementPlot, 0);
 v1 = reshape(VMs(:,mod), 2, []).';
-PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor',Ly*11);
+PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor',Ly*1.1);
 title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
 
 end
-
+close all
 %% MDs
-NMDs =8;
+NMDs =15;
 [MDs,MDs_names,time_md] = BeamAssembly.MDs_compute( n_VMs,NMDs,u0);
 
 %   figure('units','normalized','position',[.2 .1 .6 .8])
@@ -128,8 +133,11 @@ elseif PNxx==2
     PNxx=3;
     PNyy=1;
 end
-
-for mod=1%size(MDs,2)
+for ii = 1:size(MDs,2)
+   MDs(:,ii) = MDs(:,ii)/max(sqrt(sum(MDs(:,ii).^2,2)));
+end
+m=3
+for mod=1:m*(m+1)/2%size(MDs,2)
 % mod = 4;
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
   figure('units','normalized','position',[.2 .1 .6 .8])
@@ -138,12 +146,15 @@ elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
  
 PlotMesh(nodes, elementPlot, 0);
 d1 = reshape(MDs(:,mod), 2, []).';
-PlotFieldonDeformedMesh(nodes, elementPlot, d1, 'factor', Ly*110 );
+PlotFieldonDeformedMesh(nodes, elementPlot, d1, 'factor', Ly*0.3 );
 title(['MD' num2str(MDs_names{mod})])
 
 end
+ % Q3=BeamAssembly.tensor('tensor_Q3',[myMesh.nDOFs myMesh.nDOFs myMesh.nDOFs],[2 3]);
+% Q4=BeamAssembly.tensor('tensor_Q4',[myMesh.nDOFs myMesh.nDOFs myMesh.nDOFs myMesh.nDOFs],[2 3 4]);
 
 %deri1=BeamAssembly.stiffness_derivative(u0,VMs);
+close all
 %% EXAMPLE 2                                                        
 
 % Define external force:
@@ -155,7 +166,7 @@ end
 F = zeros(myMesh.nDOFs,1);
 nf = find_node(Lx/2,Ly/2,[],nodes); % node where to put the force
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = 1e7;
+F(node_force_dofs(2)) = 10e7;
 
 u_lin = BeamAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -184,7 +195,8 @@ title(['LINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
 
 %% Dynamic response using Implicit Newmark
 % forcing frequency of the average of first two natural frequencies
-omega_ext = 0.9*2*pi*f0(1); 
+omega_ext = 0.5*2*pi*f0(2)+0.5*2*pi*f0(1)+0.5*2*pi*f0(3); 
+% omega_ext=2*pi*f0(1);
 T =  2*pi/omega_ext; % time period of forcing
 
 % load amplification factor
@@ -209,7 +221,7 @@ h = T/150;
 BeamAssembly.DATA.M = M;
 BeamAssembly.DATA.K = K;
 BeamAssembly.DATA.C = C; %rayleigh
-%%
+
 % Instantiate object for linear time integration
 TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 
@@ -217,17 +229,18 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 10*T; 
+tmax = 50*T; 
+
 %tmax=0.002;
 tic
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
 % obtain full solution
 TI_lin.Solution.u = BeamAssembly.unconstrain_vector(TI_lin.Solution.q);
-toc
+FullLDuration=toc
 % Animate solution on Mesh (very slow)
 %AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:2,'filename','lineardisp')
-%%
+
 % Instantiate object for nonlinear time integration
 TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 
@@ -235,14 +248,13 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Nonlinear Time Integration
- tmax = 10*T; 
-%tmax=0.002;
+
 tic
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
 TI_NL.Solution.u = BeamAssembly.unconstrain_vector(TI_NL.Solution.q);
-toc
+FullNLduration=toc
 %  save('TI_NL.mat','TI_NL');
- %% Generalized alpha scheme
+% Generalized alpha scheme
 % % linear
 % TI_lin_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);
 % TI_lin_alpha.Integrate(q0,qd0,qdd0,tmax,residual_lin);
@@ -253,14 +265,43 @@ toc
 % TI_NL_alpha.Integrate(q0,qd0,qdd0,tmax,residual);
 % TI_NL_alpha.Solution.u = BeamAssembly.unconstrain_vector(TI_NL_alpha.Solution.q);
 
-%% Reduced solution Linear
-m= 2; % use the first five VMs in reduction
-n=m*(m+1)/2;
+%% Reduced solution 
+LROM=[];
+Ltime=[];
+Lduration=[];
+NLROM=[];
+NLtime=[];
+NLduration=[];
+
+nfsense = find_node(Lx/2,Ly/2,[],nodes); % node where to see the results
+dof = get_index(nfsense, myMesh.nDOFPerNode );
+dof=dof(2);
+
+count=0;
+VbMode=[];
+MDeri=[];
+for m=[1 3 7 10]
+    for n=[0 m*(m+1)/2]
+% m= 3; % use the first five VMs in reduction
+% n=m*(m+1)/2;
 % n=0;
 t=m+n;
- V = [VMs(:,1:m) MDs(:,1:n)];
+% normalization
+for ii = 1:m
+    VMs(:,ii) = VMs(:,ii)/max(sqrt(sum(VMs(:,ii).^2,2)));
+end
+for ii = 1:n
+   MDs(:,ii) = MDs(:,ii)/max(sqrt(sum(MDs(:,ii).^2,2)));
+end
+% VMs = self.unconstrain_vector(VMs);
+            
+if n==0
+ V = [VMs(:,1:m)];
+else
+   V = [VMs(:,1:m) MDs(:,1:n)];
+end
 %V=[ MDs(:,1:6)];
-tmax = 10*T; 
+
 BeamReducedAssembly  = ReducedAssembly(myMesh,V);
 
 
@@ -281,7 +322,10 @@ Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear(q,qd,qdd,t,BeamReducedAs
 tic
 TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
 TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
-toc
+durationL=toc
+Lduration=[Lduration durationL];
+Ltime=[Ltime TI_lin_red.Solution.time'];
+LROM=[LROM TI_lin_red.Solution.u(dof,:)'];
 
 %% Reduced solution Noninear
 % For demonstration purposes, we simply reduce the nonlinear system using
@@ -298,41 +342,197 @@ Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear(q,qd,qdd,t,BeamReduced
 tic
 TI_NL_alpha_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_alpha_red.Solution.u = V * TI_NL_alpha_red.Solution.q;
-toc
+durationNL=toc
 
-%% Comparison
+NLduration=[NLduration durationNL];
+
+NLtime=[NLtime TI_NL_alpha_red.Solution.time'];
+NLROM=[NLROM TI_NL_alpha_red.Solution.u(dof,:)'];
+
+count=count+1;
+VbMode=[VbMode m];
+MDeri=[MDeri n];
+    end
+end
+%%
+
+% Comparison
 % Linear
 %dof = 66; % random degree of freedom at which time response is compared
 % 
-% nfsense = find_node(9.25e-07,91.5e-6,[],nodes); % node where to see the results
-% dof = get_index(nfsense, myMesh.nDOFPerNode );
-% dof=dof(1);
-% nfsense = find_node(148.85e-6,182.07e-6,[],nodes); % node where to see the results
-% dof = get_index(nfsense, myMesh.nDOFPerNode );
-% dof=dof(2);
-% nfsense = find_node(16.775e-6,22.85e-6,[],nodes); % node where to see the results
-% dof = get_index(nfsense, myMesh.nDOFPerNode );
-% dof=dof(1);
+%% Reduced solution  Tensor Approach
+LROM=[];
+Ltime=[];
+Lduration=[];
+NLROM=[];
+NLtime=[];
+NLduration=[];
+ASEMduration=[];
+
 nfsense = find_node(Lx/2,Ly/2,[],nodes); % node where to see the results
 dof = get_index(nfsense, myMesh.nDOFPerNode );
 dof=dof(2);
 
+count=0;
+VbMode=[];
+MDeri=[];
+for m=3%m=[1 3 7 10]
+    for  n=m*(m+1)/2%n=[0 m*(m+1)/2]
+% m= 3; % use the first five VMs in reduction
+% n=m*(m+1)/2;
+% n=0;
+t=m+n;
+% normalization
+ for ii = 1:m
+    VMs(:,ii) = VMs(:,ii)/max(sqrt(sum(VMs(:,ii).^2,2)));
+end
+for ii = 1:n
+   MDs(:,ii) = MDs(:,ii)/max(sqrt(sum(MDs(:,ii).^2,2)));
+end
+% VMs = self.unconstrain_vector(VMs);
+            
+if n==0
+ V = [VMs(:,1:m)];
+else
+   V = [VMs(:,1:m) MDs(:,1:n)];
+end
+%V=[ MDs(:,1:6)];
+%  V=V(BeamReducedAssembly.Mesh.EBC.unconstrainedDOFs',:);
+BeamReducedAssembly  = ReducedAssembly(myMesh,V);
+
+
+
+ BeamReducedAssembly.DATA.M = BeamReducedAssembly.mass_matrix();
+ BeamReducedAssembly.DATA.C = BeamReducedAssembly.damping_matrix(0,0,u0);
+ BeamReducedAssembly.DATA.K =  BeamReducedAssembly.stiffness_matrix(u0);
+% Mr=BeamAssembly.mass_matrix();
+% Kr=BeamAssembly.stiffness_matrix(u0);
+% Cr=BeamAssembly.damping_matrix(0,0,u0);
+% % 
+% % Mrr= BeamAssembly.constrain_matrix(Mr);
+% % Krr=BeamAssembly.constrain_matrix(Kr);
+% % Crr=BeamAssembly.constrain_matrix(Cr);
+% % 
+% BeamReducedAssembly.DATA.M = V'*Mr*V;
+% BeamReducedAssembly.DATA.K = V'*Kr*V;
+% BeamReducedAssembly.DATA.C =  V'*Cr*V;
+
+tic
+
+
+Q2=BeamReducedAssembly.DATA.K;
+Q3r=BeamReducedAssembly.tensor('tensor_Q3',[n+m n+m n+m],[2 3]);
+Q4r=BeamReducedAssembly.tensor('tensor_Q4',[n+m n+m n+m n+m],[2 3 4]);
+% Q3 = BeamReducedAssembly.constrain_tensor(Q3r);
+% Q4 =BeamReducedAssembly.constrain_tensor(Q4r);
+Q3=full(Q3r);
+Q4=full(Q4r);
+durationTensor=toc;
+ASEMduration=[ASEMduration durationTensor];
+%% this also works (moving from full to reduce tensor)
+% VV=sptensor(V);
+% VVt=sptensor(V');
+% 
+% Q3nr=BeamAssembly.tensor('tensor_Q3',[myMesh.nDOFs myMesh.nDOFs myMesh.nDOFs],[2 3]);
+% Q4nr=BeamAssembly.tensor('tensor_Q4',[myMesh.nDOFs myMesh.nDOFs myMesh.nDOFs myMesh.nDOFs],[2 3 4]);
+% %  Q3 = BeamReducedAssembly.constrain_tensor(Q3nr);
+% %  Q4 =BeamReducedAssembly.constrain_tensor(Q4nr);
+% Q3z  = ttt(sptensor(ttt(ttt(VVt,Q3nr,2,1),VV,3,1)),VV ,2,1);
+% Q4z   = ttt(sptensor(ttt(ttt(ttt(VVt,Q4nr,2,1),VV,4,1),VV ,3,1)),VV ,2,1);
+%testing moving from full to reduce
+%%
+
+Q3t = Q3 + permute(Q3,[1 3 2]); 
+Q4t = Q4 + permute(Q4,[1 3 2 4]) + permute(Q4,[1 4 2 3]);
+
+q0 = zeros(t,1);
+qd0 = zeros(t,1);
+qdd0 = zeros(t,1);
+%%
+TI_lin_red = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
+
+% Modal linear Residual evaluation function handle
+Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear(q,qd,qdd,t,BeamReducedAssembly,F_ext);
+
+% time integration
+tic
+TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
+TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+durationL=toc
+Lduration=[Lduration durationL];
+Ltime=[Ltime TI_lin_red.Solution.time'];
+LROM=[LROM TI_lin_red.Solution.u(dof,:)'];
+
+% Reduced solution Noninear
+% For demonstration purposes, we simply reduce the nonlinear system using
+% out-of-plane bending modes. This is expected to produce bad results when 
+% in-plane stretching is involved in the response.
+
+%%
+
+TI_NL_newmark_red = ImplicitNewmark('timestep',h,'alpha',0.005);
+% Modal nonlinear Residual evaluation function handle
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_tensor(q,qd,qdd,t,BeamReducedAssembly,F_ext,Q2,Q3,Q4,Q3t,Q4t);
+
+% time integration
+tic
+TI_NL_newmark_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
+durationNL=toc
+
+NLduration=[NLduration durationNL];
+
+NLtime=[NLtime TI_NL_newmark_red.Solution.time'];
+NLROM=[NLROM TI_NL_newmark_red.Solution.u(dof,:)'];
+
+%% TI_NL_alpha_red = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
+% 
+% 
+% TI_NL_alpha_red = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
+% % Modal nonlinear Residual evaluation function handle
+% Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_tensor(q,qd,qdd,t,BeamReducedAssembly,F_ext,Q2,Q3,Q4,Q3t,Q4t);
+% 
+% % time integration
+% tic
+% TI_NL_alpha_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+% TI_NL_alpha_red.Solution.u = V * TI_NL_alpha_red.Solution.q;
+% durationNL=toc
+% 
+% NLduration=[NLduration durationNL];
+% 
+% NLtime=[NLtime TI_NL_alpha_red.Solution.time'];
+% NLROM=[NLROM TI_NL_alpha_red.Solution.u(dof,:)'];
+%%
+
+
+
+
+count=count+1;
+VbMode=[VbMode m];
+MDeri=[MDeri n];
+    end
+end
+%%
+nfsense = find_node(Lx/2,Ly/2,[],nodes); % node where to see the results
+dof = get_index(nfsense, myMesh.nDOFPerNode );
+dof=dof(2);
 
 figure;
-plot(TI_lin.Solution.time, TI_lin.Solution.u(dof,:),'DisplayName', 'Full linear (Newmark)')
+
+plot(TI_lin.Solution.time, TI_lin.Solution.u(dof,:),'DisplayName', ['Full linear (Newmark) ' 'time= ' num2str(FullLDuration) ])
 hold on
-% plot(TI_lin_alpha.Solution.time, TI_lin_alpha.Solution.u(dof,:),'DisplayName', 'Full linear (Generalized-$$\alpha$$)')
-%plot(TI_lin_red.Solution.time, TI_lin_alpha.Solution.u(dof,:),'DisplayName', 'Reduced linear (Newmark)')
-plot(TI_lin_red.Solution.time, TI_lin_red.Solution.u(dof,:),'DisplayName', 'Reduced linear (Newmark)')
-
-xlabel('q'); ylabel('time'); grid on; axis tight; legend('show')
-
-% Nonlinear
-%  figure;
-plot(TI_NL.Solution.time, TI_NL.Solution.u(dof,:),'DisplayName', 'Full nonlinear (Newmark)')
+plot(TI_NL.Solution.time, TI_NL.Solution.u(dof,:),'DisplayName', ['Full nonlinear (Newmark) ' 'time= ' num2str(FullNLduration)])
 hold on
-% plot(TI_NL_alpha.Solution.time, TI_NL_alpha.Solution.u(dof,:),'DisplayName', 'Full nonlinear (Generalized-$$\alpha$$)')
-%plot(TI_NL_alpha_red.Solution.time, TI_NL_alpha_red.Solution.u(dof,:),'DisplayName', 'Reduced nonlinear (Generalized-$$\alpha$$)')
-plot(TI_NL_alpha_red.Solution.time, TI_NL_alpha_red.Solution.u(dof,:),'DisplayName', 'Reduced nonlinear (Generalized-$$\alpha$$)')
-xlabel('q'); ylabel('time'); grid on; axis tight; legend('show')
+for i=1:count
+Vmode=VbMode(i);
+Mderi=MDeri(i);
 
+
+plot(Ltime(:,i), LROM(:,i),'DisplayName', ['Reduced linear (Newmark) ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(Lduration(i)) 's'])
+
+xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+
+plot(NLtime(:,i), NLROM(:,i),'DisplayName', ['Reduced nonlinear (Newmark) T' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(NLduration(i)) 's'])
+xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+
+end

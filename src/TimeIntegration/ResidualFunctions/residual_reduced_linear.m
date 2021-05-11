@@ -49,6 +49,7 @@ M_V = Assembly.DATA.M;
 C_V = Assembly.DATA.C;
 K_V = Assembly.DATA.K;
 F_V = Assembly.V.' * Fext(t);
+
 %% 
 % Residual is computed according to the formula above:
 r = M_V * qdd + C_V * qd + K_V * q - F_V ;
