@@ -34,9 +34,21 @@ classdef Hex20Element < Element
                 Ngauss = 2;
             end
             [x,w]=lgwt(Ngauss,-1,1);
+            X = zeros(3,Ngauss^3);
+            W = zeros(Ngauss^3,1);
+            cont = 1;
+            for ii = 1:Ngauss
+                for jj = 1:Ngauss
+                    for kk = 1:Ngauss
+                        X(:,cont) = [x(ii) x(jj) x(kk)].';
+                        W(cont) = w(ii)*w(jj)*w(kk);
+                        cont = cont+1;
+                    end
+                end
+            end
             self.quadrature.Ng = Ngauss;
-            self.quadrature.X = x;	% gauss integration points
-            self.quadrature.W = w;	% gauss integration weights
+            self.quadrature.X = X;	% gauss integration points
+            self.quadrature.W = W;	% gauss integration weights
             % INIZIALIZATION of some matrices (this should speedup
             % numerical integration)
             C = self.Material.get_stress_strain_matrix_3D;
@@ -65,21 +77,18 @@ classdef Hex20Element < Element
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
             Mel = zeros(60);
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    for kk = 1:self.quadrature.Ng
-                        g = X(ii);
-                        h = X(jj);
-                        r = X(kk);
-                        N = self.shape_functions(g,h,r);
-                        [~,detJ] = shape_function_derivatives(self,g,h,r);
-                        NN(1,1:3:60) = N;
-                        NN(2,2:3:60) = N;
-                        NN(3,3:3:60) = N;
-                        % integration of K and M through GAUSS QUADRATURE
-                        Mel = Mel + W(ii)*W(jj)*W(kk)*(NN'*NN)*detJ;
-                    end
-                end
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                r = X(3,ii);
+                we = W(ii); % weights
+                N = self.shape_functions(g,h,r);
+                [~,detJ] = shape_function_derivatives(self,g,h,r);
+                NN(1,1:3:60) = N;
+                NN(2,2:3:60) = N;
+                NN(3,3:3:60) = N;
+                % integration of K and M through GAUSS QUADRATURE
+                Mel = Mel + (NN'*NN)*(we*detJ);
             end
             Mel = sparse(rho*Mel);
         end
@@ -93,39 +102,35 @@ classdef Hex20Element < Element
             C = self.initialization.C;
             H = self.initialization.H;
             ZZ = self.initialization.Z;
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    for kk = 1:self.quadrature.Ng
-                        g = X(ii);              % natural coordinates
-                        h = X(jj);              % natural coordinates
-                        r = X(kk);              % natural coordinates
-                        we = W(ii)*W(jj)*W(kk); % weights
-                        [G,detJ,dH] = shape_function_derivatives(self,g,h,r);
-                        th  = G*displ;
-                        A = self.initialization.A;
-                        A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
-                        A(6,2)=th(3); A(3,3)=th(3); A(5,3)=th(1); A(6,3)=th(2); A(1,4)=th(4);
-                        A(4,4)=th(5); A(5,4)=th(6); A(2,5)=th(5); A(4,5)=th(4); A(6,5)=th(6);
-                        A(3,6)=th(6); A(5,6)=th(4); A(6,6)=th(5); A(1,7)=th(7); A(4,7)=th(8);
-                        A(5,7)=th(9); A(2,8)=th(8); A(4,8)=th(7); A(6,8)=th(9); A(3,9)=th(9);
-                        A(5,9)=th(7); A(6,9)=th(8);
-                        % Green Strain tensor
-                        E = (H + 1/2*A)*th;
-                        % second Piola-Kirchhoff stress tensor
-                        s = C*E; % s = [S11 S22 S33 S12 S13 S23]
-                        S = [s(1) s(4) s(5); s(4) s(2) s(6); s(5) s(6) s(3)];
-                        Bnl = (H + A)*G;
-                        % functions to integrate over volume
-                        int_K1 = Bnl'*C*Bnl;
-                        HSH = dH'*S*dH;
-                        int_Ks = [HSH ZZ ZZ; ZZ HSH ZZ; ZZ ZZ HSH]; % (faster than blkdiag)
-                        int_K = (int_K1 + int_Ks)*detJ;
-                        int_F = (Bnl'*s)*detJ;
-                        % integration of K and F through Gauss quadrature
-                        K = K + we*int_K;
-                        F = F + we*int_F;
-                    end
-                end
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                r = X(3,ii);
+                we = W(ii); % weights
+                [G,detJ,dH] = shape_function_derivatives(self,g,h,r);
+                th  = G*displ;
+                A = self.initialization.A;
+                A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
+                A(6,2)=th(3); A(3,3)=th(3); A(5,3)=th(1); A(6,3)=th(2); A(1,4)=th(4);
+                A(4,4)=th(5); A(5,4)=th(6); A(2,5)=th(5); A(4,5)=th(4); A(6,5)=th(6);
+                A(3,6)=th(6); A(5,6)=th(4); A(6,6)=th(5); A(1,7)=th(7); A(4,7)=th(8);
+                A(5,7)=th(9); A(2,8)=th(8); A(4,8)=th(7); A(6,8)=th(9); A(3,9)=th(9);
+                A(5,9)=th(7); A(6,9)=th(8);
+                % Green Strain tensor
+                E = (H + 1/2*A)*th;
+                % second Piola-Kirchhoff stress tensor
+                s = C*E; % s = [S11 S22 S33 S12 S13 S23]
+                S = [s(1) s(4) s(5); s(4) s(2) s(6); s(5) s(6) s(3)];
+                Bnl = (H + A)*G;
+                % functions to integrate over volume
+                int_K1 = Bnl'*C*Bnl;
+                HSH = dH'*S*dH;
+                int_Ks = [HSH ZZ ZZ; ZZ HSH ZZ; ZZ ZZ HSH]; % (faster than blkdiag)
+                int_K = (int_K1 + int_Ks)*detJ;
+                int_F = (Bnl'*s)*detJ;
+                % integration of K and F through Gauss quadrature
+                K = K + we*int_K;
+                F = F + we*int_F;
             end
         end
         
