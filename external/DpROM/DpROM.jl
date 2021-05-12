@@ -4,7 +4,7 @@ using Dates
 using TensorOperations
 using LinearAlgebra
 
-export red_stiff_tensors, red_stiff_tensors_defects
+export red_stiff_tensors, red_stiff_tensors_defects, stiffness_matrix_derivative
 
 # ASSEMBLY FUNCTIONS ___________________________________________________________
 # ASSEMBLE ROM stiffness tensors (standard, no parametrization)
@@ -255,6 +255,62 @@ function element_tensor_standard(G,C,H,L1,V)
     K2n, K3n, K4n
 end
 
+# STIFFNESS MATRIX DERIVATIVES _________________________________________________
+function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss, WGauss)
+    time1 = now()
+
+    # useful dimensions
+    nD = size(nodes,2)              # dimension of the problem
+    nel = size(elements,1)          # number of elements
+    nel_dofs = size(connectivity,2) # number of dofs per element
+    nw = length(WGauss)             # number of integration points
+    nv = size(V,2)                  # number of vibration modes
+    ndofs = prod(size(nodes))       # number of DOFs (total, free+constrained)
+
+    G_FUN = Gselector(nD,nel_dofs)
+
+    if nD==3
+        L1, L2, L31, H = constantMatrices3D()
+        A1, A2, A3 = Amatrices3D()
+    elseif nD==2
+        L1, L2, L31, H = constantMatrices2D()
+        A1, A2, A3 = Amatrices2D()
+    end
+
+    # initialize tensors
+    dKdη = zeros(ndofs, ndofs)
+
+    # cycle over all the elements
+    for e in 1:nel
+        el_nodes = elements[e,:]        # IDs of the element nodes
+        el_dofs  = connectivity[e,:]    # IDs of the element dofs
+        xyz = nodes[el_nodes,:]         # element's coordinates x, y, z
+        Ve = V[el_dofs,:]               # Projection Basis V (only element's dofs)
+
+        # cycle over Gauss quadrature points (integration over volume)
+        for i in 1:nw
+            ISO = XGauss[:,i]           # Gauss point coordinates
+            w = WGauss[i]               # Gauss weight
+            G, detJ = G_FUN(ISO,xyz)    # shape function derivative matrix G and Jacobian
+            # compute the element-level dKdηE at the Gauss points
+            CwJ = C .* (w * detJ);
+            dKdηE = element_stiffness_matrix_derivative(G,CwJ,H,A1,L1,Ve)
+            # assembly the element contributions in the global matrix
+            dKdη[el_dofs, el_dofs] .+= dKdηE
+        end
+    end
+    time2 = now()
+    time3 = time2 - time1
+    totaltime = time3.value
+    # return all the tensors
+    dKdη, totaltime;
+end
+function element_stiffness_matrix_derivative(G, C, H, A1, L1, Ve)
+    th = G*Ve
+    dKdηE = G'*(H'*C*A1(th) + 2*A1(th)'*C*H)*G
+    dKdηE
+end
+
 # COMMONS & elements ___________________________________________________________
 # all constant matrices are defined here (H,L��?,L₂,L₃��?)
 function constantMatrices3D()
@@ -361,6 +417,42 @@ function constantMatrices2D()
     ];
 
     L1, L2, L31, H
+end
+function Amatrices3D()
+    A1(th) =
+        [th[1]     0     0 th[4]     0     0 th[7]     0     0;
+             0 th[2]     0     0 th[5]     0     0 th[8]     0;
+             0     0 th[3]     0     0 th[6]     0     0 th[9];
+         th[2] th[1]     0 th[5] th[4]     0 th[8] th[7]     0;
+         th[3]     0 th[1] th[6]     0 th[4] th[9]     0 th[7];
+             0 th[3] th[2]     0 th[6] th[5]     0 th[9] th[8]]
+    A2(th) = -1*
+          [th[1]  th[4]  th[7]      0      0      0      0      0      0;
+               0      0      0  th[2]  th[5]  th[8]      0      0      0;
+               0      0      0      0      0      0  th[3]  th[6]  th[9];
+           th[2]  th[5]  th[8]  th[1]  th[4]  th[7]      0      0      0;
+           th[3]  th[6]  th[9]      0      0      0  th[1]  th[4]  th[7];
+               0      0      0  th[3]  th[6]  th[9]  th[2]  th[5]  th[8]]
+    A3(th) = -1/2*
+        [th[1]     0     0         th[4]/2         th[7]/2               0;
+             0 th[5]     0         th[2]/2               0         th[8]/2;
+             0	   0 th[9]               0         th[3]/2         th[6]/2;
+         th[2] th[4]     0 th[1]/2+th[5]/2         th[8]/2         th[7]/2;
+         th[3]     0 th[7]         th[6]/2 th[1]/2+th[9]/2         th[4]/2;
+             0 th[6] th[8]         th[3]/2         th[2]/2 th[5]/2+th[9]/2]
+    A1, A2, A3
+end
+function Amatrices2D()
+    A1(th) = [th[1]     0 th[3]     0;
+                  0 th[2]     0 th[4];
+              th[2] th[1] th[4] th[3]]
+    A2(th) =-[th[1] th[3]     0     0;
+                  0     0 th[2] th[4];
+              th[2] th[4] th[1] th[3]]
+    A3(th) = [th[1]     0 th[3]/2;
+                  0 th[4] th[2]/2;
+              th[2] th[3] th[1]/2+th[4]/2]/2
+    A1, A2, A3
 end
 function Gselector(nDIM,ndofs)
 
