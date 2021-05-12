@@ -1,4 +1,4 @@
-module DpROM_module
+module DpROM
 
 using Dates
 using TensorOperations
@@ -256,9 +256,9 @@ function element_tensor_standard(G,C,H,L1,V)
 end
 
 # COMMONS & elements ___________________________________________________________
-# all constant matrices are defined here (H,L�?,L₂,L₃�?)
+# all constant matrices are defined here (H,L��?,L₂,L₃��?)
 function constantMatrices3D()
-    # A = L�?⋅ θ
+    # A = L��?⋅ θ
     L1 = zeros(6,9,9)
     L1[1,1,1]=1; L1[4,2,1]=1; L1[5,3,1]=1;
     L1[4,1,2]=1; L1[2,2,2]=1; L1[6,3,2]=1;
@@ -283,7 +283,7 @@ function constantMatrices3D()
     L2[5,3,9]=1; L2[6,6,9]=1; L2[3,9,9]=1;
     L2 = -L2;
 
-    # A₃A�? = (L₃�?⋅ θᵈ)⋅ θ
+    # A₃A��? = (L₃��?⋅ θᵈ)⋅ θ
     L31 = zeros(6,9,9,9)
     L31[1,1,1,1] = 2; L31[4,2,1,1] = 1; L31[5,3,1,1] = 1; L31[4,1,2,1] = 1;
     L31[5,1,3,1] = 1; L31[1,4,4,1] = 2; L31[4,5,4,1] = 1; L31[5,6,4,1] = 1;
@@ -333,7 +333,7 @@ function constantMatrices3D()
     L1, L2, L31, H
 end
 function constantMatrices2D()
-    # A = L�?⋅ θ
+    # A = L��?⋅ θ
     L1 = zeros(3,4,4)
     L1[1,1,1] = 1; L1[3,2,1] = 1; L1[3,1,2] = 1; L1[2,2,2] = 1;
     L1[1,3,3] = 1; L1[3,4,3] = 1; L1[3,3,4] = 1; L1[2,4,4] = 1;
@@ -344,7 +344,7 @@ function constantMatrices2D()
     L2[1,2,3] = 1; L2[3,4,3] = 1; L2[3,2,4] = 1; L2[2,4,4] = 1;
     L2 = -L2;
 
-    # A₃A�? = (L₃�?⋅ θᵈ)⋅ θ
+    # A₃A��? = (L₃��?⋅ θᵈ)⋅ θ
     L31 = zeros(3,4,4,4)
     L31[1,1,1,1] = 2; L31[3,2,1,1] = 1; L31[3,1,2,1] = 1; L31[1,3,3,1] = 2;
     L31[3,4,3,1] = 1; L31[3,3,4,1] = 1; L31[3,1,1,2] = 2; L31[2,2,1,2] = 1;

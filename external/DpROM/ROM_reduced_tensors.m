@@ -49,7 +49,7 @@ if a{end}~='.'
 end
 % load packages
 jleval using TensorOperations
-jleval using DpROM_module
+jleval using DpROM
 
 % call the function once (for 1 element only) to precompile
 elem1 = elements(1,:);
