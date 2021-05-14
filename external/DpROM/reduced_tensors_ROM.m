@@ -1,5 +1,5 @@
 
-function tensors = ROM_reduced_tensors(myAssembly, elements, V)
+function tensors = reduced_tensors_ROM(myAssembly, elements, V)
 
 t0=tic;
 

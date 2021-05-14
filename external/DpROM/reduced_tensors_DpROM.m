@@ -1,5 +1,5 @@
 
-function tensors = DpROM_reduced_tensors(FORMULATION, volume, myAssembly, elements, V, Vd)
+function tensors = reduced_tensors_DpROM(FORMULATION, volume, myAssembly, elements, V, Vd)
 
 t0=tic;
 
