@@ -1,4 +1,26 @@
-% tensor corrections, ONLY for defect-formulations
+% DefectedTensors
+%
+% Synthax:
+% [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors, xi)
+%
+% Description: this function returns the second, third and fourth order
+% reduced stiffness tensors evaluated at xi (see Eqs. (28) and (33) in the
+% paper).
+% INPUTS
+%   - tensors: the output of the "reduced_tensors_DpROM.m" function
+%   - xi: column vector containing the amplitudes of the defects in the
+%     selected basis U (we'll have then: d=size(U,2)=length(xi))
+% OUTPUTS
+%   - Q2, Q3 and Q4: the reduced order stiffness tensors
+%   - Q3t, Q4t: tensors required to compute the reduced tangent stiffness
+%     matrix (see tensors_KF.m function)
+%
+% Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
+% order parametric nonlinear reduced order model for imperfect structures 
+% using Neumann expansion", Nonlinear Dynamics, 2021.
+%
+% Created: 14 May 2021
+% Author: Jacopo Marconi, Politecnico di Milano
 
 function [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors, xi)
 

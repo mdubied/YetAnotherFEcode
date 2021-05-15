@@ -1,3 +1,39 @@
+% reduced_tensors_ROM
+%
+% Synthax:
+% tensors = reduced_tensors_ROM(myAssembly, elements, V)
+%
+% Description: this is a wrapper function for YetAnotherFEcode that
+% computes the "standard" reduced order tensors, as described in the paper.
+% INPUTS
+%   - myAssembly: Assembly from YetAnotherFEcode.
+%   - elements: table of the elements
+%   - V: Reduced Order Basis (unconstrained)
+% OUTPUT
+%   tensors: a struct variable with the following fields*:
+%       .Q2             n*n         reduced stiffness tensor
+%    	.Q3             n*n*n       reduced stiffness tensor
+%   	.Q4             n*n*n*n     reduced stiffness tensor
+%      	.time           computational time
+%   *being n=size(V,2)
+%
+% Additional notes:
+%   - ALL the elements are assumed to have the same properties in terms
+%     of MATERIAL and QUADRATURE rules.
+%   - this function uses the red_stiff_tensors function implemented in the
+%     Julia module "DpROM.jl". 
+%   - as such, this function supports ONLY models meshed with the elements
+%     supported by both YetAnotherFEcode AND the DpROM.jl
+%   - List of currently supported elements: 
+%     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
+%     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
+%
+% Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
+% order parametric nonlinear reduced order model for imperfect structures 
+% using Neumann expansion", Nonlinear Dynamics, 2021.
+%
+% Created: 14 May 2021
+% Author: Jacopo Marconi, Politecnico di Milano
 
 function tensors = reduced_tensors_ROM(myAssembly, elements, V)
 
@@ -46,6 +82,7 @@ if a{end}~='.'
     jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
     jleval push!(LOAD_PATH, pwd() * "\\DpROM");
     jleval push!(LOAD_PATH, ".")
+    fprintf(' Path added\n\n')
 end
 % load packages
 jleval using TensorOperations

@@ -29,6 +29,10 @@
 %     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
 %     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
 %
+% Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
+% order parametric nonlinear reduced order model for imperfect structures 
+% using Neumann expansion", Nonlinear Dynamics, 2021.
+%
 % Created: 14 May 2021
 % Author: Jacopo Marconi, Politecnico di Milano
 

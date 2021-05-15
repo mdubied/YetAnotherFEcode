@@ -138,8 +138,8 @@ tensors_ROM = reduced_tensors_ROM(DefectedAssembly, elements, Vd);
 
 % parametric formulation for defects
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
-tensors_DpROM = reduced_tensors_DpROM(FORMULATION, VOLUME, ...
-    NominalAssembly, elements, Vn, U);
+tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, Vn, U, ...
+    FORMULATION, VOLUME);
 
 % evaluate the defected tensors at xi
 [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors_DpROM, xi);

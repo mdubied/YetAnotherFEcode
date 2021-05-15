@@ -1,3 +1,38 @@
+% stiffness_matrix_derivative
+%
+% Synthax:
+% dKdq = stiffness_matrix_derivative(myAssembly, elements, V)
+%
+% Description: this is a wrapper function for YetAnotherFEcode that 
+% computes the derivative of the tangent stiffness matrix with respect to
+% the amplitude of the vibration mode V.
+% INPUTS
+%   - myAssembly: Assembly from YetAnotherFEcode. It MUST contain the field
+%     ".DATA.K" storing the unconstrained linear stiffness matrix K0
+%   - elements: table of the elements
+%   - V: vector with the displacement field corresponding to a selected
+%     vibration mode (V must be unconstrained)
+% OUTPUTS
+%   - dKdq: tangent stiffness matrix derivative wrt q, being q the
+%     modal coordinate of the vibration mode V
+%
+% Additional notes:
+%   - ALL the elements are assumed to have the same properties in terms
+%     of MATERIAL and QUADRATURE rules.
+%   - this function uses the stiffness_matrix_derivative function 
+%     implemented in the Julia module "DpROM.jl". 
+%   - as such, this function supports ONLY models meshed with the elements
+%     supported by both YetAnotherFEcode AND the DpROM.jl
+%   - List of currently supported elements: 
+%     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
+%     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
+%
+% Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
+% order parametric nonlinear reduced order model for imperfect structures 
+% using Neumann expansion", Nonlinear Dynamics, 2021.
+%
+% Created: 14 May 2021
+% Author: Jacopo Marconi, Politecnico di Milano
 
 function dKdq = stiffness_matrix_derivative(myAssembly, elements, V)
 
@@ -46,6 +81,7 @@ if a{end}~='.'
     jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
     jleval push!(LOAD_PATH, pwd() * "\\DpROM");
     jleval push!(LOAD_PATH, ".")
+    fprintf(' Path added\n\n')
 end
 % load packages
 jleval using TensorOperations
