@@ -389,6 +389,7 @@ for nl=1:length(nonlinear_elements)
                 
             case 'custom'
                 myAssembly = nonlinear_elements{nl}.assembly;
+                fnl_CUSTOM = nonlinear_elements{nl}.custom_function;
                 
                 % Inverse FFT
                 Qc = transpose(reshape(Q,[],H+1)); n = size(Qc,2);
@@ -406,7 +407,7 @@ for nl=1:length(nonlinear_elements)
                     df_dql_all(iii, :, :) = Kt;
                     fnl(iii, :) = fint;                    
                 end
-
+                
                 % Forward FFT
                 Fnl = fft(fnl)/N;                   % harmonics * dofs = samples * dofs
                 Fnl = [Fnl(1,:);Fnl(2:H+1,:)*2];    % selected harmonics * dofs

@@ -115,6 +115,10 @@ tensors.Q3 = Q3;
 tensors.Q4 = Q4;
 tensors.time = time;
 
+% compute tensors for the tangent stiffness matrix (see tensors_KF.m)
+tensors.Q3t = Q3 + permute(Q3, [1 3 2]); 
+tensors.Q4t = Q4 + permute(Q4, [1 3 2 4]) + permute(Q4, [1 4 2 3]);
+
 end
 
 

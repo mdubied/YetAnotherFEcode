@@ -60,6 +60,8 @@ classdef FE_system < MechanicalSystem
         % Constructor
         function obj = FE_system(myAssembly, Fext, nonlinearity_type)
             
+         	global fnl_CUSTOM
+            
             ntot = myAssembly.Mesh.nDOFs;
             n = length(myAssembly.Mesh.EBC.unconstrainedDOFs);
             

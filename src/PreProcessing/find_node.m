@@ -3,7 +3,7 @@
 % 
 % Returns the id of a node at coordinates (xt,yt,zt).
 % INPUTS:   coordinates xt,yt,zt
-%           nodes2search: matrix containing nodes' [id x y z]
+%           nodes2search: matrix containing nodes' [x y z]
 
 function n = find_node(xt,yt,zt,nodes2search)
 
