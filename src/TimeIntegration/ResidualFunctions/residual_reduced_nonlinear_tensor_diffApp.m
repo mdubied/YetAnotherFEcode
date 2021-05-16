@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_tensor( q, qd, qdd, t, Assembly, Fext , Q2,Q3,Q4,Q3t,Q4t)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_tensor_diffApp( q, qd, qdd, t, Assembly, Fext , Q2,Q3,Q4,Q3t,Q4t,V,M_V,C_V)
 %  RESIDUAL_REDUCED_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -47,9 +47,11 @@ function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_tensor( q, qd,
 % finite element mesh were precomputed and stored in the $\texttt{DATA}$ property 
 % of the $\texttt{Assembly}$ object to avoid unnecessary assembly during each 
 % time-step.
-V = Assembly.V;
-M_V = Assembly.DATA.M;
-C_V = Assembly.DATA.C;
+% V = Assembly.V;
+% M_V = Assembly.DATA.M;
+% C_V = Assembly.DATA.C;
+
+
 %% 
 % The reduced tangent stiffness $\mathbf{K_V} = \frac{\partial\mathbf{F_V}}{\partial\mathbf{q}}$ 
 % and the the reduced internal force $\mathbf{F_V}$, however, need to be assmbled 
@@ -63,7 +65,7 @@ C_V = Assembly.DATA.C;
 % from the reduced variables $\mathbf{q}$ as $\mathbf{u} = \mathbf{Vq}$, and then 
 % directly assemble the reduced nonlinear operators  with the Assembly class method 
 % $\texttt{tangent\_stiffness\_and\_force\_modal(u,V)}$. 
-% q = V'*q;
+u = V*q;
 % [K_V, F_V] = Assembly.tangent_stiffness_and_force(u);
 F_V = Q2*q + ttsv(Q3,q,-1) + ttsv(Q4,q,-1);
 K_V = Q2 + ttsv(Q3t, q, -2) + ttsv(Q4t,q,-2);
@@ -71,6 +73,7 @@ K_V = Q2 + ttsv(Q3t, q, -2) + ttsv(Q4t,q,-2);
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
+
 F_ext_V =  V.'*Fext(t);
 r = F_inertial + F_damping + F_V - F_ext_V ;
 drdqdd = M_V;

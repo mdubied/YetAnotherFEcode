@@ -80,19 +80,7 @@ classdef Quad8Element < Element
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
             Mel = zeros(16);
-<<<<<<< HEAD
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    % shape functions and detJ (ABAQUS ORDER)
-                    N = self.shape_functions(g,h);
-                    [~,detJ] = shape_function_derivatives(self,g,h);
-                    NN = kron(N', eye(2));
-                    % integration of K and M through GAUSS QUADRATURE
-                    Mel = Mel + ( NN' * NN )*( W(ii) * W(jj) * detJ );
-                end
-=======
+
             for ii = 1:length(W)
                 g = X(1,ii);
                 h = X(2,ii);
@@ -103,7 +91,7 @@ classdef Quad8Element < Element
                 NN = kron(N', eye(2));
                 % integration of K and M through GAUSS QUADRATURE
                 Mel = Mel + ( NN' * NN )*( we * detJ );
->>>>>>> origin/master
+
             end
             Mel = sparse(rho*Mel);
         end
@@ -126,34 +114,7 @@ classdef Quad8Element < Element
             C = self.initialization.C;
             H = self.initialization.H;
             ZZ = self.initialization.Z;
-<<<<<<< HEAD
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    we = W(ii)*W(jj); % weights
-                    [G,detJ,dH] = shape_function_derivatives(self,g,h);
-                    th  = G*displ;
-                    A =	[th(1)	0     th(3) 0;
-                        0    	th(2) 0     th(4);
-                        th(2)	th(1) th(4) th(3)];
-                    % Green Strain tensor
-                    E = (H + 1/2*A)*th;
-                    % second Piola-Kirchhoff stress tensor
-                    s = C*E; % s = [S11 S22 S12]
-                    S = [s(1), s(3); s(3), s(2)];
-                    Bnl = (H + A)*G;
-                    % functions to integrate over volume
-                    int_K1 = Bnl'*C*Bnl;
-                    HSH = dH'*S*dH;
-                    int_Ks = [HSH ZZ; ZZ HSH]; % (faster than blkdiag)
-                    int_K = int_K1 + int_Ks;
-                    int_F = Bnl'*s;
-                    % integration of K and F through Gauss quadrature
-                    K = K + int_K * (we * detJ);
-                    F = F + int_F * (we * detJ);
-                end
-=======
+
             for ii = 1:length(W)
                 g = X(1,ii);
                 h = X(2,ii);
@@ -178,7 +139,7 @@ classdef Quad8Element < Element
                 % integration of K and F through Gauss quadrature
                 K = K + int_K * (we * detJ);
                 F = F + int_F * (we * detJ);
->>>>>>> origin/master
+
             end
         end
         
@@ -275,11 +236,10 @@ classdef Quad8Element < Element
             
             %             [G,detJ,dH] = self.shape_function_derivatives(g,h);
             dKdq=0;
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    we = W(ii)*W(jj); % weights
+             for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
                     [G,detJ,dH] = shape_function_derivatives(self,g,h);
                     
                     
@@ -294,7 +254,7 @@ classdef Quad8Element < Element
                     dKdq=dKdq+we*int_dKdq;
                     
                 end
-            end
+            
         end
         
         function [Q3 globalSubs]= tensor_Q3(self)
@@ -310,11 +270,10 @@ classdef Quad8Element < Element
             m=numel(self.nodes);
             Q3h = zeros(m,m,m);
             
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    we = W(ii)*W(jj); % weights
+             for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
                     [G,detJ,dH] = shape_function_derivatives(self,g,h);
                     
                     %                     GHC = tensor((C*H*G)');
@@ -326,14 +285,17 @@ classdef Quad8Element < Element
                     %
                     %                     Q3h_int = ttt(GHC,LGG,2,1);
                     %
-                    Q3h_int = self.tensors_Q3_hat(G,H,L,C);
                     
+               
+
+                        Q3h_int = self.tensors_Q3_hat(G,H,L,C);
+
                     
                     Q3h = Q3h + Q3h_int*detJ*we;
                     
                     
                 end
-            end
+            
             % build third order tensors using Q3h
             Q3ht = permute(Q3h,[3 2 1]);
             Q3 = Q3h./2 + Q3ht;
@@ -355,7 +317,7 @@ classdef Quad8Element < Element
         end
         
         function [Q3h] = tensors_Q3_hat(self,G,H,L,C)
-            
+          
             GHC = tensor((C*H*G)');
             C = tensor(C);
             G = tensor(G);
@@ -375,12 +337,11 @@ classdef Quad8Element < Element
             %Phi_i_el=V(self.iDOFs);
             
             m=numel(self.nodes);
-            Q4h = zeros(m,m,m,m);
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    g = X(ii);
-                    h = X(jj);
-                    we = W(ii)*W(jj); % weights
+            Q4 = zeros(m,m,m,m);
+             for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
                     [G,detJ,dH] = shape_function_derivatives(self,g,h);
                     %                     G=sparse(G);
                     %
@@ -396,11 +357,11 @@ classdef Quad8Element < Element
                     Q4h_int = self.tensors_Q4_hat(G,H,L,C);
                     
                     
-                    Q4h = Q4h + Q4h_int*detJ*we;
+                    Q4 = Q4 + Q4h_int*detJ*we;
                     
-                end
+                
             end
-            Q4=Q4h./2;
+             Q4=Q4./2;
 %             Vt = tensor(V');    % reduction basis (transpose)
 %             V  = tensor(V);     % reduction basis
 %             
@@ -429,7 +390,7 @@ classdef Quad8Element < Element
             Q4h = ttt(ttt(permute(LGG,[2 1 3]),C,2,1),LGG,3,1);
             
         end
-        
+       
         
     end % methods
     

@@ -40,6 +40,9 @@ PlateAssembly = Assembly(myMesh);
 K = PlateAssembly.stiffness_matrix();
 M = PlateAssembly.mass_matrix();
 C = PlateAssembly.damping_matrix();
+PlateAssembly.DATA.K=K;
+PlateAssembly.DATA.M=M;
+PlateAssembly.DATA.C=C;
 
 % Tensor Assembly
 T2 = PlateAssembly.tensor('T2',[myMesh.nDOFs, myMesh.nDOFs, myMesh.nDOFs], [2,3]);
@@ -116,7 +119,7 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,PlateAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 10*T; 
+tmax = 1*T; 
 TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 
 % obtain full solution
@@ -132,7 +135,7 @@ TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,PlateAssembly,F_ext);
 
 % Nonlinear Time Integration
-tmax = 10*T; 
+tmax = 1*T; 
 TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
 TI_NL.Solution.u = PlateAssembly.unconstrain_vector(TI_NL.Solution.q);
 
