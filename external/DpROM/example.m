@@ -11,8 +11,8 @@ FORMULATION = 'N1'; % N1/N1t/N0
 
 % DATA ____________________________________________________________________
 E       = 70e9;     % Young's modulus [Pa]
-rho     = 2700;     % density [kg/m^3]
-nu      = 0.33;     % Poisson's ratio 
+rho     = 2800;     % density [kg/m^3]
+nu      = 0.30;     % Poisson's ratio 
 thickness = .2;     % [m] beam's out-of-plane thickness
 
 % Material
@@ -24,9 +24,10 @@ myElementConstructor = @()Quad8Element(thickness, myMaterial);
 
 % MESH_____________________________________________________________________
 Lx = 2;
-Ly = .05;
-nx = 40;
-ny = 2;
+Ly = .050;
+h = 2;
+nx = 20*h;
+ny = 1*h;
 [nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny);
 
 % nominal mesh
@@ -138,7 +139,7 @@ figure
 v1 = reshape(MDn(:, nwho), 2, []).';
 S = Ly/2;
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S, 'component', 'U');
-title(['\theta_{' num2str(MDnames(1,nwho)) num2str(MDnames(2,nwho)) '}'])
+title(['\theta_{' num2str(MDnames(nwho,1)) num2str(MDnames(nwho,2)) '}'])
 axis on; grid on; box on
 
 
@@ -149,10 +150,10 @@ Vd = [VMd MDd];   	% reduced order basis (ROM-d)
 
 % mass-normalize
 for ii = 1 : size(Vn, 2)
-    Vn(:,ii) = Vn(:,ii) / (Vn(:,ii)'*Mn*Vn(:,ii));
+    Vn(:,ii) = Vn(:,ii) / sqrt(Vn(:,ii)'*Mn*Vn(:,ii));
 end
 for ii = 1 : size(Vd, 2)
-    Vd(:,ii) = Vd(:,ii) / (Vd(:,ii)'*Md*Vd(:,ii));
+    Vd(:,ii) = Vd(:,ii) / sqrt(Vd(:,ii)'*Md*Vd(:,ii));
 end
 
 Mnr = Vn'*Mn*Vn; 	% reduced mass matrix (DpROM)
@@ -182,7 +183,7 @@ disp(table(f0n, f0d, f0_ROMd, f0_DpROM))
 
 % PREPARE MODEL ___________________________________________________________
 % ROMd: reduced matrices
-Kr = Vd' * Kd * Vd;     % reduced linear stiffness matrix
+Kr = tensors_ROM.Q2;    % reduced linear stiffness matrix
 Mr = Vd' * Md * Vd;     % reduced mass matrix
 Dr = Vd' * D  * Vd;     % reduced damping matrix
 Fr = Vd'*Fext;          % reduced external force vector
@@ -206,19 +207,19 @@ fnl_CUSTOM = @(myAssembly, q) tensors_KF_NLvib(tensors_ROM.Q3,...
 imod = 1;               % eigenfreq to study
 omi = 2*pi*f0d(imod); 	% linear eigenfrequency
 n = size(Vd, 2);        % number of DOFs of the reduced system
-H = 5;                  % harmonic order
+H = 7;                  % harmonic order
 N = 3*H+1;              % number of time samples per period
-Om_s = omi * 0.90;   	% start frequency
+Om_s = omi * 0.80;   	% start frequency
 Om_e = omi * 1.1;    	% end frequency
-ds =  1;                % Path continuation step size
-exc_lev = [4000];
+ds =  2;                % Path continuation step size
+exc_lev = 4000;
 
 % COMPUTE FRs _____________________________________________________________
 fprintf('\n\n FRF from %.2f to %.2f rad/s \n\n', Om_s, Om_e)
 r2 = cell(length(exc_lev),1);
 for iex = 1 : length(exc_lev)
     % Set excitation level
-    ROMd_System.Fex1 = Fr * exc_lev(iex);
+    ROMd_System.Fex1 = Vd' * Fext * exc_lev(iex);
     
     % Initial guess (solution of underlying linear system)
     Q1 = (-Om_s^2*Mr + 1i*Om_s*Dr + Kr) \ ROMd_System.Fex1;
@@ -257,7 +258,6 @@ for iex = 1 : length(exc_lev)
     c = c(forced_dof, :);
     
     W = r2{iex}.omega;
-    a1 = squeeze(sqrt( A.^2 + B.^2 ));
     plot(W, abs(c) / Ly, '.-', 'linewidth', 1); hold on
 end
 grid on
@@ -269,7 +269,7 @@ title('FRF with HB (beam mid-span)')
 
 % LINEAR RESPONSE
 % compute the linear FRF for comparison
-nw = 201;
+nw = 501;
 w_linear = linspace(Om_s, Om_e, nw);
 for iex = 1 : length(exc_lev)
     fr_linear = zeros(nNodes*2, nw);
