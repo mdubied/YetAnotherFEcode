@@ -51,7 +51,7 @@ classdef Quad8Element < Element
             self.thickness = thickness;
             % INIZIALIZATION of some matrices (this should speedup
             % numerical integration)
-            C = self.Material.get_stress_strain_matrix_2D;
+            C = self.Material.get_stress_strain_matrix_2D * thickness;
             H = [1 0 0 0; 
                 0 0 0 1; 
                 0 1 1 0];
@@ -73,6 +73,7 @@ classdef Quad8Element < Element
             X = self.quadrature.X;
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
+            t = self.thickness;
             Mel = zeros(16);
             for ii = 1:length(W)
                 g = X(1,ii);
@@ -85,7 +86,7 @@ classdef Quad8Element < Element
                 % integration of K and M through GAUSS QUADRATURE
                 Mel = Mel + ( NN' * NN )*( we * detJ );
             end
-            Mel = sparse(rho*Mel);
+            Mel = sparse(t*rho*Mel);
         end
         
         function [K,F] = tangent_stiffness_and_force(self, x)
