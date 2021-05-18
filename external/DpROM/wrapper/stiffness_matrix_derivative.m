@@ -1,5 +1,40 @@
+% stiffness_matrix_derivative
+%
+% Synthax:
+% dKdq = stiffness_matrix_derivative(myAssembly, elements, V)
+%
+% Description: this is a wrapper function for YetAnotherFEcode that 
+% computes the derivative of the tangent stiffness matrix with respect to
+% the amplitude of the vibration mode V.
+% INPUTS
+%   - myAssembly: Assembly from YetAnotherFEcode. It MUST contain the field
+%     ".DATA.K" storing the unconstrained linear stiffness matrix K0
+%   - elements: table of the elements
+%   - V: vector with the displacement field corresponding to a selected
+%     vibration mode (V must be unconstrained)
+% OUTPUTS
+%   - dKdq: tangent stiffness matrix derivative wrt q, being q the
+%     modal coordinate of the vibration mode V
+%
+% Additional notes:
+%   - ALL the elements are assumed to have the same properties in terms
+%     of MATERIAL and QUADRATURE rules.
+%   - this function uses the stiffness_matrix_derivative function 
+%     implemented in the Julia module "DpROM.jl". 
+%   - as such, this function supports ONLY models meshed with the elements
+%     supported by both YetAnotherFEcode AND the DpROM.jl
+%   - List of currently supported elements: 
+%     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
+%     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
+%
+% Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
+% order parametric nonlinear reduced order model for imperfect structures 
+% using Neumann expansion", Nonlinear Dynamics, 2021.
+%
+% Created: 14 May 2021
+% Author: Jacopo Marconi, Politecnico di Milano
 
-function tensors = ROM_reduced_tensors(myAssembly, elements, V)
+function dKdq = stiffness_matrix_derivative(myAssembly, elements, V)
 
 t0=tic;
 
@@ -42,42 +77,23 @@ end
 % JULIA ___________________________________________________________________
 % add current path in Julia
 a = jl.eval('LOAD_PATH');
-if a{end}~='.'
+if a{end}~='.' 
     jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
     jleval push!(LOAD_PATH, pwd() * "\\DpROM");
     jleval push!(LOAD_PATH, ".")
+    fprintf(' Path added\n\n')
 end
 % load packages
 jleval using TensorOperations
 jleval using DpROM
 
-% call the function once (for 1 element only) to precompile
-elem1 = elements(1,:);
-jl.call('red_stiff_tensors', elem1, ...
-    nodes, conn, C, V, XGauss, WGauss);
-
-disp(' REDUCED TENSORS (standard ~ Julia):')
-fprintf(' Assembling %d elements ...', nel)
+fprintf(' dKdq, assembling %d elements ...', nel)
 
 % call the function in Julia to compute all the tensors
-a=jl.call('red_stiff_tensors', elements, ...
+dKdq = jl.call('stiffness_matrix_derivative', elements, ...
     nodes, conn, C, V, XGauss, WGauss);
 
-% unpack results __________________________________________________________
-Q2 = getfield(a,'1'); %#ok<*GFLD>
-Q3 = tensor(getfield(a,'2'));
-Q4 = tensor(getfield(a,'3'));
-time = double(getfield(a,'4'))/1000;
+fprintf(' %.2f s\n',toc(t0))
 
-fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
-fprintf(' SPEED: %.1f el/s\n',nel/time)
-fprintf(' SIZEs: %d \n\n', size(V,2))
-
-tensors.Q2 = Q2;
-tensors.Q3 = Q3;
-tensors.Q4 = Q4;
-tensors.time = time;
-
-end
 
 

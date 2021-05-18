@@ -276,19 +276,19 @@ classdef Quad8Element < Element
                 we = W(ii); % weights
                     [G,detJ,dH] = shape_function_derivatives(self,g,h);
                     
-                    %                     GHC = tensor((C*H*G)');
-                    %
-                    %                     C = tensor(C);
-                    %                     G = tensor(G);
-                    %
-                    %                     LGG = ttt(ttt(L,G,3,1),G,2,1);
-                    %
-                    %                     Q3h_int = ttt(GHC,LGG,2,1);
-                    %
+                                        GHC = tensor((C*H*G)');
+                    
+%                                         C = tensor(C);
+                                        G = tensor(G);
+                    
+                                        LGG = ttt(ttt(L,G,3,1),G,2,1);
+                    
+                                        Q3h_int = ttt(GHC,LGG,2,1);
+                    
                     
                
 
-                        Q3h_int = self.tensors_Q3_hat(G,H,L,C);
+%                         Q3h_int = self.tensors_Q3_hat(G,H,L,C);
 
                     
                     Q3h = Q3h + Q3h_int*detJ*we;

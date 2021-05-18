@@ -1,10 +1,13 @@
 module DpROM
 
+
 using Dates
 using TensorOperations
 using LinearAlgebra
 
-export red_stiff_tensors, red_stiff_tensors_defects, stiffness_matrix_derivative
+export red_stiff_tensors, red_stiff_tensors_defects
+export stiffness_matrix_derivative, stiffness_matrix_sensitivity
+export stiffness_matrix_linear
 
 # ASSEMBLY FUNCTIONS ___________________________________________________________
 # ASSEMBLE ROM stiffness tensors (standard, no parametrization)
@@ -56,8 +59,8 @@ function red_stiff_tensors(elements, nodes, connectivity, C, V, XGauss, WGauss)
     time3 = time2 - time1
     totaltime = time3.value
     # return all the tensors
-    K2n, K3n, K4n, totaltime;
-	
+     K2n,K3n,K4n, totaltime;
+   
 end
 # ASSEMBLE DpROM stiffness tensors
 function red_stiff_tensors_defects(formulation, volume, elements, nodes, connectivity, C, V, U, XGauss, WGauss)
@@ -143,6 +146,7 @@ function red_stiff_tensors_defects(formulation, volume, elements, nodes, connect
     totaltime = time3.value
     # return all the tensors
     K2n, K3d, K4dd, K3n, K4d, K5dd, K4n, K5d, K6dd, totaltime;
+
 end
 
 # approiximated determinant (for integration over the defected volume)
@@ -157,7 +161,8 @@ function compute_defect_divergence_3D(G,Ue)
     detF1a
 end
 
-# FORMULATIONS _________________________________________________________________
+
+# TENSOR FORMULATIONS __________________________________________________________
 function element_tensor_selector(formulation)
     if formulation == "N1"
         element_tensor = element_tensor_N1
@@ -256,16 +261,15 @@ function element_tensor_standard(G,C,H,L1,V)
     K2n, K3n, K4n
 end
 
-# STIFFNESS MATRIX DERIVATIVES _________________________________________________
+
+# STIFFNESS MATRIX and DERIVATIVES _____________________________________________
 function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss, WGauss)
-    time1 = now()
 
     # useful dimensions
     nD = size(nodes,2)              # dimension of the problem
     nel = size(elements,1)          # number of elements
     nel_dofs = size(connectivity,2) # number of dofs per element
     nw = length(WGauss)             # number of integration points
-    nv = size(V,2)                  # number of vibration modes
     ndofs = prod(size(nodes))       # number of DOFs (total, free+constrained)
 
     G_FUN = Gselector(nD,nel_dofs)
@@ -286,7 +290,7 @@ function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss
         el_nodes = elements[e,:]        # IDs of the element nodes
         el_dofs  = connectivity[e,:]    # IDs of the element dofs
         xyz = nodes[el_nodes,:]         # element's coordinates x, y, z
-        Ve = V[el_dofs,:]               # Projection Basis V (only element's dofs)
+        Ve = V[el_dofs]                 # Projection Basis V (only element's dofs)
 
         # cycle over Gauss quadrature points (integration over volume)
         for i in 1:nw
@@ -300,20 +304,114 @@ function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss
             dKdη[el_dofs, el_dofs] .+= dKdηE
         end
     end
-    time2 = now()
-    time3 = time2 - time1
-    totaltime = time3.value
     # return all the tensors
-    dKdη, totaltime;
+    dKdη
 end
 function element_stiffness_matrix_derivative(G, C, H, A1, L1, Ve)
     th = G*Ve
-    dKdηE = G'*(H'*C*A1(th) + 2*A1(th)'*C*H)*G
+    dKdη_E1 = G'*(H'*C*A1(th) + A1(th)'*C*H)*G
+    CHGV = C*H*G*Ve;
+    @tensoropt begin
+        dKdη_E2[I,J] := G[ii,I] * L1[jj,ii,kk] * G[kk,J] * CHGV[jj]
+    end
+    dKdηE = dKdη_E1 + dKdη_E2
     dKdηE
+end
+function stiffness_matrix_sensitivity(elements, nodes, connectivity, C, U, XGauss, WGauss, formulation="N1")
+
+    # useful dimensions
+    nD = size(nodes,2)              # dimension of the problem
+    nel = size(elements,1)          # number of elements
+    nel_dofs = size(connectivity,2) # number of dofs per element
+    nw = length(WGauss)             # number of integration points
+    ndofs = prod(size(nodes))       # number of DOFs (total, free+constrained)
+
+    G_FUN = Gselector(nD,nel_dofs)
+
+    if nD==3
+        L1, L2, L31, H = constantMatrices3D()
+        A1, A2, A3 = Amatrices3D()
+    elseif nD==2
+        L1, L2, L31, H = constantMatrices2D()
+        A1, A2, A3 = Amatrices2D()
+    end
+
+    if formulation == "N0"
+        Ad = A1
+    else
+        Ad = A2 # for N1 and N1T
+    end
+
+    # initialize tensors
+    dKdξ = zeros(ndofs, ndofs)
+
+    # cycle over all the elements
+    for e in 1:nel
+        el_nodes = elements[e,:]        # IDs of the element nodes
+        el_dofs  = connectivity[e,:]    # IDs of the element dofs
+        xyz = nodes[el_nodes,:]         # element's coordinates x, y, z
+        Ue = U[el_dofs]                 # Defect Basis U (only element's dofs)
+
+        # cycle over Gauss quadrature points (integration over volume)
+        for i in 1:nw
+            ISO = XGauss[:,i]           # Gauss point coordinates
+            w = WGauss[i]               # Gauss weight
+            G, detJ = G_FUN(ISO,xyz)    # shape function derivative matrix G and Jacobian
+            # compute the element-level dKdηE at the Gauss points
+            CwJ = C .* (w * detJ);
+            thd = G*Ue
+            dKdξ_E = G'*(H'*CwJ*Ad(thd) + Ad(thd)'*CwJ*H)*G
+            # assembly the element contributions in the global matrix
+            dKdξ[el_dofs, el_dofs] .+= dKdξ_E
+        end
+    end
+    # return all the tensors
+    dKdξ
+end
+function stiffness_matrix_linear(elements, nodes, connectivity, C, XGauss, WGauss)
+
+    # useful dimensions
+    nD = size(nodes,2)              # dimension of the problem
+    nel = size(elements,1)          # number of elements
+    nel_dofs = size(connectivity,2) # number of dofs per element
+    nw = length(WGauss)             # number of integration points
+    ndofs = prod(size(nodes))       # number of DOFs (total, free+constrained)
+
+    G_FUN = Gselector(nD,nel_dofs)
+
+    if nD==3
+        L1, L2, L31, H = constantMatrices3D()
+    elseif nD==2
+        L1, L2, L31, H = constantMatrices2D()
+    end
+
+    # initialize tensors
+    K0 = zeros(ndofs, ndofs)
+
+    # cycle over all the elements
+    for e in 1:nel
+        el_nodes = elements[e,:]        # IDs of the element nodes
+        el_dofs  = connectivity[e,:]    # IDs of the element dofs
+        xyz = nodes[el_nodes,:]         # element's coordinates x, y, z
+
+        # cycle over Gauss quadrature points (integration over volume)
+        for i in 1:nw
+            ISO = XGauss[:,i]           # Gauss point coordinates
+            w = WGauss[i]               # Gauss weight
+            G, detJ = G_FUN(ISO,xyz)    # shape function derivative matrix G and Jacobian
+            # compute the element-level dKdηE at the Gauss points
+            CwJ = C .* (w * detJ);
+            K0E = G'*H'*CwJ*H*G
+            # assembly the element contributions in the global matrix
+            K0[el_dofs, el_dofs] .+= K0E
+        end
+    end
+    # return all the tensors
+    K0
 end
 
 # COMMONS & elements ___________________________________________________________
-# all constant matrices are defined here (H,L��?,L₂,L₃��?)
+# all constant matrices are defined here (H,L₁,L₂,L₃)
 function constantMatrices3D()
     # A = L��?⋅ θ
     L1 = zeros(6,9,9)
@@ -419,6 +517,7 @@ function constantMatrices2D()
 
     L1, L2, L31, H
 end
+# all function-matrices A are defined here (A₁,A₂,A₃)
 function Amatrices3D()
     A1(th) =
         [th[1]     0     0 th[4]     0     0 th[7]     0     0;
@@ -455,6 +554,7 @@ function Amatrices2D()
               th[2] th[3] th[1]/2+th[4]/2]/2
     A1, A2, A3
 end
+# shape functions selector
 function Gselector(nDIM,ndofs)
 
     if nDIM == 3                # 3D continuum elements
@@ -482,7 +582,6 @@ function Gselector(nDIM,ndofs)
     end
     G_FUN
 end
-
 # shape functions derivatives for Q4 (4-noded quadrilateral)
 function G_Q4(ISO,xy)
     r, s = ISO

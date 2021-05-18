@@ -461,12 +461,13 @@ classdef Assembly < handle
             
             Nm = NMDs(end)-(NMDs(1)-1);
             MDs = zeros(length(freedofs),Nm*(Nm+1)/2);
-            MDs_names = cell(size(MDs,2),1);
+            MDs_names = zeros(size(MDs,2),2);
             
             disp(' MODAL DERIVATIVES:')
             t0 = tic;
             
             count = 0;
+            kk=1;
             for ii = 1:size(VMs,2)
                 
                 VM_i = VMs(:,ii);
@@ -485,7 +486,10 @@ classdef Assembly < handle
                     end
                     count = count + 1;
                     MDs(:,count) = -K\(dKdq_i*VMs(freedofs,jj));
-                    MDs_names{count} = sprintf('i=%d,j=%d',ii,jj);
+                    %MDs_names{count} = sprintf('%d','%d',ii,jj);
+                    MDs_names(kk, :) = [ii jj];
+                    kk = kk + 1;
+                   % MDs_names{count} = sprintf('i=%d,j=%d',ii,jj);
                 end
                 fprintf(' %.2f s\n',toc(t1))
                 

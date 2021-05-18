@@ -174,19 +174,19 @@ classdef ReducedAssembly < Assembly
                 Ve = V(index,:); %#ok<*PFBNS>
                 [Te, ~] = thisElement.(elementMethodName)(inputs{:});                
                 % transform tensor
-%                 Vcell = cell(ndims(Te),1);
-%                 Vcell(:) = {Ve.'};
-%                 T = T + elementWeights(j) * ttm(Te, Vcell,I);
-                 Vt = tensor(Ve');    % reduction basis (transpose)
-                            Vnt  = tensor(Ve);     % reduction basis
-            if elementMethodName=='tensor_Q3'
-                T  = T + elementWeights(j)*ttt(ttt(ttt(Vt,Te ,2,1),Vnt,3,1),Vnt ,2,1);
-            elseif elementMethodName=='tensor_Q4'
-                T= T + elementWeights(j)*ttt(ttt(ttt(ttt(Vt,Te  ,2,1),Vnt,4,1),Vnt ,3,1),Vnt ,2,1);
-            end
+                 Vcell = cell(ndims(Te),1);
+                 Vcell(:) = {Ve.'};
+                 T = T + elementWeights(j) * ttm(Te, Vcell,I);
+%                  Vt = tensor(Ve');    % reduction basis (transpose)
+%                             Vnt  = tensor(Ve);     % reduction basis
+%             if elementMethodName=='tensor_Q3'
+%                 T  = T + elementWeights(j)*ttt(ttt(ttt(Vt,Te ,2,1),Vnt,3,1),Vnt ,2,1);
+%             elseif elementMethodName=='tensor_Q4'
+%                 T= T + elementWeights(j)*ttt(ttt(ttt(ttt(Vt,Te  ,2,1),Vnt,4,1),Vnt ,3,1),Vnt ,2,1);
+%             end
             
-%             [subs, T] = sparsify(T,[],sumDIMS);
-%             T = sptensor(subs, T, SIZE);
+            [subs, T] = sparsify(T,[],sumDIMS);
+            T = sptensor(subs, T, SIZE);
         end
 
     end
