@@ -51,9 +51,10 @@ classdef Quad8Element < Element
             self.thickness = thickness;
             % INIZIALIZATION of some matrices (this should speedup
             % numerical integration)
-            C = self.Material.get_stress_strain_matrix_2D;
-            H = [1 0 0 0;
-                0 0 0 1;
+
+            C = self.Material.get_stress_strain_matrix_2D * thickness;
+            H = [1 0 0 0; 
+                0 0 0 1; 
                 0 1 1 0];
             % Quadratic strain matrix: A = L.th, eps_quad = A*th
             L(1,1,1)=1; L(3,2,1)=1; L(3,1,2)=1; L(2,2,2)=1; L(1,2,3)=1;
@@ -79,6 +80,7 @@ classdef Quad8Element < Element
             X = self.quadrature.X;
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
+            t = self.thickness;
             Mel = zeros(16);
 
             for ii = 1:length(W)
@@ -93,7 +95,7 @@ classdef Quad8Element < Element
                 Mel = Mel + ( NN' * NN )*( we * detJ );
 
             end
-            Mel = sparse(rho*Mel);
+            Mel = sparse(t*rho*Mel);
         end
         function Cel = damping_matrix(self,alfa,beta,u0)
             [Kel Fel]=self.tangent_stiffness_and_force(u0);
