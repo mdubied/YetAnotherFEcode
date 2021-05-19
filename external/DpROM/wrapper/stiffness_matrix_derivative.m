@@ -93,6 +93,8 @@ fprintf(' dKdq, assembling %d elements ...', nel)
 dKdq = jl.call('stiffness_matrix_derivative', elements, ...
     nodes, conn, C, V, XGauss, WGauss);
 
+dKdq = sparse(dKdq);
+
 fprintf(' %.2f s\n',toc(t0))
 
 

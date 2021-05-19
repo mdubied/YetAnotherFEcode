@@ -3,6 +3,7 @@ module DpROM
 using Dates
 using TensorOperations
 using LinearAlgebra
+using SparseArrays
 
 export red_stiff_tensors, red_stiff_tensors_defects
 export stiffness_matrix_derivative, stiffness_matrix_sensitivity
@@ -279,8 +280,12 @@ function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss
         A1, A2, A3 = Amatrices2D()
     end
 
-    # initialize tensors
-    dKdη = zeros(ndofs, ndofs)
+    # create indexes for sparse assembly
+    I = reshape(kron(connectivity,ones(nel_dofs,1))',nel_dofs^2*nel,1)
+    J = reshape(kron(connectivity,ones(1,nel_dofs))',nel_dofs^2*nel,1)
+    I = I[:]
+    J = J[:]
+    dKdη_collection = zeros(nel_dofs^2, nel)
 
     # cycle over all the elements
     for e in 1:nel
@@ -298,9 +303,13 @@ function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss
             CwJ = C .* (w * detJ);
             dKdηE = element_stiffness_matrix_derivative(G,CwJ,H,A1,L1,Ve)
             # assembly the element contributions in the global matrix
-            dKdη[el_dofs, el_dofs] .+= dKdηE
+            dKdη_collection[:,e] .+= dKdηE[:]
         end
     end
+    # sparse assembly
+    dKdη_vectorized = reshape(dKdη_collection, nel_dofs^2*nel, 1)
+    dKdη_vectorized = dKdη_vectorized[:]
+    dKdη = sparse(I, J, dKdη_vectorized, ndofs, ndofs, +)
     # return all the tensors
     dKdη
 end
@@ -309,7 +318,7 @@ function element_stiffness_matrix_derivative(G, C, H, A1, L1, Ve)
     dKdη_E1 = G'*(H'*C*A1(th) + A1(th)'*C*H)*G
     CHGV = C*H*G*Ve;
     @tensoropt begin
-        dKdη_E2[I,J] := G[ii,I] * L1[jj,ii,kk] * G[kk,J] * CHGV[jj]
+        dKdη_E2[I,J] := G[ii,I] * ( L1[jj,ii,kk] * CHGV[jj] ) * G[kk,J]
     end
     dKdηE = dKdη_E1 + dKdη_E2
     dKdηE
