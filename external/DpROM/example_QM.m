@@ -4,6 +4,9 @@ close all;
 clc
 format short g
 
+clear global
+global fnl_CUSTOM
+
 FORMULATION = 'N1'; % N1/N1t/N0
 
 
@@ -143,6 +146,16 @@ title(['\theta_{' num2str(MDnames(nwho,1)) num2str(MDnames(nwho,2)) '}'])
 axis on; grid on; box on
 
 
+%% Quadratic Manifold                                               
+
+Phi = VMd;
+Theta = QM_Theta_from_SMDs(MDd, MDnames);
+tensors_QM = reduced_tensors_QMROM(DefectedAssembly, elements, Phi, Theta);
+Mqm = VMd'*Md*VMd;
+Dqm = VMd'*D *VMd;
+Fqm = VMd'*Fext;
+
+
 %% (Dp)ROM                                                          
 
 Vn = [VMn MDn DS]; 	% reduced order basis (DpROM)
@@ -162,53 +175,58 @@ Mdr = Vd'*Md*Vd; 	% reduced mass matrix (ROM-d)
 % standard reduced order model (defects in the mesh)
 tensors_ROM = reduced_tensors_ROM(DefectedAssembly, elements, Vd);
 
-% parametric formulation for defects
-VOLUME = 1;         % integration over defected (1) or nominal volume (0)
-tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, Vn, U, ...
-    FORMULATION, VOLUME);
+% % parametric formulation for defects
+% VOLUME = 1;         % integration over defected (1) or nominal volume (0)
+% tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, Vn, U, ...
+%     FORMULATION, VOLUME);
+% 
+% % evaluate the defected tensors at xi
+% [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors_DpROM, xi);
+% 
+% % check eigenfrequencies
+% f0_ROMd = sort(sqrt(eig(Mdr\tensors_ROM.Q2))/2/pi);
+% f0_DpROM = sort(sqrt(eig(Mnr\Q2))/2/pi);
+% id = 1 : n_VMs;
+% f0_ROMd = f0_ROMd(id);
+% f0_DpROM = f0_DpROM(id);
+% disp(table(f0n, f0d, f0_ROMd, f0_DpROM))
 
-% evaluate the defected tensors at xi
-[Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors_DpROM, xi);
 
-% check eigenfrequencies
-f0_ROMd = sort(sqrt(eig(Mdr\tensors_ROM.Q2))/2/pi);
-f0_DpROM = sort(sqrt(eig(Mnr\Q2))/2/pi);
-id = 1 : n_VMs;
-f0_ROMd = f0_ROMd(id);
-f0_DpROM = f0_DpROM(id);
-disp(table(f0n, f0d, f0_ROMd, f0_DpROM))
+%% FRF - Harmonic Balance (with NLvib) - ROMd                       
 
-
-%% FRF - Harmonic Balance (with NLvib)                              
-
+ROMd = 1;
+if ROMd == 1
 % PREPARE MODEL ___________________________________________________________
 % ROMd: reduced matrices
 Kr = tensors_ROM.Q2;    % reduced linear stiffness matrix
 Mr = Vd' * Md * Vd;     % reduced mass matrix
 Dr = Vd' * D  * Vd;     % reduced damping matrix
 Fr = Vd'*Fext;          % reduced external force vector
+ROB = Vd;
 
 % Let us defined the ROMd Assembly (although the ReducedAssembly class is
 % not strictly necessary, we want to define a different object - remember
 % that the synthax obj1=obj2 does NOT copy an object)
-ROMd_Assembly = Assembly(MeshDefected, Vd); 
+ROMd_Assembly = Assembly(MeshDefected, ROB); 
 ROMd_Assembly.DATA.K = Kr;
 ROMd_Assembly.DATA.M = Mr;
 ROMd_Assembly.DATA.D = Dr;
-ROMd_System = FE_system(ROMd_Assembly, Fr, 'custom');
 
 % the function to compute the nonlinear forces and the jacobian are passed
 % to NLvib through a global function handle:
-global fnl_CUSTOM
+% global fnl_CUSTOM
 fnl_CUSTOM = @(myAssembly, q, qd, qdd) tensors_KF_NLvib(tensors_ROM.Q3,...
     tensors_ROM.Q4, tensors_ROM.Q3t, tensors_ROM.Q4t, q);
+
+% create system
+ROMd_System = FE_system(ROMd_Assembly, Fr, 'custom');
 
 % ANALYSIS PARAMETERS _____________________________________________________
 imod = 1;               % eigenfreq to study
 omi = 2*pi*f0d(imod); 	% linear eigenfrequency
-n = size(Vd, 2);        % number of DOFs of the reduced system
+n = size(ROB, 2);       % number of DOFs of the reduced system
 H = 7;                  % harmonic order
-N = 3*H+1;              % number of time samples per period
+N = 3*H+2;              % number of time samples per period
 Om_s = omi * 0.80;   	% start frequency
 Om_e = omi * 1.1;    	% end frequency
 ds =  2;                % Path continuation step size
@@ -219,7 +237,7 @@ fprintf('\n\n FRF from %.2f to %.2f rad/s \n\n', Om_s, Om_e)
 r2 = cell(length(exc_lev),1);
 for iex = 1 : length(exc_lev)
     % Set excitation level
-    ROMd_System.Fex1 = Vd' * Fext * exc_lev(iex);
+    ROMd_System.Fex1 = ROB' * Fext * exc_lev(iex);
     
     % Initial guess (solution of underlying linear system)
     Q1 = (-Om_s^2*Mr + 1i*Om_s*Dr + Kr) \ ROMd_System.Fex1;
@@ -239,13 +257,86 @@ for iex = 1 : length(exc_lev)
     % Interpret solver output
     r2{iex} = nlvib_decode(X, Solinfo, Sol, 'FRF', 'HB', n, H);
     
-    results.FRF.HB{iex} = r2{iex};
+    results.FRF.HB.ROMd{iex} = r2{iex};
+end
+end
+
+
+%% FRF - Harmonic Balance (with NLvib) - QM                         
+
+QM = 1;
+if QM == 1
+% PREPARE MODEL ___________________________________________________________
+% ROMd: reduced matrices
+Kr = tensors_QM.Q2;     % reduced linear stiffness matrix
+Mr = Mqm;               % reduced mass matrix
+Dr = Dqm;               % reduced damping matrix
+Fr = Fqm;               % reduced external force vector
+ROB = VMd;
+
+% Let us defined the ROMd Assembly (although the ReducedAssembly class is
+% not strictly necessary, we want to define a different object - remember
+% that the synthax obj1=obj2 does NOT copy an object)
+QM_Assembly = Assembly(MeshDefected, ROB); 
+QM_Assembly.DATA.K = Kr;
+QM_Assembly.DATA.M = Mr;
+QM_Assembly.DATA.D = Dr;
+QM_Assembly.DATA.velocity = true;       % ask to compute velocities
+QM_Assembly.DATA.acceleration = true;   % ask to compute accelerations
+
+% the function to compute the nonlinear forces and the jacobian are passed
+% to NLvib through a global function handle:
+fnl_CUSTOM = @(myAssembly, q, qd, qdd) tensors_KF_NLvib_QM(tensors_QM.Q3,...
+    tensors_QM.Q4, tensors_QM.Q3t, tensors_QM.Q4t, ROB, tensor(Theta), Md, D, Fext, q, qd, qdd);
+
+% create system
+QM_System = FE_system(QM_Assembly, Fr, 'custom');
+
+% ANALYSIS PARAMETERS _____________________________________________________
+imod = 1;               % eigenfreq to study
+omi = 2*pi*f0d(imod); 	% linear eigenfrequency
+n = size(ROB, 2);       % number of DOFs of the reduced system
+H = 7;                  % harmonic order
+N = 3*H+1;              % number of time samples per period
+Om_s = omi * 0.80;   	% start frequency
+Om_e = omi * 1.1;    	% end frequency
+ds =  2;                % Path continuation step size
+exc_lev = 4000;
+
+% COMPUTE FRs _____________________________________________________________
+fprintf('\n\n FRF from %.2f to %.2f rad/s \n\n', Om_s, Om_e)
+r2 = cell(length(exc_lev),1);
+for iex = 1 : length(exc_lev)
+    % Set excitation level
+    QM_System.Fex1 = ROB' * Fext * exc_lev(iex);
+    
+    % Initial guess (solution of underlying linear system)
+    Q1 = (-Om_s^2*Mr + 1i*Om_s*Dr + Kr) \ QM_System.Fex1;
+    y0 = zeros( (2*H+1)*n , 1);
+    y0( n + (1:2*n) ) = [real(Q1);-imag(Q1)];
+    
+    % stuff for scaling
+    qscl = max(abs((-omi^2*Mr + 1i*omi*Dr + Kr) \ QM_System.Fex1));
+    dscale = [y0*0+qscl; omi];
+    Sopt = struct('Dscale', dscale, 'dynamicDscale', 1);
+    
+    % Solve and continue w.r.t. Om	
+    [X, Solinfo, Sol] = solve_and_continue(y0, ...
+        @(X) HB_residual(X, QM_System, H, N, 'FRF'), ...
+        Om_s, Om_e, ds, Sopt);
+    
+    % Interpret solver output
+    r2{iex} = nlvib_decode(X, Solinfo, Sol, 'FRF', 'HB', n, H);
+    
+    results.FRF.HB.QM{iex} = r2{iex};
+end
 end
 
 
 %% PLOT FRs                                                         
 
-r2 = results.FRF.HB;
+% r2 = results.FRF.HB.QM; % u=Phi*q + 1/2*Theta*q*q!
+r2 = results.FRF.HB.ROMd;
 
 figure
 h = 1;
@@ -258,7 +349,8 @@ for iex = 1 : length(exc_lev)
     c = c(forced_dof, :);
     
     W = r2{iex}.omega;
-    plot(W, abs(c) / Ly, '.-', 'linewidth', 1); hold on
+    plot(W, abs(c) / Ly, '.-', 'linewidth', 1, 'DisplayName','ROM-d'); 
+    hold on
 end
 grid on
 axis tight
@@ -276,10 +368,38 @@ for iex = 1 : length(exc_lev)
     for ii = 1:nw
         w = w_linear(ii);
         frl = (-w^2*Mr + 1i*w*Dr + Kr) \ Fr * exc_lev(iex);
-        fr_linear(:, ii) = Vd * frl;
+        fr_linear(:, ii) = ROB * frl;
     end
-    plot(w_linear, abs(fr_linear(forced_dof, :))/Ly, 'k--')
+    plot(w_linear, abs(fr_linear(forced_dof, :))/Ly, 'k--',...
+        'DisplayName','linear')
 end
 drawnow
 
 
+
+
+
+
+
+
+
+
+
+
+
+%% auxiliary functions
+
+function Theta = QM_Theta_from_SMDs(SMDs, names)
+
+    n = size(SMDs,1);
+    m = max(names(:));
+    I = names(:,1);
+    J = names(:,2);
+
+    Theta = zeros(n,m,m);
+    for k = size(SMDs,2)
+        Theta(:,I(k),J(k)) = SMDs(:,k);
+        Theta(:,J(k),I(k)) = SMDs(:,k);
+    end
+
+end
