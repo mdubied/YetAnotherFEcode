@@ -169,6 +169,10 @@ function red_stiff_tensors_QM(elements, nodes, connectivity, C, Phi, Theta, XGau
     Q2 = zeros(nv,nv)
     Q3 = zeros(nv,nv,nv)
     Q4 = zeros(nv,nv,nv,nv)
+    Q5 = zeros(nv,nv,nv,nv,nv)
+    Q6 = zeros(nv,nv,nv,nv,nv,nv)
+    Q7 = zeros(nv,nv,nv,nv,nv,nv,nv)
+    Q8 = zeros(nv,nv,nv,nv,nv,nv,nv,nv)
 
     # cycle over all the elements
     for e in 1:nel
@@ -185,18 +189,22 @@ function red_stiff_tensors_QM(elements, nodes, connectivity, C, Phi, Theta, XGau
             G, detJ = G_FUN(ISO,xyz)    # shape function derivative matrix G and Jacobian
             # compute the element-level reduced tensors at the Gauss point
             CwJ = C .* (w * detJ);
-            Q2E, Q3E, Q4E = element_tensor_QM(G,CwJ,H,L1,Phi_e,Theta_e)
+            Q2E, Q3E, Q4E, Q5E, Q6E, Q7E, Q8E = element_tensor_QM(G,CwJ,H,L1,Phi_e,Theta_e)
             # sum over the element contributions
             Q2 .+= Q2E
             Q3 .+= Q3E
             Q4 .+= Q4E
+            Q5 .+= Q5E
+            Q6 .+= Q6E
+            Q7 .+= Q7E
+            Q8 .+= Q8E
         end
     end
     time2 = now()
     time3 = time2 - time1
     totaltime = time3.value
     # return all the tensors
-    Q2, Q3, Q4, totaltime;
+    Q2, Q3, Q4, Q5, Q6, Q7, Q8, totaltime;
 end
 
 # approiximated determinant (for integration over the defected volume)
@@ -328,25 +336,25 @@ function element_tensor_QM(G,C,H,L1,Phi,Theta)
         # reduced element tensors stemming from the quadratic terms
         QQ3[I,J,K] := Phi[i,I]*K3[i,j,k]*Phi[j,J]*Phi[k,K]
         QQ4[I,J,K,L] := 0.5*Phi[i,I]*K3[i,j,k]*Theta[j,J,K]*Phi[k,L] + Theta[i,I,J]*K3[i,j,k]*Phi[j,K]*Phi[k,L] + 0.5*Phi[i,I]*K3[i,j,k]*Phi[j,J]*Theta[k,K,L]
-        # QQ5[I,J,K,L,M] :=
-        # QQ6[I,J,K,L,M,N] :=
+        QQ5[I,J,K,L,M] := 0.5*Theta[i,I,J]*K3[i,j,k]*Theta[j,K,L]*Phi[k,M] + 0.25*Phi[i,I]*K3[i,j,k]*Theta[j,J,K]*Theta[k,L,M] + 0.5*Theta[i,I,J]*K3[i,j,k]*Phi[j,K]*Theta[k,L,M]
+        QQ6[I,J,K,L,M,N] := 0.25*Theta[i,I,J]*K3[i,j,k]*Theta[j,K,L]*Theta[k,M,N]
 
         # reduced element tensors stemming from the cubic terms
         QC4[I,J,K,L] := Phi[i,I]*K4[i,j,k,l]*Phi[j,J]*Phi[k,K]*Phi[l,L]
-        # QC5[I,J,K,L,M] :=
-        # QC6[I,J,K,L,M,N] :=
-        # QC7[I,J,K,L,M,N,O] :=
-        # QC8[I,J,K,L,M,N,O,P] :=
+        QC5[I,J,K,L,M] := 0.5*Phi[i,I]*K4[i,j,k,l]*(Theta[j,J,K]*Phi[k,L]*Phi[l,M] + Phi[j,J]*Phi[k,K]*Theta[l,L,M] + Phi[j,J]*Theta[k,K,L]*Phi[l,M]) + Theta[i,I,J]*K4[i,j,k,l]*Phi[j,K]*Phi[k,L]*Phi[l,M]
+        QC6[I,J,K,L,M,N] := 0.5*Theta[i,I,J]*K4[i,j,k,l]*(Theta[j,K,L]*Phi[k,M]*Phi[l,N] + Phi[j,K]*Theta[k,L,M]*Phi[l,N] + Phi[j,K]*Phi[k,L]*Theta[l,M,N]) + 0.25*Phi[i,I]*K4[i,j,k,l]*(Theta[j,J,K]*Theta[k,L,M]*Phi[l,N] + Theta[j,J,K]*Phi[k,L]*Theta[l,M,N] + Phi[j,J]*Theta[k,K,L]*Theta[l,M,N])
+        QC7[I,J,K,L,M,N,O] := 0.25*Theta[i,I,J]*K4[i,j,k,l]*(Theta[j,K,L]*Theta[k,M,N]*Phi[l,O] + Theta[j,K,L]*Phi[k,M]*Theta[l,N,O] + Phi[j,K]*Theta[k,L,M]*Theta[l,N,O]) + 0.125*Phi[i,I]*K4[i,j,k,l]*Theta[j,J,K]*Theta[k,L,M]*Theta[l,N,O]
+        QC8[I,J,K,L,M,N,O,P] := 0.125*Theta[i,I,J]*K4[i,j,k,l]*Theta[j,K,L]*Theta[k,M,N]*Theta[l,O,P]
     end
     Q2 = QL2
     Q3 = QL3 + QQ3
     Q4 = QL4 + QQ4 + QC4
-    # Q5 = QQ5 + QC5
-    # Q6 = QQ6 + QC6
-    # Q7 = QC7
-    # Q8 = QC8
+    Q5 = QQ5 + QC5
+    Q6 = QQ6 + QC6
+    Q7 = QC7
+    Q8 = QC8
 
-    Q2, Q3, Q4
+    Q2, Q3, Q4, Q5, Q6, Q7, Q8
 end
 
 

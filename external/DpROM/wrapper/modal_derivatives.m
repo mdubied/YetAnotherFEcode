@@ -53,7 +53,7 @@ for jj = 1 : n_VMs
         Phi_i = myAssembly.constrain_vector( Phi(:, ii) );
         dPhi_i_deta_j = -K0\(dK_deta_j * Phi_i); 
         
-        th =  dPhi_i_deta_j / max(abs(dPhi_i_deta_j));
+        th =  dPhi_i_deta_j;
         MD(:,kk) = myAssembly.unconstrain_vector( th );
         names(kk, :) = [ii jj];
         kk = kk + 1;

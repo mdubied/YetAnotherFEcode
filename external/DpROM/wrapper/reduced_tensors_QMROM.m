@@ -103,7 +103,7 @@ elem1 = elements(1,:);
 jl.call('red_stiff_tensors_QM', elem1, ...
     nodes, conn, C, Phi, Theta, XGauss, WGauss);
 
-disp(' REDUCED TENSORS (Quadratic Manifold ~ Julia):')
+disp(' STIFFNESS REDUCED TENSORS (Quadratic Manifold ~ Julia):')
 fprintf(' Assembling %d elements ...', nel)
 
 % call the function in Julia to compute all the tensors
@@ -114,7 +114,11 @@ a=jl.call('red_stiff_tensors_QM', elements, ...
 Q2 = getfield(a,'1'); %#ok<*GFLD>
 Q3 = tensor(getfield(a,'2'));
 Q4 = tensor(getfield(a,'3'));
-time = double(getfield(a,'4'))/1000;
+Q5 = tensor(getfield(a,'4'));
+Q6 = tensor(getfield(a,'5'));
+Q7 = tensor(getfield(a,'6'));
+Q8 = tensor(getfield(a,'7'));
+time = double(getfield(a,'8'))/1000;
 
 fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
 fprintf(' SPEED: %.1f el/s\n',nel/time)
@@ -123,12 +127,19 @@ fprintf(' SIZEs: %d \n\n', size(Phi,2))
 tensors.Q2 = Q2;
 tensors.Q3 = Q3;
 tensors.Q4 = Q4;
+tensors.Q5 = Q5;
+tensors.Q6 = Q6;
+tensors.Q7 = Q7;
+tensors.Q8 = Q8;
 tensors.time = time;
 
 % compute tensors for the tangent stiffness matrix (see tensors_KF.m)
 tensors.Q3t = Q3 + permute(Q3, [1 3 2]); 
 tensors.Q4t = Q4 + permute(Q4, [1 3 2 4]) + permute(Q4, [1 4 2 3]);
-
+tensors.Q5t = Q5 + permute(Q5, [1 3 2 4 5]) + permute(Q5, [1 3 4 2 5]) + permute(Q5, [1 3 4 5 2]);
+tensors.Q6t = Q6 + permute(Q6, [1 3 2 4 5 6]) + permute(Q6, [1 3 4 2 5 6]) + permute(Q6, [1 3 4 5 6 2]) + permute(Q6, [1 3 4 5 6 2]);
+tensors.Q7t = Q7 + permute(Q7, [1 3 2 4 5 6 7]) + permute(Q7, [1 3 4 2 5 6 7]) + permute(Q7, [1 3 4 5 6 2 7]) + permute(Q7, [1 3 4 5 6 2 7]) + permute(Q7, [1 3 4 5 6 7 2]);
+tensors.Q8t = Q8 + permute(Q8, [1 3 2 4 5 6 7 8]) + permute(Q8, [1 3 4 2 5 6 7 8]) + permute(Q8, [1 3 4 5 6 2 7 8]) + permute(Q8, [1 3 4 5 6 2 7 8]) + permute(Q8, [1 3 4 5 6 7 2 8]) + permute(Q8, [1 3 4 5 6 7 8 2]);
 end
 
 
