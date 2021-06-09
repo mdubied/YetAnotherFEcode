@@ -9,7 +9,7 @@ whichModel = 'ANSYS'; % or "ABAQUS" or %CUSTOM
 %% PREPARE MODEL
 
 % DATA ____________________________________________________________________
-E       = 148e9;     % Young's modulus [Pa]
+E       = 170e9;     % Young's modulus [Pa]
 rho     = 2329;     % density [kg/m^3]
 nu      = 0.33;     % Poisson's ratio
 thickness = 1e-5;     % [m] beam's out-of-plane thickness
@@ -33,7 +33,7 @@ switch upper( whichModel )
     case 'ANSYS'
         % Alternatively, one can write an input file in ANSYS and read it as:
         
-        meshfile='MeshFreqFull_QUAD8_metric.dat';
+        meshfile='QGmesh.dat';
         meshtype='QUAD8';
         model=Ansys2Matlab_mesh(meshfile,meshtype);
         model.nodes=model.nodes(:,2:3);          % 2:3 because 2D
@@ -71,11 +71,11 @@ nNodes = size(nodes,1);
 u0_1 = zeros( myMesh.nDOFs, 1);
 [K,~] = FreqDivAssembly.tangent_stiffness_and_force(u0_1);
 
-C = 761*M + 0*K; %1.96e-10*K;
+C = 761*M +1.96e-10*K;
 
 alfa=761;
-%beta=1.96e-10;
- beta=0;
+beta=1.96e-10;
+%  beta=0;
 % C=0*K+0*M;
 
 %C2=FreqDivAssembly.damping_matrix(alfa,beta,u0_1);
@@ -133,7 +133,7 @@ end
 % end
 
 % PLOT
-for mod=[5]
+for mod=1:5
     % mod = 4;
     elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
     figure('units','normalized','position',[.2 .1 .6 .8])
@@ -202,10 +202,10 @@ close all
 
 % Nodal force
 F = zeros(myMesh.nDOFs,1);
-nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
-%nf=3;
+%nf = find_node(9.25e-07,0.000183,[],nodes); % node where to put the force
+nf=2564;
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(2)) = -115e-6 % -135e-6;
+F(node_force_dofs(1)) = 135e-6 % -135e-6;
 %% Static Analysis
 u_lin = FreqDivAssembly.solve_system(K, F);
 ULIN = reshape(u_lin,2,[]).';	% Linear response
@@ -225,7 +225,7 @@ title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
 
 %% Dynamic response Initlialization
 % forcing frequency of the average of first two natural frequencies
-omega_ext = 2*pi*8*f0(1);
+omega_ext = 2*pi*868000;
 %omega_ext = pi*2*1.02e5;
 T =  2*pi/omega_ext; % time period of forcing
 
@@ -246,18 +246,18 @@ qd0 = FreqDivAssembly.constrain_vector(v0);
 qdd0 = FreqDivAssembly.constrain_vector(a0);
 
 % time step for integration
-h = T/200;
+h = T/50;
 
 % Precompute data for Assembly object
 % FreqDivAssembly.DATA.M = M;
 % FreqDivAssembly.DATA.K = K;
 % FreqDivAssembly.DATA.C = C; %rayleigh
 
-tmax = 0.0005;
+tmax = 1200*T;
 %% Linear Dynamic Response
 % Instantiate object for linear time integration
 
-TI_lin = ImplicitNewmark('timestep',T/50,'alpha',0.005,'linear',true); %h is different fast
+TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true); %h is different fast
 
 % Linear Residual evaluation function handle
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,FreqDivAssembly,F_ext);
@@ -277,41 +277,44 @@ FullLDuration=toc
 % Animate solution on Mesh (very slow)
 %AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:2,'filename','lineardisp')
 %% Non Linear Dyanmic Response
-% tmax = 0.01*T;
-% % Instantiate object for nonlinear time integration
-% TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
-% 
-% % Linear Residual evaluation function handle
-% residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivAssembly,F_ext);
-% 
-% % Nonlinear Time Integration
-% 
-% tic
-% TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
-% TI_NL.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL.Solution.q);
-% FullNLduration=toc
-% NL_SOLUTION=TI_NL.Solution;
-% %  save('TI_NL_FREQ_test','-struct','NL_SOLUTION','-v7.3');
-% 
-% % Generalized alpha scheme
-% % linear
-% % TI_lin_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);
-% % TI_lin_alpha.Integrate(q0,qd0,qdd0,tmax,residual_lin);
-% % TI_lin_alpha.Solution.u = FreqDivAssembly.unconstrain_vector(TI_lin_alpha.Solution.q);
-% %
-% % % nonlinear
-% % TI_NL_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
-% % TI_NL_alpha.Integrate(q0,qd0,qdd0,tmax,residual);
-% % TI_NL_alpha.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL_alpha.Solution.q);
+tmax = T;
+% Instantiate object for nonlinear time integration
+TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% Linear Residual evaluation function handle
+residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivAssembly,F_ext);
+
+% Nonlinear Time Integration
+
+tic
+TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
+TI_NL.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL.Solution.q);
+FullNLduration=toc
+NL_SOLUTION=TI_NL.Solution;
+%  save('TI_NL_FREQ_test','-struct','NL_SOLUTION','-v7.3');
+
+% Generalized alpha scheme
+% linear
+% TI_lin_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);
+% TI_lin_alpha.Integrate(q0,qd0,qdd0,tmax,residual_lin);
+% TI_lin_alpha.Solution.u = FreqDivAssembly.unconstrain_vector(TI_lin_alpha.Solution.q);
+%
+% % nonlinear
+% TI_NL_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
+% TI_NL_alpha.Integrate(q0,qd0,qdd0,tmax,residual);
+% TI_NL_alpha.Solution.u = FreqDivAssembly.unconstrain_vector(TI_NL_alpha.Solution.q);
 
 %% DOF used in Ploting and Saving
-nfsense1 = find_node(9.25e-07,91.5e-6,[],nodes); % node where to see the results
+%nfsense1 = find_node(9.25e-07,91.5e-6,[],nodes); % node where to see the results
+nfsense1=2754;
 dof1 = get_index(nfsense1, myMesh.nDOFPerNode );
 dof1=dof1(1);
-nfsense2 = find_node(148.85e-6,182.07e-6,[],nodes); % node where to see the results
+%nfsense2 = find_node(148.85e-6,182.07e-6,[],nodes); % node where to see the results
+nfsense2=2144;
 dof2 = get_index(nfsense2, myMesh.nDOFPerNode );
 dof2=dof2(2);
-nfsense3 = find_node(16.775e-6,22.85e-6,[],nodes); % node where to see the results
+%nfsense3 = find_node(16.775e-6,22.85e-6,[],nodes); % node where to see the results
+nfsense3=1483;
 dof3 = get_index(nfsense3, myMesh.nDOFPerNode );
 dof3=dof3(1);
 
@@ -467,7 +470,8 @@ end
 % end
 
 %% Reduced solution  Tensor Approach (normal ROM) (name of variable ***T)
-tmax =0.0005;
+tmax =0.002;
+h=T/200;
 LROMT1=[];
 LROMT2=[];
 LROMT3=[];
@@ -489,14 +493,14 @@ VbModeT=[];
 MDeriT=[];
 %   VMss=orth(VMs);
 %  MDss=orth(MDs);
-for m=[13]
-    for  n=[91]%55 66 78 91] %m*(m+1)/2]
+for m=[15]
+    for  n=[55 56] %m*(m+1)/2]
         t=m+n;
         if n==0
             V = [VMs(:,1:m)];
         else
-            V = [VMs(:,1:m) MDs(:,1:n)];
-            %V = [VMs(:,1:m) MDs(:,[sortedMDs(1:n)])];
+            %V = [VMs(:,1:m) MDs(:,1:n)];
+            V = [VMs(:,1:m) MDs(:,[sortedMDs(1:n)])];
         end
         
         V=orth(V);
@@ -519,6 +523,12 @@ for m=[13]
         FreqDivReducedAssemblyTensor.DATA.C = alfa*FreqDivReducedAssemblyTensor.DATA.M+beta*FreqDivReducedAssemblyTensor.DATA.K;
         
         %% using Julia
+        if n==56
+              FreqDivReducedAssemblyTensor.DATA.C = alfa*FreqDivReducedAssemblyTensor.DATA.M;
+              C = 761*M +0*K;
+              FreqDivAssembly.DATA.C= C;
+        end
+        
         tic
         
         tensors_ROM = reduced_tensors_ROM(FreqDivAssembly, elements, V);
@@ -553,15 +563,15 @@ for m=[13]
         
         % time integration
         tic
-        TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
-        TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
-        durationL=toc
-        LdurationT=[LdurationT durationL];
-        LtimeT=[LtimeT TI_lin_red.Solution.time'];
-        LROMT1=[LROMT1 TI_lin_red.Solution.u(dof1,:)'];
-        LROMT2=[LROMT2 TI_lin_red.Solution.u(dof2,:)'];
-        LROMT3=[LROMT3 TI_lin_red.Solution.u(dof3,:)'];
-        
+%         TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
+%          TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+%         durationL=toc
+%         LdurationT=[LdurationT durationL];
+%         LtimeT=[LtimeT TI_lin_red.Solution.time'];
+%         LROMT1=[LROMT1 TI_lin_red.Solution.u(dof1,:)'];
+%         LROMT2=[LROMT2 TI_lin_red.Solution.u(dof2,:)'];
+%         LROMT3=[LROMT3 TI_lin_red.Solution.u(dof3,:)'];
+%         
         
         
         %% NL
@@ -582,16 +592,16 @@ for m=[13]
 %         NLROMT1=[NLROMT1 TI_NL_newmark_red.Solution.u(dof1,:)'];
 %         NLROMT2=[NLROMT2 TI_NL_newmark_red.Solution.u(dof2,:)'];
 %         NLROMT3=[NLROMT3 TI_NL_newmark_red.Solution.u(dof3,:)'];
-        NLROMT1=[];
+       
         NLROMT1=[NLROMT1 (V(dof1,:)*TI_NL_newmark_red.Solution.q)'];
-        NLROMT2=[];
+      
         NLROMT2=[NLROMT2 (V(dof2,:)*TI_NL_newmark_red.Solution.q)'];
-        NLROMT3=[];
+        
         NLROMT3=[NLROMT3 (V(dof3,:)*TI_NL_newmark_red.Solution.q)'];
         %%
         countT=countT+1;
         VbModeT=[VbModeT m];
-        VbModeT=[MDeriT n];
+        MDeriT=[MDeriT n];
         
         
     end
@@ -605,10 +615,11 @@ for ii=1:max_indexT
     s=length(f0c);
     f0_ROMT(1:s,ii)=f0c;
 end
+
 1;
 %% HFM-d init (Defected mesh) first VM
 U=VMs(:,1);      %defect Basis
-xi=1e-6;
+xi=2e-6;
 U1 = reshape(U(:,1), 2, []).';
 nodes_defected=nodes+ U1*xi;
 % Mesh
@@ -680,7 +691,7 @@ for mod=1%:size(MDd,2)
     grid on; box on
 end
 %% HFOM-d Linear 
-tmax = 100*T;
+tmax = 1200*T;
 % Initial condition: equilibrium
 u00 = zeros(FreqDivDefectedAssembly.Mesh.nDOFs, 1);
 v00 = zeros(FreqDivDefectedAssembly.Mesh.nDOFs, 1);
@@ -704,19 +715,19 @@ TI_lin_HFMd.Solution.ud = FreqDivDefectedAssembly.unconstrain_vector(TI_lin_HFMd
 FullLDurationHFMd=toc
 
 %% HFOM-d NL
-% tmax = 10*T;
-% % Instantiate object for nonlinear time integration
-% TI_NL_HFMd = ImplicitNewmark('timestep',h,'alpha',0.005);
-% 
-% % Linear Residual evaluation function handle
-% residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivDefectedAssembly,F_ext);
-% 
-% % Nonlinear Time Integration
-% 
-% tic
-% TI_NL_HFMd.Integrate(q0,qd0,qdd0,tmax,residual);
-% TI_NL_HFMd.Solution.ud = FreqDivDefectedAssembly.unconstrain_vector(TI_NL_HFMd.Solution.q);
-% FullNLdurationHFMd=toc
+tmax = 1*T;
+% Instantiate object for nonlinear time integration
+TI_NL_HFMd = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% Linear Residual evaluation function handle
+residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivDefectedAssembly,F_ext);
+
+% Nonlinear Time Integration
+
+tic
+TI_NL_HFMd.Integrate(q0,qd0,qdd0,tmax,residual);
+TI_NL_HFMd.Solution.ud = FreqDivDefectedAssembly.unconstrain_vector(TI_NL_HFMd.Solution.q);
+FullNLdurationHFMd=toc
 %% Maixmum Modal interaction  MMI for defected case
 
 %Linear Solution is Needed to Get the Best MDs
@@ -757,7 +768,7 @@ for ii=1:size(sortedWd,2)
     sortedMDd=[sortedMDd MDd_ii];
 end
 %% ROM for defected Mesh ROM-d using tensors
-tmax = 100*T;
+tmax = 1200*T;
 LROMdd1=[];
 LROMdd2=[];
 LROMdd3=[];
@@ -779,8 +790,8 @@ VbModedd=[];
 MDeridd=[];
 %   VMss=orth(VMs);
 %  MDss=orth(MDs);
-for m=[13]
-    for  n=[66 78 91] %m*(m+1)/2]
+for m=[15]
+    for  n=[55] %m*(m+1)/2]
         t=m+n;
         if n==0
             V = [VMd(:,1:m)];
@@ -861,15 +872,22 @@ for m=[13]
         % time integration
         tic
         TI_NL_newmark_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_newmark_red);
-        TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
+        %TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
         durationNL=toc
         
         NLdurationdd=[NLdurationdd durationNL];
         
         NLtimedd=[NLtimedd TI_NL_newmark_red.Solution.time'];
-        NLROMdd1=[NLROMdd1 TI_NL_newmark_red.Solution.u(dof1,:)'];
-        NLROMdd2=[NLROMdd2 TI_NL_newmark_red.Solution.u(dof2,:)'];
-        NLROMdd3=[NLROMdd3 TI_NL_newmark_red.Solution.u(dof3,:)'];
+%         NLROMdd1=[NLROMdd1 TI_NL_newmark_red.Solution.u(dof1,:)'];
+%         NLROMdd2=[NLROMdd2 TI_NL_newmark_red.Solution.u(dof2,:)'];
+%         NLROMdd3=[NLROMdd3 TI_NL_newmark_red.Solution.u(dof3,:)'];
+        
+       
+        NLROMdd1=[NLROMdd1 (V(dof1,:)*TI_NL_newmark_red.Solution.q)'];
+       
+        NLROMdd2=[NLROMdd2 (V(dof2,:)*TI_NL_newmark_red.Solution.q)'];
+      
+        NLROMdd3=[NLROMdd3 (V(dof3,:)*TI_NL_newmark_red.Solution.q)'];
         %%
         countdd=countdd+1;
         VbModedd=[VbModedd m];
@@ -900,7 +918,7 @@ ndef=size(U,2); %number of defects
 %     DS(:,ii) = DS(:,ii)/max(sqrt(sum(DS(:,ii).^2,2)));
 % end
 %%  DpROM VM (name of variable **DpROM) 1st VM
-tmax = 100*T;
+tmax = 1200*T;
 LDPROM1=[];
 LDPROM2=[];
 LDPROM3=[];
@@ -924,9 +942,9 @@ countDP=0;
 VbModeDp=[];
 MDeriDp=[];
 DSenti=[];
-for m=[13]
-    for  n=[66 78 91]
-        for k=[13]%ndef*m] % always include DS or so
+for m=[15]
+    for  n=[55]
+        for k=[m]%ndef*m] % always include DS or so
             
             if n==0 && k~=0
                 break
@@ -943,7 +961,7 @@ for m=[13]
 %                     V = [VMs(:,1:m) MDs(:,1:n) DS(:,1:7) DS(:,9:k)];
 %                 end
             end
-            
+              V=orth(V);
             %mass normalization
             for ii = 1 : size(V, 2)
                 V(:,ii) = V(:,ii) / (V(:,ii)'*(FreqDivAssembly.mass_matrix)*V(:,ii));
@@ -1006,9 +1024,10 @@ for m=[13]
             
             
             
+            
             %% NL
-            tmax=100*T;
-            h=T/300;
+            tmax=1000*T;
+           
             TI_NL_newmark_red = ImplicitNewmark('timestep',h,'alpha',0.005);
             % Modal nonlinear Residual evaluation function handle
             Residual_NL_newmark_red = @(q,qd,qdd,t)residual_reduced_nonlinear_tensor(q,qd,qdd,t,FreqDivDefectedDPROMAssembly,F_ext,Q2,Q3,Q4,Q3t,Q4t);
@@ -1018,16 +1037,22 @@ for m=[13]
             tic
             
             TI_NL_newmark_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_newmark_red);
-            TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
+            %TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
             durationNL=toc
             
             NLdurationDP=[NLdurationDP durationNL];
             
             NLtimeDP=[NLtimeDP TI_NL_newmark_red.Solution.time'];
-            NLDPROM1=[NLDPROM1 TI_NL_newmark_red.Solution.u(dof1,:)'];
-            NLDPROM2=[NLDPROM2 TI_NL_newmark_red.Solution.u(dof2,:)'];
-            NLDPROM3=[NLDPROM3 TI_NL_newmark_red.Solution.u(dof3,:)'];
+%             NLDPROM1=[NLDPROM1 TI_NL_newmark_red.Solution.u(dof1,:)'];
+%             NLDPROM2=[NLDPROM2 TI_NL_newmark_red.Solution.u(dof2,:)'];
+%             NLDPROM3=[NLDPROM3 TI_NL_newmark_red.Solution.u(dof3,:)'];
             
+            
+            NLDPROM1=[NLDPROM1 (V(dof1,:)*TI_NL_newmark_red.Solution.q)'];
+       
+        NLDPROM2=[NLDPROM2 (V(dof2,:)*TI_NL_newmark_red.Solution.q)'];
+      
+        NLDPROM3=[NLDPROM3 (V(dof3,:)*TI_NL_newmark_red.Solution.q)'];
             %%
             countDP=countDP+1;
             VbModeDp=[VbModeDp m];
@@ -1050,15 +1075,15 @@ end
 % Linear
 %dof = 66; % random degree of freedom at which time response is compared
 %
-nfsense1 = find_node(9.25e-07,91.5e-6,[],nodes); % node where to see the results
-dof1 = get_index(nfsense1, myMesh.nDOFPerNode );
-dof1=dof1(1);
-nfsense2 = find_node(148.85e-6,182.07e-6,[],nodes); % node where to see the results
-dof2 = get_index(nfsense2, myMesh.nDOFPerNode );
-dof2=dof2(1);
-nfsense3 = find_node(16.775e-6,22.85e-6,[],nodes); % node where to see the results
-dof3 = get_index(nfsense3, myMesh.nDOFPerNode );
-dof3=dof3(1);
+% nfsense1 = find_node(9.25e-07,91.5e-6,[],nodes); % node where to see the results
+% dof1 = get_index(nfsense1, myMesh.nDOFPerNode );
+% dof1=dof1(1);
+% nfsense2 = find_node(148.85e-6,182.07e-6,[],nodes); % node where to see the results
+% dof2 = get_index(nfsense2, myMesh.nDOFPerNode );
+% dof2=dof2(1);
+% nfsense3 = find_node(16.775e-6,22.85e-6,[],nodes); % node where to see the results
+% dof3 = get_index(nfsense3, myMesh.nDOFPerNode );
+% dof3=dof3(1);
 
 
 figure;
@@ -1075,14 +1100,14 @@ plot(TI_NL_HFMd.Solution.time, TI_NL_HFMd.Solution.ud(dof1,:),'DisplayName', ['F
 hold on
 
 %plot normal ROM
-for i=1:count
-    Vmode=VbMode(i);
-    Mderi=MDeri(i);
-    plot(Ltime(:,i), LROM1(:,i),'DisplayName', ['Reduced linear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(Lduration(i)) 's'])
-    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
-    plot(NLtime(:,i), NLROM1(:,i),'DisplayName', ['Reduced nonlinear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(NLduration(i)) 's'])
-    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
-end
+% for i=1:count
+%     Vmode=VbMode(i);
+%     Mderi=MDeri(i);
+%     plot(Ltime(:,i), LROM1(:,i),'DisplayName', ['Reduced linear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(Lduration(i)) 's'])
+%     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+%     plot(NLtime(:,i), NLROM1(:,i),'DisplayName', ['Reduced nonlinear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(NLduration(i)) 's'])
+%     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+% end
 %plot Tensor normal ROM
 for i=1:countT
     VmodeT=VbModeT(i);
@@ -1090,9 +1115,9 @@ for i=1:countT
     ASEMdurationT_i=ASEMdurationT(i);
     NLdurationT_i=NLdurationT(i);
     totalduration_i=ASEMdurationT_i+NLdurationT_i;  % time with assem time of tensors
-    plot(LtimeT(:,i), LROMT1(:,i),'DisplayName', ['Reduced linear TensorApproach  ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(LdurationT(i)) 's' ])
-    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
-    plot(NLtimeT(:,i), NLROMT1(:,i),'DisplayName', ['Reduced nonlinear TensorApproach ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's' ])
+%      plot(LtimeT(:,i), LROMT1(:,i),'DisplayName', ['Reduced linear TensorApproach  ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(LdurationT(i)) 's' ])
+%      xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+      plot(NLtimeT(:,i), NLROMT1(:,i),'DisplayName', ['Reduced nonlinear TensorApproach ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's' ])
     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
 end
 
@@ -1121,3 +1146,362 @@ for i=1:countDP
     plot(NLtimeDP(:,i), NLDPROM1(:,i),'DisplayName', ['DPROM NL ' ' VM=' num2str(VmodeDP) ' MD=' num2str(MderiDP) ' DS=' num2str(DSsenti) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's'])
     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
 end
+%% Comparison B
+
+
+
+figure;
+hold on
+%plot full simulation
+plot(TI_lin.Solution.time, TI_lin.Solution.u(dof2,:),'DisplayName',[ 'Full linear (Newmark)' 'time=' num2str(FullLDuration) 's'])
+plot(TI_NL.Solution.time, TI_NL.Solution.u(dof2,:),'DisplayName', ['Full Non linear ' ' time=' num2str(FullNLduration) 's'])
+xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+
+%plot full simulation for defected case
+plot(TI_lin_HFMd.Solution.time, TI_lin_HFMd.Solution.ud(dof2,:),'DisplayName', ['Full linear Defected ' 'time= ' num2str(FullLDurationHFMd) ])
+hold on
+plot(TI_NL_HFMd.Solution.time, TI_NL_HFMd.Solution.ud(dof2,:),'DisplayName', ['Full nonlinear Defected ' 'time= ' num2str(FullNLdurationHFMd)])
+hold on
+
+%plot normal ROM
+% for i=1:count
+%     Vmode=VbMode(i);
+%     Mderi=MDeri(i);
+%     plot(Ltime(:,i), LROM2(:,i),'DisplayName', ['Reduced linear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(Lduration(i)) 's'])
+%     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+%     plot(NLtime(:,i), NLROM2(:,i),'DisplayName', ['Reduced nonlinear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(NLduration(i)) 's'])
+%     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+% end
+%plot Tensor normal ROM
+for i=1:countT
+    VmodeT=VbModeT(i);
+    MderiT=MDeriT(i);
+    ASEMdurationT_i=ASEMdurationT(i);
+    NLdurationT_i=NLdurationT(i);
+    totalduration_i=ASEMdurationT_i+NLdurationT_i;  % time with assem time of tensors
+     %plot(LtimeT(:,i), LROMT2(:,i),'DisplayName', ['Reduced linear TensorApproach  ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(LdurationT(i)) 's' ])
+     %xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+     plot(NLtimeT(:,i), NLROMT2(:,i),'DisplayName', ['Reduced nonlinear TensorApproach ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's' ])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+
+%plot Tensor defected ROM (meshdefected)
+for i=1:countdd
+    Vmoded=VbModedd(i);
+    Mderid=MDeridd(i);
+    ASEMdurationd_i=ASEMdurationdd(i);
+    NLdurationd_i=NLdurationdd(i);
+    totalduration_i=ASEMdurationd_i+NLdurationd_i;  % time with assem time of tensors
+    plot(Ltimedd(:,i), LROMdd2(:,i),'DisplayName', ['Reduced linear defected Mesh TensorApproach' ' VM=' num2str(Vmoded) ' MD=' num2str(Mderid) ' time=' num2str(Ldurationdd(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+    plot(NLtimedd(:,i), NLROMdd2(:,i),'DisplayName', ['Reduced nonlinear defected Mesh TensorApproach ' ' VM=' num2str(Vmoded) ' MD=' num2str(Mderid) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationd_i) 's' ])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+%plot Tensor  DpROM
+for i=1:countDP
+    VmodeDP=VbModeDp(i);
+    MderiDP=MDeriDp(i);
+    DSsenti=DSenti(i)
+    ASEMdurationT_i=ASEMdurationDP(i);
+    NLdurationT_i=NLdurationDP(i);
+    totalduration_i=ASEMdurationT_i+NLdurationT_i;  % time with assem time of tensors
+    plot(LtimeDP(:,i), LDPROM2(:,i),'DisplayName', ['DPROM L  ' ' VM=' num2str(VmodeDP) ' MD=' num2str(MderiDP) ' DS=' num2str(DSsenti) ' time=' num2str(LdurationDP(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+    plot(NLtimeDP(:,i), NLDPROM2(:,i),'DisplayName', ['DPROM NL ' ' VM=' num2str(VmodeDP) ' MD=' num2str(MderiDP) ' DS=' num2str(DSsenti) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+%% Comparison C
+
+
+
+figure;
+hold on
+%plot full simulation
+plot(TI_lin.Solution.time, TI_lin.Solution.u(dof3,:),'DisplayName',[ 'Full linear (Newmark)' 'time=' num2str(FullLDuration) 's'])
+plot(TI_NL.Solution.time, TI_NL.Solution.u(dof3,:),'DisplayName', ['Full Non linear ' ' time=' num2str(FullNLduration) 's'])
+xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+
+%plot full simulation for defected case
+plot(TI_lin_HFMd.Solution.time, TI_lin_HFMd.Solution.ud(dof3,:),'DisplayName', ['Full linear Defected ' 'time= ' num2str(FullLDurationHFMd) ])
+hold on
+plot(TI_NL_HFMd.Solution.time, TI_NL_HFMd.Solution.ud(dof3,:),'DisplayName', ['Full nonlinear Defected ' 'time= ' num2str(FullNLdurationHFMd)])
+hold on
+
+%plot normal ROM
+% for i=1:count
+%     Vmode=VbMode(i);
+%     Mderi=MDeri(i);
+%     plot(Ltime(:,i), LROM3(:,i),'DisplayName', ['Reduced linear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(Lduration(i)) 's'])
+%     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+%     plot(NLtime(:,i), NLROM3(:,i),'DisplayName', ['Reduced nonlinear ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(NLduration(i)) 's'])
+%     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+% end
+%plot Tensor normal ROM
+for i=1:countT
+    VmodeT=VbModeT(i);
+    MderiT=MDeriT(i);
+    ASEMdurationT_i=ASEMdurationT(i);
+    NLdurationT_i=NLdurationT(i);
+    totalduration_i=ASEMdurationT_i+NLdurationT_i;  % time with assem time of tensors
+     %plot(LtimeT(:,i), LROMT3(:,i),'DisplayName', ['Reduced linear TensorApproach  ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(LdurationT(i)) 's' ])
+     %xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+     plot(NLtimeT(:,i), NLROMT3(:,i),'DisplayName', ['Reduced nonlinear TensorApproach ' ' VM=' num2str(VmodeT) ' MD=' num2str(MderiT) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's' ])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+
+%plot Tensor defected ROM (meshdefected)
+for i=1:countdd
+    Vmoded=VbModedd(i);
+    Mderid=MDeridd(i);
+    ASEMdurationd_i=ASEMdurationdd(i);
+    NLdurationd_i=NLdurationdd(i);
+    totalduration_i=ASEMdurationd_i+NLdurationd_i;  % time with assem time of tensors
+    plot(Ltimedd(:,i), LROMdd3(:,i),'DisplayName', ['Reduced linear defected Mesh TensorApproach' ' VM=' num2str(Vmoded) ' MD=' num2str(Mderid) ' time=' num2str(Ldurationdd(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+    plot(NLtimedd(:,i), NLROMdd3(:,i),'DisplayName', ['Reduced nonlinear defected Mesh TensorApproach ' ' VM=' num2str(Vmoded) ' MD=' num2str(Mderid) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationd_i) 's' ])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+%plot Tensor  DpROM
+for i=1:countDP
+    VmodeDP=VbModeDp(i);
+    MderiDP=MDeriDp(i);
+    DSsenti=DSenti(i)
+    ASEMdurationT_i=ASEMdurationDP(i);
+    NLdurationT_i=NLdurationDP(i);
+    totalduration_i=ASEMdurationT_i+NLdurationT_i;  % time with assem time of tensors
+    plot(LtimeDP(:,i), LDPROM3(:,i),'DisplayName', ['DPROM L  ' ' VM=' num2str(VmodeDP) ' MD=' num2str(MderiDP) ' DS=' num2str(DSsenti) ' time=' num2str(LdurationDP(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+    plot(NLtimeDP(:,i), NLDPROM3(:,i),'DisplayName', ['DPROM NL ' ' VM=' num2str(VmodeDP) ' MD=' num2str(MderiDP) ' DS=' num2str(DSsenti) ' time=' num2str(totalduration_i) 's' ' Assembly=' num2str(ASEMdurationT_i) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+%% FFT
+Ts = h; 
+TIME_FFT=[NLtimeT(:,1)];
+X_FFT1=[NLROMT1(:,1) NLROMT2(:,1) NLROMT3(:,1)];
+for i=1:3
+    
+t=TIME_FFT(1:end);
+x=X_FFT1(1:end,i);
+
+figure(1000)
+hold on
+plot(t,x)
+xlabel('Time (seconds)')
+ylabel('Amplitude')
+y = fft(x);   
+fs = 1/Ts;
+f = (0:length(y)-1)*fs/length(y);
+legend('A','B','C')
+
+figure(2000)
+hold on
+plot(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+
+figure(3000)
+hold on
+loglog(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+set(gca, 'XScale', 'log', 'YScale', 'log')
+[y1,f1]=fft_n([t,x],fs);
+
+figure(4000)
+hold on
+loglog(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+set(gca, 'XScale', 'log', 'YScale', 'log');
+
+figure(5000)
+hold on
+plot(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+
+end
+%% FFT ANSYS
+Ts = [2.30410000000000e-08]; 
+TIME_FFT=[QGANSYS135868(:,1)];
+X_FFT1=[QGANSYS135868(:,2) QGANSYS135868(:,3) QGANSYS135868(:,4)];
+for i=1:3
+    
+% t=TIME_FFT(1:56419);
+% x=X_FFT1(1:56419,i);
+t=TIME_FFT(150000:end-1);
+x=X_FFT1(150000:end-1,i);
+figure(1000)
+hold on
+plot(t,x)
+xlabel('Time (seconds)')
+ylabel('Amplitude')
+y = fft(x);   
+fs = 1/Ts;
+f = (0:length(y)-1)*fs/length(y);
+legend('A-ansys','B-ansys','C-ansys')
+
+figure(2000)
+hold on
+plot(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A-ansys','B-ansys','C-ansys')
+
+figure(3000)
+hold on
+loglog(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+set(gca, 'XScale', 'log', 'YScale', 'log')
+legend('A-ansys','B-ansys','C-ansys')
+
+[y1,f1]=fft_n([t,x],fs);
+
+figure(4000)
+hold on
+loglog(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A-ansys','B-ansys','C-ansys')
+set(gca, 'XScale', 'log', 'YScale', 'log');
+
+figure(10000)
+hold on
+plot(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A-ansys','B-ansys','C-ansys')
+
+end
+
+%% FFT Defected
+Ts = h; 
+TIME_FFT=[NLtimedd(:,1)];
+X_FFT1=[NLROMdd1(:,1) NLROMdd2(:,1) NLROMdd3(:,1)];
+for i=1:3
+    
+t=TIME_FFT(1:end);
+x=X_FFT1(1:end,i);
+
+figure(1000)
+hold on
+plot(t,x)
+xlabel('Time (seconds)')
+ylabel('Amplitude')
+y = fft(x);   
+fs = 1/Ts;
+f = (0:length(y)-1)*fs/length(y);
+legend('A','B','C')
+
+figure(2000)
+hold on
+plot(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+
+figure(3000)
+hold on
+loglog(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+set(gca, 'XScale', 'log', 'YScale', 'log')
+[y1,f1]=fft_n([t,x],fs);
+
+figure(4000)
+hold on
+loglog(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+set(gca, 'XScale', 'log', 'YScale', 'log');
+
+figure(5000)
+hold on
+plot(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+
+end
+
+%% FFT Defected
+Ts = h; 
+TIME_FFT=[NLtimeDP(:,1)];
+X_FFT1=[NLDPROM1(:,1) NLDPROM2(:,1) NLDPROM3(:,1)];
+for i=1:3
+    
+t=TIME_FFT(1:end);
+x=X_FFT1(1:end,i);
+
+figure(1000)
+hold on
+plot(t,x)
+xlabel('Time (seconds)')
+ylabel('Amplitude')
+y = fft(x);   
+fs = 1/Ts;
+f = (0:length(y)-1)*fs/length(y);
+legend('A','B','C')
+
+figure(2000)
+hold on
+plot(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+
+figure(3000)
+hold on
+loglog(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+set(gca, 'XScale', 'log', 'YScale', 'log')
+[y1,f1]=fft_n([t,x],fs);
+
+figure(4000)
+hold on
+loglog(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+set(gca, 'XScale', 'log', 'YScale', 'log');
+
+figure(5000)
+hold on
+plot(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+legend('A','B','C')
+
+end
+figure(1000)
+legend('A-ROM','B-ROM','C-ROM','A-ansys','B-ansys','C-ansys','A-HFMd','B-HFMd','C-HFMd','A-ROMd','B-ROMd','C-ROMd')
+figure(2000)
+legend('A-ROM','B-ROM','C-ROM','A-ansys','B-ansys','C-ansys','A-HFMd','B-HFMd','C-HFMd','A-ROMd','B-ROMd','C-ROMd')
+figure(3000)
+legend('A-ROM','B-ROM','C-ROM','A-ansys','B-ansys','C-ansys','A-HFMd','B-HFMd','C-HFMd','A-ROMd','B-ROMd','C-ROMd')
+figure(4000)
+legend('A-ROM','B-ROM','C-ROM','A-ansys','B-ansys','C-ansys','A-HFMd','B-ROMd','C-HFMd','A-ROMd','B-ROMd','C-ROMd')
+figure(5000)
+legend('A-ROM','B-ROM','C-ROM','A-ansys','B-ansys','C-ansys','A-HFMd','B-HFMd','C-HFMd','A-ROMd','B-ROMd','C-ROMd')

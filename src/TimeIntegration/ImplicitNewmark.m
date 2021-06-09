@@ -8,7 +8,7 @@ classdef ImplicitNewmark < handle
         beta
         h = 0 % time step size
         gamma
-        tol = 1e-12      % Relative error tolerance
+        tol = 1e-6      % Relative error tolerance
         
         
         Solution        % Solution data structure

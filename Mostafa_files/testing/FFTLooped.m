@@ -26,11 +26,11 @@ dofM(1)=node_force_dofs(2);
 
 %%
 Ts = h;    
-
-for i=2
+NL_ROMT=[NLROMT1 NLROMT2 NLROMT3];
+for i=1:3
     dof=dofM(i)
-t=TI_NL.Solution.time(:);
-x=TI_NL.Solution.u(dof,:)';
+% t=TI_NL.Solution.time(:);
+% x=TI_NL.Solution.u(dof,:)';
 % 
 % t=TI_lin.Solution.time(:);
 % x=10^6*TI_lin.Solution.u(dof,:)';
@@ -39,7 +39,9 @@ x=TI_NL.Solution.u(dof,:)';
 % x=10^6*u(dof,:)';
 % t=time(:);
 % x=u(dof,:)';
-
+t=TI_NL_newmark_red.Solution.time([65300:end])';
+% x=TI_NL_newmark_red.Solution.u(dof,[1:end])';
+x=NL_ROMT(65300:end,i);
 
 figure(1000)
 hold on
@@ -50,6 +52,7 @@ y = fft(x);
 fs = 1/Ts;
 f = (0:length(y)-1)*fs/length(y);
 legend('Force','A','C','B')
+
 figure(2000)
 hold on
 plot(f,abs(y))
@@ -57,14 +60,16 @@ xlabel('Frequency (Hz)')
 ylabel('Magnitude')
 title('Magnitude')
 legend('Force','A','C','B')
-% figure(3000)
-% hold on
-% loglog(f,abs(y))
-% xlabel('Frequency (Hz)')
-% ylabel('Magnitude')
-% title('Magnitude')
 
+figure(3000)
+hold on
+loglog(f,abs(y))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
+set(gca, 'XScale', 'log', 'YScale', 'log')
 [y1,f1]=fft_n([t,x],fs);
+
 figure(4000)
 hold on
 loglog(f1,abs(y1(:,2)))
@@ -72,10 +77,12 @@ xlabel('Frequency (Hz)')
 ylabel('Magnitude')
 title('Magnitude')
 legend('Force','A','C','B')
-% figure(5000)
-% hold on
-% plot(f1,abs(y1(:,2)))
-% xlabel('Frequency (Hz)')
-% ylabel('Magnitude')
-% title('Magnitude')
+set(gca, 'XScale', 'log', 'YScale', 'log');
+
+figure(5000)
+hold on
+plot(f1,abs(y1(:,2)))
+xlabel('Frequency (Hz)')
+ylabel('Magnitude')
+title('Magnitude')
 end
