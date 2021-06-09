@@ -97,6 +97,8 @@ fprintf(' dKdxi, assembling %d elements ...', nel)
 dKdxi = jl.call('stiffness_matrix_sensitivity', elements, ...
     nodes, conn, C, U, XGauss, WGauss, formulation);
 
+dKdxi = sparse(dKdxi);
+
 fprintf(' %.2f s\n',toc(t0))
 
 

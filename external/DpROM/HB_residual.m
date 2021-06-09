@@ -167,6 +167,9 @@ function [F,dF] = ...
 %% Initialize output
 F = zeros(size(Q));
 dF = zeros(size(F,1),size(dQ,2));
+dF1 = zeros(size(F,1),size(dQ,2));
+dF2 = zeros(size(F,1),size(dQ,2));
+dF3 = zeros(size(F,1),size(dQ,2));
 
 %% Iterate on nonlinear elements
 for nl=1:length(nonlinear_elements)
@@ -426,12 +429,16 @@ for nl=1:length(nonlinear_elements)
                 % (If the double loop bothers you, vectorize!)
                 fnl         = zeros(N,n);
                 df_dql_all  = zeros(N,n,n);
+                df_dqldot_all = zeros(N,n,n);
+                df_dqlddot_all = zeros(N,n,n);
                 for iii = 1 : size( q , 1 )
                     x = q(iii, :)';
                     xdot = qdot(iii, :)';
                     xddot = qddot(iii, :)';
-                    [Kt, fint] = fnl_CUSTOM( myAssembly, x, xdot, xddot);
-                    df_dql_all(iii, :, :) = Kt;
+                    [df, fint] = fnl_CUSTOM( myAssembly, x, xdot, xddot);
+                    df_dql_all(iii, :, :) = df.K;
+                    df_dqldot_all(iii, :, :) = df.C;
+                    df_dqlddot_all(iii, :, :) = df.M;
                     fnl(iii, :) = fint;                    
                 end
                 
@@ -450,14 +457,32 @@ for nl=1:length(nonlinear_elements)
                     dql = ifft(dQlc)*N;
 
                     df_dql = df_dql_all(:,:,l_ind);
+                    df_dqldot = df_dqldot_all(:,:,l_ind);
+                    df_dqlddot = df_dqlddot_all(:,:,l_ind);
 
                     % Derive
                     for i=1:n
-                        dfi = repmat(df_dql(:,i),1,size(dql,2)).*dql;
-                        dFi = fft(dfi(end-N+1:end,:))/N;
-                        dFi = [dFi(1,:);dFi(2:H+1,:)*2];
-                        dF(i:n:end,:) = dF(i:n:end,:) + dFi;
+                        dfi1 = repmat(df_dql(:,i),1,size(dql,2)).*dql;
+                        dFi1 = fft(dfi1(end-N+1:end,:))/N;
+                        dFi1 = [dFi1(1,:);dFi1(2:H+1,:)*2];
+                        dF1(i:n:end,:) = dF1(i:n:end,:) + dFi1;
+
+%                         dfi2 = repmat(df_dqldot(:,i),1,size(dql,2)).*dql;
+%                         dFi2 = fft(dfi2(end-N+1:end,:))/N;
+%                         dFi2 = [dFi2(1,:);dFi2(2:H+1,:)*2];
+%                         dF2(i:n:end,:) = dF2(i:n:end,:) + dFi2;
+% 
+%                         dfi3 = repmat(df_dqlddot(:,i),1,size(dql,2)).*dql;
+%                         dFi3 = fft(dfi3(end-N+1:end,:))/N;
+%                         dFi3 = [dFi3(1,:);dFi3(2:H+1,:)*2];
+%                         dF3(i:n:end,:) = dF3(i:n:end,:) + dFi3;
+
+%                         dRc = ( -Om^2*kron(diag((0:H).^2),M) + 1i*Om*kron(diag(0:H),D) + ...
+%                             kron(eye(H+1),K) )*dQ + dFnl - dFex + ...
+%                             ( -2*Om*kron(diag((0:H).^2),M) + 1i*kron(diag(0:H),D) )*Q*dOm + ...
+%                             1i*Om*kron(diag(0:H),dD_dalpha)*Q*dalpha;
                     end
+                    dF = dF1 + dF2 + dF3;
                 end
                 
             otherwise

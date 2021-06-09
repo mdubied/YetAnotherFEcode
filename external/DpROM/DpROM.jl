@@ -1,11 +1,11 @@
 module DpROM
 
-
 using Dates
 using TensorOperations
 using LinearAlgebra
+using SparseArrays
 
-export red_stiff_tensors, red_stiff_tensors_defects
+export red_stiff_tensors, red_stiff_tensors_defects, red_stiff_tensors_QM
 export stiffness_matrix_derivative, stiffness_matrix_sensitivity
 export stiffness_matrix_linear
 
@@ -59,8 +59,7 @@ function red_stiff_tensors(elements, nodes, connectivity, C, V, XGauss, WGauss)
     time3 = time2 - time1
     totaltime = time3.value
     # return all the tensors
-     K2n,K3n,K4n, totaltime;
-   
+    K2n, K3n, K4n, totaltime;
 end
 # ASSEMBLE DpROM stiffness tensors
 function red_stiff_tensors_defects(formulation, volume, elements, nodes, connectivity, C, V, U, XGauss, WGauss)
@@ -146,7 +145,66 @@ function red_stiff_tensors_defects(formulation, volume, elements, nodes, connect
     totaltime = time3.value
     # return all the tensors
     K2n, K3d, K4dd, K3n, K4d, K5dd, K4n, K5d, K6dd, totaltime;
+end
+# ASSEMBLE QM-ROM stiffness tensors (standard, no parametrization)
+function red_stiff_tensors_QM(elements, nodes, connectivity, C, Phi, Theta, XGauss, WGauss)
+    time1 = now()
 
+    # useful dimensions
+    nD = size(nodes,2)
+    nel = size(elements,1)
+    ndofs = size(connectivity,2)
+    nw = length(WGauss)
+    nv = size(Phi,2)
+
+    G_FUN = Gselector(nD,ndofs)
+
+    if nD==3
+        L1, L2, L31, H = constantMatrices3D()
+    elseif nD==2
+        L1, L2, L31, H = constantMatrices2D()
+    end
+
+    # initialize tensors
+    Q2 = zeros(nv,nv)
+    Q3 = zeros(nv,nv,nv)
+    Q4 = zeros(nv,nv,nv,nv)
+    Q5 = zeros(nv,nv,nv,nv,nv)
+    Q6 = zeros(nv,nv,nv,nv,nv,nv)
+    Q7 = zeros(nv,nv,nv,nv,nv,nv,nv)
+    Q8 = zeros(nv,nv,nv,nv,nv,nv,nv,nv)
+
+    # cycle over all the elements
+    for e in 1:nel
+        el_nodes = elements[e,:]        # IDs of the element nodes
+        el_dofs  = connectivity[e,:]    # IDs of the element dofs
+        xyz = nodes[el_nodes,:]         # element's coordinates x, y, z
+        Phi_e = Phi[el_dofs,:]          # Vibration modes (only element's dofs)
+        Theta_e = Theta[el_dofs,:,:]    # static Modal Derivatives
+
+        # cycle over Gauss quadrature points (integration over volume)
+        for i in 1:nw
+            ISO = XGauss[:,i]           # Gauss point coordinates
+            w = WGauss[i]               # Gauss weight
+            G, detJ = G_FUN(ISO,xyz)    # shape function derivative matrix G and Jacobian
+            # compute the element-level reduced tensors at the Gauss point
+            CwJ = C .* (w * detJ);
+            Q2E, Q3E, Q4E, Q5E, Q6E, Q7E, Q8E = element_tensor_QM(G,CwJ,H,L1,Phi_e,Theta_e)
+            # sum over the element contributions
+            Q2 .+= Q2E
+            Q3 .+= Q3E
+            Q4 .+= Q4E
+            Q5 .+= Q5E
+            Q6 .+= Q6E
+            Q7 .+= Q7E
+            Q8 .+= Q8E
+        end
+    end
+    time2 = now()
+    time3 = time2 - time1
+    totaltime = time3.value
+    # return all the tensors
+    Q2, Q3, Q4, Q5, Q6, Q7, Q8, totaltime;
 end
 
 # approiximated determinant (for integration over the defected volume)
@@ -260,6 +318,44 @@ function element_tensor_standard(G,C,H,L1,V)
     end
     K2n, K3n, K4n
 end
+# STANDARD FORMULATION (no parametrization) with QUADRATIC MANIFOLD
+# Reduced Tensors at element-level (evaluated at one gauss point)
+function element_tensor_QM(G,C,H,L1,Phi,Theta)
+    GHC = G'*H'*C
+    CHG = C*H*G
+    @tensoropt begin
+        K2[I,J] := G[i,I]*H[j,i]*C[j,k]*H[k,l]*G[l,J];
+        K3[I,J,K] := 0.5*GHC[I,i]*L1[i,j,l]*G[l,K]*G[j,J] + G[i,I]*L1[j,i,k]*G[k,K]*CHG[j,J];
+        K4[I,J,K,L] := 0.5*G[i,I]*L1[j,i,k]*G[k,J] *C[j,l]*L1[l,m,n]*G[n,K]*G[m,L];
+
+        # reduced element tensors stemming from the linear terms
+        QL2[I,J] := Phi[i,I]*K2[i,j]*Phi[j,J]
+        QL3[I,J,K] := 0.5*Phi[i,I]*K2[i,j]*Theta[j,J,K] + Theta[i,I,J]*K2[i,j]*Phi[j,K]
+        QL4[I,J,K,L] := 0.5*Theta[i,I,J]*K2[i,j]*Theta[j,K,L]
+
+        # reduced element tensors stemming from the quadratic terms
+        QQ3[I,J,K] := Phi[i,I]*K3[i,j,k]*Phi[j,J]*Phi[k,K]
+        QQ4[I,J,K,L] := 0.5*Phi[i,I]*K3[i,j,k]*Theta[j,J,K]*Phi[k,L] + Theta[i,I,J]*K3[i,j,k]*Phi[j,K]*Phi[k,L] + 0.5*Phi[i,I]*K3[i,j,k]*Phi[j,J]*Theta[k,K,L]
+        QQ5[I,J,K,L,M] := 0.5*Theta[i,I,J]*K3[i,j,k]*Theta[j,K,L]*Phi[k,M] + 0.25*Phi[i,I]*K3[i,j,k]*Theta[j,J,K]*Theta[k,L,M] + 0.5*Theta[i,I,J]*K3[i,j,k]*Phi[j,K]*Theta[k,L,M]
+        QQ6[I,J,K,L,M,N] := 0.25*Theta[i,I,J]*K3[i,j,k]*Theta[j,K,L]*Theta[k,M,N]
+
+        # reduced element tensors stemming from the cubic terms
+        QC4[I,J,K,L] := Phi[i,I]*K4[i,j,k,l]*Phi[j,J]*Phi[k,K]*Phi[l,L]
+        QC5[I,J,K,L,M] := 0.5*Phi[i,I]*K4[i,j,k,l]*(Theta[j,J,K]*Phi[k,L]*Phi[l,M] + Phi[j,J]*Phi[k,K]*Theta[l,L,M] + Phi[j,J]*Theta[k,K,L]*Phi[l,M]) + Theta[i,I,J]*K4[i,j,k,l]*Phi[j,K]*Phi[k,L]*Phi[l,M]
+        QC6[I,J,K,L,M,N] := 0.5*Theta[i,I,J]*K4[i,j,k,l]*(Theta[j,K,L]*Phi[k,M]*Phi[l,N] + Phi[j,K]*Theta[k,L,M]*Phi[l,N] + Phi[j,K]*Phi[k,L]*Theta[l,M,N]) + 0.25*Phi[i,I]*K4[i,j,k,l]*(Theta[j,J,K]*Theta[k,L,M]*Phi[l,N] + Theta[j,J,K]*Phi[k,L]*Theta[l,M,N] + Phi[j,J]*Theta[k,K,L]*Theta[l,M,N])
+        QC7[I,J,K,L,M,N,O] := 0.25*Theta[i,I,J]*K4[i,j,k,l]*(Theta[j,K,L]*Theta[k,M,N]*Phi[l,O] + Theta[j,K,L]*Phi[k,M]*Theta[l,N,O] + Phi[j,K]*Theta[k,L,M]*Theta[l,N,O]) + 0.125*Phi[i,I]*K4[i,j,k,l]*Theta[j,J,K]*Theta[k,L,M]*Theta[l,N,O]
+        QC8[I,J,K,L,M,N,O,P] := 0.125*Theta[i,I,J]*K4[i,j,k,l]*Theta[j,K,L]*Theta[k,M,N]*Theta[l,O,P]
+    end
+    Q2 = QL2
+    Q3 = QL3 + QQ3
+    Q4 = QL4 + QQ4 + QC4
+    Q5 = QQ5 + QC5
+    Q6 = QQ6 + QC6
+    Q7 = QC7
+    Q8 = QC8
+
+    Q2, Q3, Q4, Q5, Q6, Q7, Q8
+end
 
 
 # STIFFNESS MATRIX and DERIVATIVES _____________________________________________
@@ -282,8 +378,12 @@ function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss
         A1, A2, A3 = Amatrices2D()
     end
 
-    # initialize tensors
-    dKdη = zeros(ndofs, ndofs)
+    # create indexes for sparse assembly
+    I = reshape(kron(connectivity,ones(nel_dofs,1))',nel_dofs^2*nel,1)
+    J = reshape(kron(connectivity,ones(1,nel_dofs))',nel_dofs^2*nel,1)
+    I = I[:]
+    J = J[:]
+    dKdη_collection = zeros(nel_dofs^2, nel)
 
     # cycle over all the elements
     for e in 1:nel
@@ -301,9 +401,13 @@ function stiffness_matrix_derivative(elements, nodes, connectivity, C, V, XGauss
             CwJ = C .* (w * detJ);
             dKdηE = element_stiffness_matrix_derivative(G,CwJ,H,A1,L1,Ve)
             # assembly the element contributions in the global matrix
-            dKdη[el_dofs, el_dofs] .+= dKdηE
+            dKdη_collection[:,e] .+= dKdηE[:]
         end
     end
+    # sparse assembly
+    dKdη_vectorized = reshape(dKdη_collection, nel_dofs^2*nel, 1)
+    dKdη_vectorized = dKdη_vectorized[:]
+    dKdη = sparse(I, J, dKdη_vectorized, ndofs, ndofs, +)
     # return all the tensors
     dKdη
 end
@@ -312,7 +416,7 @@ function element_stiffness_matrix_derivative(G, C, H, A1, L1, Ve)
     dKdη_E1 = G'*(H'*C*A1(th) + A1(th)'*C*H)*G
     CHGV = C*H*G*Ve;
     @tensoropt begin
-        dKdη_E2[I,J] := G[ii,I] * L1[jj,ii,kk] * G[kk,J] * CHGV[jj]
+        dKdη_E2[I,J] := G[ii,I] * ( L1[jj,ii,kk] * CHGV[jj] ) * G[kk,J]
     end
     dKdηE = dKdη_E1 + dKdη_E2
     dKdηE

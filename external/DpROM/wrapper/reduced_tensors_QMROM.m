@@ -1,45 +1,29 @@
-% reduced_tensors_DpROM
+% reduced_tensors_QMROM
 %
 % Synthax:
-% tensors = reduced_tensors_DpROM(myAssembly, elements, V, U, FORMULATION, volume)
+% tensors = reduced_tensors_QMROM(myAssembly, elements, Phi, Theta)
 %
 % Description: this is a wrapper function for YetAnotherFEcode that
-% computes the parametric reduced order tensors for shape defect described
-% in the paper.
+% computes the reduced order tensors for the Quadratic Manifold (QM)
+% implementation.
 % INPUTS
 %   - myAssembly: Assembly from YetAnotherFEcode.
 %   - elements: table of the elements
-%   - V: Reduced Order Basis (unconstrained)
-%   - U: tall matrix collecting by columns the (unconstrained) defect shapes
-%   - formulation (optional): choose the Neumann formulation between "N1",
-%     "N1T" and "N0".
-%     The default value is N1.
-%   - volume (optional): set to 1 to compute the additional tensors required
-%     to approximate the volume integral over the defected volume, set to 0
-%     if the integral can be computed over the nominal volume (e.g. 
-%     isochoric defect).
-%     The default value is 1.
+%   - Phi: Vibration Modes (unconstrained, n*m matrix)
+%   - Theta: Modal Derivatives (unconstrained, n*m*m matrix)
 % OUTPUT
 %   tensors: a struct variable with the following fields*:
 %       .Q2             n*n         reduced stiffness tensor
 %    	.Q3             n*n*n       reduced stiffness tensor
 %   	.Q4             n*n*n*n     reduced stiffness tensor
-%    	.Q3d            n*n*d       reduced stiffness tensor
-%       .Q4d            n*n*d*n     reduced stiffness tensor
-%       .Q5d            n*n*n*d*n   reduced stiffness tensor
-%      	.Q4dd           n*n*d*d     reduced stiffness tensor
-%      	.Q5dd           n*n*d*n*d   reduced stiffness tensor
-%     	.Q6dd           n*n*d*n*d*n reduced stiffness tensor
 %      	.time           computational time
-%      	.formulation    adopted formulation
-%      	.volume         1/0
-%   *being n=size(V,2) and d=size(U,2)
+%   *being n=size(Phi,2)
 %
 % Additional notes:
 %   - ALL the elements are assumed to have the same properties in terms
 %     of MATERIAL and QUADRATURE rules.
-%   - this function uses the red_stiff_tensors_defects function 
-%     implemented in the Julia module "DpROM.jl". 
+%   - this function uses the red_stiff_tensors function implemented in the
+%     Julia module "DpROM.jl". 
 %   - as such, this function supports ONLY models meshed with the elements
 %     supported by both YetAnotherFEcode AND the DpROM.jl
 %   - List of currently supported elements: 
@@ -51,19 +35,12 @@
 % using Neumann expansion", Nonlinear Dynamics, 2021.
 %
 % Created: 14 May 2021
+% Last modified: 31 May 2021
 % Author: Jacopo Marconi, Politecnico di Milano
 
-function tensors = reduced_tensors_DpROM(myAssembly, elements, V, U, FORMULATION, volume)
+function tensors = reduced_tensors_QMROM(myAssembly, elements, Phi, Theta)
 
 t0=tic;
-
-% Handle incomplete input
-if nargin < 6
-    volume = 1;
-elseif nargin < 5
-    volume = 1;
-    FORMULATION = 'N1';
-end
 
 % data from myAssembly
 nodes    = myAssembly.Mesh.nodes;                   % nodes table
@@ -81,7 +58,6 @@ C = Element.initialization.C;                   % constitutive matrix
 DIM = size(nodes,2);                            % 2D/3D problem
 ndofs = nnodes * DIM;                           % total number of DOFs
 nfree = length(freedofs);                       % number of free DOFs
-nd = size(U,2);                                 % number of defects
 
 % build connectivity table
 conn = zeros(nel, length(Element.iDOFs));
@@ -94,29 +70,27 @@ conn = int64(conn);         % convert into integers
 
 % INPUT SIZE CHECK ________________________________________________________
 % for tensor assembly, always use the full DOFs displacement vectors
-if size(V,1)==nfree
-    u = zeros(ndofs,size(V,2));
-    u(freedofs,:) = V;
-    V = u;
-elseif size(V,1)~=ndofs
+if size(Phi,1)==nfree
+    U = zeros(ndofs,size(Phi,2));
+    U(freedofs,:) = Phi;
+    Phi = U;
+elseif size(Phi,1)~=ndofs
+    error('Wrong dimensions for Phi')
+end
+if size(Theta,1)==nfree
+    U = zeros(ndofs,size(Theta,2),size(Theta,3));
+    U(freedofs,:) = Theta;
+    Theta = U;
+elseif size(Theta,1)~=ndofs
     error('Wrong dimensions for V')
 end
-if size(U,1)==nfree
-    u = zeros(ndofs,size(U,2));
-    u(freedofs,:) = U;
-    U = u;
-elseif isscalar(U) && U == 0
-    U = V(:,1)*0;
-elseif size(U,1)~=ndofs
-    error('Wrong dimensions for U')
-end
-FORMULATION = upper(FORMULATION);
 
 % JULIA ___________________________________________________________________
 % add current path in Julia
 a = jl.eval('LOAD_PATH');
 if a{end}~='.'
     jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
+    jleval push!(LOAD_PATH, pwd() * "\\DpROM");
     jleval push!(LOAD_PATH, ".")
     fprintf(' Path added\n\n')
 end
@@ -126,61 +100,46 @@ jleval using DpROM
 
 % call the function once (for 1 element only) to precompile
 elem1 = elements(1,:);
-jl.call('red_stiff_tensors_defects', FORMULATION, volume, elem1, ...
-    nodes, conn, C, V, U, XGauss, WGauss);
+jl.call('red_stiff_tensors_QM', elem1, ...
+    nodes, conn, C, Phi, Theta, XGauss, WGauss);
 
-disp([' REDUCED TENSORS (' FORMULATION ' ~ Julia):'])
+disp(' STIFFNESS REDUCED TENSORS (Quadratic Manifold ~ Julia):')
 fprintf(' Assembling %d elements ...', nel)
 
 % call the function in Julia to compute all the tensors
-a=jl.call('red_stiff_tensors_defects', FORMULATION, volume, elements, ...
-    nodes, conn, C, V, U, XGauss, WGauss);
+a=jl.call('red_stiff_tensors_QM', elements, ...
+    nodes, conn, C, Phi, Theta, XGauss, WGauss);
 
 % unpack results __________________________________________________________
-Q2n= getfield(a,'1'); %#ok<*GFLD>
-a2 = getfield(a,'2');
-a3 = getfield(a,'3');
-a4 = getfield(a,'4');
-a5 = getfield(a,'5');
-a6 = getfield(a,'6');
-a7 = getfield(a,'7');
-a8 = getfield(a,'8');
-a9 = getfield(a,'9');
-if volume == 1
-    ind = nd+1;
-else
-    ind = 1; % (the other tensors are zero)
-end
-for ii = 1 : ind
-    Q3d{ii}  = tensor(a2{ii}); %#ok<*AGROW>
-    Q4dd{ii} = tensor(a3{ii});
-    Q3n{ii}  = tensor(a4{ii});
-    Q4d{ii}  = tensor(a5{ii});
-    Q5dd{ii} = tensor(a6{ii});
-    Q4n{ii}  = tensor(a7{ii});
-    Q5d{ii}  = tensor(a8{ii});
-    Q6dd{ii} = tensor(a9{ii});
-end
-
-time = double(getfield(a,'10'))/1000;
+Q2 = getfield(a,'1'); %#ok<*GFLD>
+Q3 = tensor(getfield(a,'2'));
+Q4 = tensor(getfield(a,'3'));
+Q5 = tensor(getfield(a,'4'));
+Q6 = tensor(getfield(a,'5'));
+Q7 = tensor(getfield(a,'6'));
+Q8 = tensor(getfield(a,'7'));
+time = double(getfield(a,'8'))/1000;
 
 fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
 fprintf(' SPEED: %.1f el/s\n',nel/time)
-fprintf(' SIZEs: %d - %d \n\n', size(V,2), size(U,2))
+fprintf(' SIZEs: %d \n\n', size(Phi,2))
 
-tensors.Q2   = Q2n;
-tensors.Q3   = Q3n;
-tensors.Q4   = Q4n;
-tensors.Q3d  = Q3d;
-tensors.Q4d  = Q4d;
-tensors.Q5d  = Q5d;
-tensors.Q4dd = Q4dd;
-tensors.Q5dd = Q5dd;
-tensors.Q6dd = Q6dd;
+tensors.Q2 = Q2;
+tensors.Q3 = Q3;
+tensors.Q4 = Q4;
+tensors.Q5 = Q5;
+tensors.Q6 = Q6;
+tensors.Q7 = Q7;
+tensors.Q8 = Q8;
 tensors.time = time;
-tensors.formulation = FORMULATION;
-tensors.volume = volume;
 
+% compute tensors for the tangent stiffness matrix (see tensors_KF.m)
+tensors.Q3t = Q3 + permute(Q3, [1 3 2]); 
+tensors.Q4t = Q4 + permute(Q4, [1 3 2 4]) + permute(Q4, [1 4 2 3]);
+tensors.Q5t = Q5 + permute(Q5, [1 3 2 4 5]) + permute(Q5, [1 3 4 2 5]) + permute(Q5, [1 3 4 5 2]);
+tensors.Q6t = Q6 + permute(Q6, [1 3 2 4 5 6]) + permute(Q6, [1 3 4 2 5 6]) + permute(Q6, [1 3 4 5 6 2]) + permute(Q6, [1 3 4 5 6 2]);
+tensors.Q7t = Q7 + permute(Q7, [1 3 2 4 5 6 7]) + permute(Q7, [1 3 4 2 5 6 7]) + permute(Q7, [1 3 4 5 6 2 7]) + permute(Q7, [1 3 4 5 6 2 7]) + permute(Q7, [1 3 4 5 6 7 2]);
+tensors.Q8t = Q8 + permute(Q8, [1 3 2 4 5 6 7 8]) + permute(Q8, [1 3 4 2 5 6 7 8]) + permute(Q8, [1 3 4 5 6 2 7 8]) + permute(Q8, [1 3 4 5 6 2 7 8]) + permute(Q8, [1 3 4 5 6 7 2 8]) + permute(Q8, [1 3 4 5 6 7 8 2]);
 end
 
 
