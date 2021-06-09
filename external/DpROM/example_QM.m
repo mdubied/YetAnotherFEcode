@@ -28,8 +28,8 @@ myElementConstructor = @()Quad8Element(thickness, myMaterial);
 % MESH_____________________________________________________________________
 Lx = 2;
 Ly = .050;
-h = 2;
-nx = 20*h;
+h = 1;
+nx = 10*h;
 ny = 1*h;
 [nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny);
 
@@ -40,7 +40,7 @@ MeshNominal.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
 
 % defected mesh
     % arch defect
-    xi = 1;                                     % defect amplitude
+    xi = .1;                                     % defect amplitude
     yd = Ly * sin(pi/Lx * nodes(:,1));          % y-displacement 
     nodes_defected = nodes + [yd*0 yd]*xi;   	% new nodes
     arc_defect = zeros(numel(nodes),1);         
@@ -84,7 +84,7 @@ forced_dof_c = NominalAssembly.free2constrained_index( forced_dof );
 %% Eigenmodes                                                       
 
 % Eigenvalue problem_______________________________________________________
-n_VMs = 3; % first n_VMs modes with lowest frequency calculated
+n_VMs = 2; % first n_VMs modes with lowest frequency calculated
 
 % Vibration Modes (VM): nominal
 Knc = DefectedAssembly.constrain_matrix(Kn);
@@ -139,21 +139,35 @@ MDd = modal_derivatives(DefectedAssembly, elements, VMd);           % defected
 nwho = 1;
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
 figure
-v1 = reshape(MDn(:, nwho), 2, []).';
-S = Ly/2;
+v1 = reshape(MDn(:, nwho), 2, []).' / max(abs(v1(:)));
+S = Ly/ny;
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S, 'component', 'U');
 title(['\theta_{' num2str(MDnames(nwho,1)) num2str(MDnames(nwho,2)) '}'])
 axis on; grid on; box on
+drawnow
 
 
 %% Quadratic Manifold                                               
 
 Phi = VMd;
-Theta = QM_Theta_from_SMDs(MDd, MDnames);
-tensors_QM = reduced_tensors_QMROM(DefectedAssembly, elements, Phi, Theta);
-Mqm = VMd'*Md*VMd;
-Dqm = VMd'*D *VMd;
-Fqm = VMd'*Fext;
+for ii = 1 : size(VMd, 2)
+    Phi(:,ii) = VMd(:,ii) / sqrt(VMd(:,ii)'*Md*VMd(:,ii));
+end
+Th = modal_derivatives(DefectedAssembly, elements, Phi);
+
+Theta = QM_Theta_from_SMDs(Th, MDnames);
+
+stiff_tensors_QM = reduced_tensors_QMROM(DefectedAssembly, elements, Phi, Theta);
+mass_tensors_QM  = QM_mass_tensors(DefectedAssembly, Phi, Theta);
+damp_tensors_QM  = QM_damp_tensors(alfa, beta, DefectedAssembly, Phi, Theta);
+
+QMtensors.K = stiff_tensors_QM;
+QMtensors.C = damp_tensors_QM;
+QMtensors.M = mass_tensors_QM;
+
+Mqm = mass_tensors_QM.M2; % Phi'*Md*Phi;
+Dqm = damp_tensors_QM.C2; % Phi'*D *Phi;
+Fqm = Phi'*Fext;
 
 
 %% (Dp)ROM                                                          
@@ -226,11 +240,11 @@ imod = 1;               % eigenfreq to study
 omi = 2*pi*f0d(imod); 	% linear eigenfrequency
 n = size(ROB, 2);       % number of DOFs of the reduced system
 H = 7;                  % harmonic order
-N = 3*H+2;              % number of time samples per period
-Om_s = omi * 0.80;   	% start frequency
+N = 3*H+1;              % number of time samples per period
+Om_s = omi * 0.90;   	% start frequency
 Om_e = omi * 1.1;    	% end frequency
 ds =  2;                % Path continuation step size
-exc_lev = 4000;
+exc_lev = 1000;
 
 % COMPUTE FRs _____________________________________________________________
 fprintf('\n\n FRF from %.2f to %.2f rad/s \n\n', Om_s, Om_e)
@@ -268,11 +282,11 @@ QM = 1;
 if QM == 1
 % PREPARE MODEL ___________________________________________________________
 % ROMd: reduced matrices
-Kr = tensors_QM.Q2;     % reduced linear stiffness matrix
+Kr = stiff_tensors_QM.Q2;     % reduced linear stiffness matrix
 Mr = Mqm;               % reduced mass matrix
 Dr = Dqm;               % reduced damping matrix
 Fr = Fqm;               % reduced external force vector
-ROB = VMd;
+ROB = Phi;
 
 % Let us defined the ROMd Assembly (although the ReducedAssembly class is
 % not strictly necessary, we want to define a different object - remember
@@ -286,8 +300,8 @@ QM_Assembly.DATA.acceleration = true;   % ask to compute accelerations
 
 % the function to compute the nonlinear forces and the jacobian are passed
 % to NLvib through a global function handle:
-fnl_CUSTOM = @(myAssembly, q, qd, qdd) tensors_KF_NLvib_QM(tensors_QM.Q3,...
-    tensors_QM.Q4, tensors_QM.Q3t, tensors_QM.Q4t, ROB, tensor(Theta), Md, D, Fext, q, qd, qdd);
+fnl_CUSTOM = @(myAssembly, q, qd, qdd) tensors_KF_NLvib_QM(QMtensors,...
+    Phi, Theta, Fext, q, qd, qdd);
 
 % create system
 QM_System = FE_system(QM_Assembly, Fr, 'custom');
@@ -298,10 +312,10 @@ omi = 2*pi*f0d(imod); 	% linear eigenfrequency
 n = size(ROB, 2);       % number of DOFs of the reduced system
 H = 7;                  % harmonic order
 N = 3*H+1;              % number of time samples per period
-Om_s = omi * 0.80;   	% start frequency
+Om_s = omi * 0.90;   	% start frequency
 Om_e = omi * 1.1;    	% end frequency
-ds =  2;                % Path continuation step size
-exc_lev = 4000;
+ds = 02;                % Path continuation step size
+exc_lev = 1000;
 
 % COMPUTE FRs _____________________________________________________________
 fprintf('\n\n FRF from %.2f to %.2f rad/s \n\n', Om_s, Om_e)
@@ -318,7 +332,8 @@ for iex = 1 : length(exc_lev)
     % stuff for scaling
     qscl = max(abs((-omi^2*Mr + 1i*omi*Dr + Kr) \ QM_System.Fex1));
     dscale = [y0*0+qscl; omi];
-    Sopt = struct('Dscale', dscale, 'dynamicDscale', 1);
+    Sopt = struct('Dscale', dscale, 'dynamicDscale', 1, 'stepmax', 1e4, ...
+        'dsmin',ds/5)%, 'jac', 'none');
     
     % Solve and continue w.r.t. Om	
     [X, Solinfo, Sol] = solve_and_continue(y0, ...
@@ -330,38 +345,93 @@ for iex = 1 : length(exc_lev)
     
     results.FRF.HB.QM{iex} = r2{iex};
 end
+
+% POSTPROCESSING __________________________________________________________
+fprintf(' QM postprocessing... ')
+tic
+
+% X size: [coefficients*dofs + omega]*nw ==> [(2*H+1)*n + 1] * nw
+
+r = results.FRF.HB.QM{1};
+
+Uqm = zeros(H+1, size(Phi,1), length(r.omega));
+for ww = 1 : length(r.omega)
+
+    Q1 = squeeze(r.Qre(:, ww, :) + 1i*r.Qim(:, ww, :));
+    Q = [r.Q0(:, ww) Q1];
+
+    % Inverse FFT
+    Qc = transpose(reshape(Q,[],H+1)); n = size(Qc,2);
+    Qc = [Qc(1,:); Qc(2:end,:)/2; zeros(N-H-1,n)];
+    Qc(end-H+1:end,:) = flipud(conj(Qc(2:H+1,:)));
+    q = ifft(Qc)*N;
+
+    q = q.';
+
+    u = zeros(size(Phi,1), N);
+    for tt = 1:N
+        qt = tensor(q(:,tt));
+        u(:,tt) = Phi*q(:,tt) + ...
+            1/2*double(ttt(ttt(tensor(Theta),qt,3,1),qt,2,1));
+    end
+    u = u.';
+
+    % Forward FFT
+    UU = fft(u)/N;                  % harmonics * dofs = samples * dofs
+    UU = [UU(1,:);UU(2:H+1,:)*2]; 	% selected harmonics * dofs
+
+    Uqm(:,:,ww) = UU;
+
+end
+
+fprintf(' %.2f s \n\n', toc);
+
 end
 
 
 %% PLOT FRs                                                         
 
-% r2 = results.FRF.HB.QM; % u=Phi*q + 1/2*Theta*q*q!
-r2 = results.FRF.HB.ROMd;
-
 figure
 h = 1;
-for iex = 1 : length(exc_lev)
-    % 1st harmonic amplitude of the forced dof (use force_dof_c!)
-    A = r2{iex}.Qre(:, :, h);
-    B = r2{iex}.Qim(:, :, h);
-    
-    c = Vd * (A + 1i*B);  % project back reduced solution to full space
-    c = c(forced_dof, :);
-    
-    W = r2{iex}.omega;
-    plot(W, abs(c) / Ly, '.-', 'linewidth', 1, 'DisplayName','ROM-d'); 
-    hold on
-end
-grid on
-axis tight
-xlabel('\omega [rad/s]')
-ylabel('|Q_1| / L_y [-]')
-title('FRF with HB (beam mid-span)')
+if ROMd == 1    
+    r2 = results.FRF.HB.ROMd;
+    for iex = 1 : length(exc_lev)
+        % 1st harmonic amplitude of the forced dof (use force_dof_c!)
+        A = r2{iex}.Qre(:, :, h);
+        B = r2{iex}.Qim(:, :, h);
 
+        c = Vd * (A + 1i*B);  % project back reduced solution to full space
+        c = c(forced_dof, :);
+
+        W = r2{iex}.omega;
+        plot(W, abs(c) / Ly, '.-', 'linewidth', 1, 'DisplayName','ROM-d (LM)'); 
+        hold on
+    end
+    grid on
+    axis tight
+    xlabel('\omega [rad/s]')
+    ylabel('|Q_1| / L_y [-]')
+    title('FRF with HB (beam mid-span)')
+end
+if QM == 1
+    for iex = 1 : length(exc_lev)
+        % 1st harmonic amplitude of the forced dof (use force_dof_c!)
+        c = squeeze(Uqm(1+h, forced_dof, :));
+
+        W = r.omega;
+        semilogy(W, abs(c) / Ly, '.-', 'linewidth', 1, 'DisplayName','ROM-d (QM)'); 
+        hold on
+    end 
+end
 
 % LINEAR RESPONSE
 % compute the linear FRF for comparison
 nw = 501;
+Kr = tensors_ROM.Q2;    % reduced linear stiffness matrix
+Mr = Vd' * Md * Vd;     % reduced mass matrix
+Dr = Vd' * D  * Vd;     % reduced damping matrix
+Fr = Vd'*Fext;          % reduced external force vector
+ROB = Vd;
 w_linear = linspace(Om_s, Om_e, nw);
 for iex = 1 : length(exc_lev)
     fr_linear = zeros(nNodes*2, nw);
@@ -371,23 +441,16 @@ for iex = 1 : length(exc_lev)
         fr_linear(:, ii) = ROB * frl;
     end
     plot(w_linear, abs(fr_linear(forced_dof, :))/Ly, 'k--',...
-        'DisplayName','linear')
+        'DisplayName','ROM-d (linear)')
 end
+legend
 drawnow
 
 
 
 
 
-
-
-
-
-
-
-
-
-%% auxiliary functions
+%% auxiliary functions                                              
 
 function Theta = QM_Theta_from_SMDs(SMDs, names)
 
@@ -397,7 +460,7 @@ function Theta = QM_Theta_from_SMDs(SMDs, names)
     J = names(:,2);
 
     Theta = zeros(n,m,m);
-    for k = size(SMDs,2)
+    for k = 1:size(SMDs,2)
         Theta(:,I(k),J(k)) = SMDs(:,k);
         Theta(:,J(k),I(k)) = SMDs(:,k);
     end
