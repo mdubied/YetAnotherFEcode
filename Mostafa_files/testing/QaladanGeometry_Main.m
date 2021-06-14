@@ -904,9 +904,9 @@ for m=[15]
         Ldurationdd=[Ldurationdd durationL];
         Ltimedd=[Ltimedd TI_lin_red.Solution.time'];
 
-        LROMdd1=[LROMdd1 V(dof1,:)*TI_lin_red.Solution.q)'];
-        LROMdd2=[LROMdd2 V(dof2,:)*TI_lin_red.Solution.q)'];
-        LROMdd3=[LROMdd3 V(dof3,:)*TI_lin_red.Solution.q)'];
+        LROMdd1=[LROMdd1 (V(dof1,:)*TI_lin_red.Solution.q)'];
+        LROMdd2=[LROMdd2 (V(dof2,:)*TI_lin_red.Solution.q)'];
+        LROMdd3=[LROMdd3 (V(dof3,:)*TI_lin_red.Solution.q)'];
         
         
          save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROMd\LROMd', ...
@@ -1074,9 +1074,9 @@ for m=[15]
             LdurationDP=[LdurationDP durationL];
             LtimeDP=[LtimeDP TI_lin_red.Solution.time'];
             
-            LDPROM1=[LDPROM1  V(dof1,:)*TI_lin_red.Solution.q)'];
-            LDPROM2=[LDPROM2 V(dof2,:)*TI_lin_red.Solution.q)'];
-            LDPROM3=[LDPROM3 V(dof3,:)*TI_lin_red.Solution.q)'];
+            LDPROM1=[LDPROM1  (V(dof1,:)*TI_lin_red.Solution.q)'];
+            LDPROM2=[LDPROM2 (V(dof2,:)*TI_lin_red.Solution.q)'];
+            LDPROM3=[LDPROM3 (V(dof3,:)*TI_lin_red.Solution.q)'];
             
             
          save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\DpROM\DpLROM', ...
