@@ -41,6 +41,9 @@ classdef Assembly < handle
             [K, f] = self.matrix_and_vector('tangent_stiffness_and_force',...
                 varargin{:});
         end
+         function [G, b] = constructGb(self,qq,varargin)
+             [G, b] = self.constructGbass(qq,varargin{:});
+         end
         
         function [f] = internal_force(self, varargin)
             f = self.vector('internal_force',varargin{:});

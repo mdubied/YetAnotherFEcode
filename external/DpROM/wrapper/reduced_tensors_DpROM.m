@@ -133,25 +133,42 @@ disp([' REDUCED TENSORS (' FORMULATION ' ~ Julia):'])
 fprintf(' Assembling %d elements ...', nel)
 
 % call the function in Julia to compute all the tensors
-a=jl.call('red_stiff_tensors_defects', FORMULATION, volume, elements, ...
+% a=jl.call('red_stiff_tensors_defects', FORMULATION, volume, elements, ...
+  % nodes, conn, C, V, U, XGauss, WGauss);
+%---------------------------------------------------------------i added--
+b=cell(1,10);
+[b{1:10}]=jl.call('red_stiff_tensors_defects', FORMULATION, volume,elements, ...
     nodes, conn, C, V, U, XGauss, WGauss);
-
+%-----------------------------------------------------------------
 % unpack results __________________________________________________________
-Q2n= getfield(a,'1'); %#ok<*GFLD>
-a2 = getfield(a,'2');
-a3 = getfield(a,'3');
-a4 = getfield(a,'4');
-a5 = getfield(a,'5');
-a6 = getfield(a,'6');
-a7 = getfield(a,'7');
-a8 = getfield(a,'8');
-a9 = getfield(a,'9');
+% Q2n= getfield(b,'1'); %#ok<*GFLD>
+% a2 = getfield(b,'2');
+% a3 = getfield(b,'3');
+% a4 = getfield(b,'4');
+% a5 = getfield(b,'5');
+% a6 = getfield(b,'6');
+% a7 = getfield(b,'7');
+% a8 = getfield(b,'8');
+% a9 = getfield(b,'9');
+
+Q2n= b{1}; %#ok<*GFLD>
+a2 = b{2};
+a3 = b{3};
+a4 = b{4};
+a5 = b{5};
+a6 = b{6};
+a7 = b{7};
+a8 = b{8};
+a9 = b{9};
+
+
 if volume == 1
     ind = nd+1;
 else
     ind = 1; % (the other tensors are zero)
 end
 for ii = 1 : ind
+    
     Q3d{ii}  = tensor(a2{ii}); %#ok<*AGROW>
     Q4dd{ii} = tensor(a3{ii});
     Q3n{ii}  = tensor(a4{ii});
@@ -161,8 +178,9 @@ for ii = 1 : ind
     Q5d{ii}  = tensor(a8{ii});
     Q6dd{ii} = tensor(a9{ii});
 end
+a10=b{10}
+time = double(a10)/1000;
 
-time = double(getfield(a,'10'))/1000;
 
 fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
 fprintf(' SPEED: %.1f el/s\n',nel/time)

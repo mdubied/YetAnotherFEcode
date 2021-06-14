@@ -389,7 +389,6 @@ for nl=1:length(nonlinear_elements)
                 
             case 'custom'
                 myAssembly = nonlinear_elements{nl}.assembly;
-                fnl_CUSTOM = nonlinear_elements{nl}.custom_function;
                 
                 % Inverse FFT
                 Qc = transpose(reshape(Q,[],H+1)); n = size(Qc,2);
@@ -397,44 +396,17 @@ for nl=1:length(nonlinear_elements)
                 Qc(end-H+1:end,:) = flipud(conj(Qc(2:H+1,:)));
                 q = ifft(Qc)*N;
                 
-                comp_vel = myAssembly.DATA.velocity;
-                comp_acc = myAssembly.DATA.acceleration;
-                if comp_vel == true
-                    % velocity
-                    ind =  kron((0:H)',ones(n,1));
-                    Qdot = 1i.*ind*Om.*Q;
-                    Qcc = transpose(reshape(Qdot,[],H+1));
-                    Qcc = [Qcc(1,:); Qcc(2:end,:)/2; zeros(N-H-1,n)];
-                    Qcc(end-H+1:end,:) = flipud(conj(Qcc(2:H+1,:)));
-                    qdot = ifft(Qcc)*N;
-                else
-                    qdot = q*0;
-                end
-                if comp_acc == true
-                    % velocity
-                    ind =  kron((0:H)',ones(n,1));
-                    Qddot = -(ind*Om).^2.*Q;
-                    Qccc = transpose(reshape(Qddot,[],H+1));
-                    Qccc = [Qccc(1,:); Qccc(2:end,:)/2; zeros(N-H-1,n)];
-                    Qccc(end-H+1:end,:) = flipud(conj(Qccc(2:H+1,:)));
-                    qddot = ifft(Qccc)*N;
-                else
-                    qddot = q*0;
-                end
-                
                 % Analytical gradients ____________________________________
                 % (If the double loop bothers you, vectorize!)
                 fnl         = zeros(N,n);
                 df_dql_all  = zeros(N,n,n);
                 for iii = 1 : size( q , 1 )
-                    x = q(iii, :)';
-                    xdot = qdot(iii, :)';
-                    xddot = qddot(iii, :)';
-                    [Kt, fint] = fnl_CUSTOM( myAssembly, x, xdot, xddot);
+                    x = q(iii, :)';                    
+                    [Kt, fint] = fnl_CUSTOM( myAssembly, x );
                     df_dql_all(iii, :, :) = Kt;
                     fnl(iii, :) = fint;                    
                 end
-                
+
                 % Forward FFT
                 Fnl = fft(fnl)/N;                   % harmonics * dofs = samples * dofs
                 Fnl = [Fnl(1,:);Fnl(2:H+1,:)*2];    % selected harmonics * dofs

@@ -78,7 +78,7 @@ end
 % JULIA ___________________________________________________________________
 % add current path in Julia
 a = jl.eval('LOAD_PATH');
-if a{end}~='.'
+if a{end}~='.' % a{end}~='.'
     jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
     jleval push!(LOAD_PATH, pwd() * "\\DpROM");
     jleval push!(LOAD_PATH, ".")
@@ -97,14 +97,29 @@ disp(' REDUCED TENSORS (standard ~ Julia):')
 fprintf(' Assembling %d elements ...', nel)
 
 % call the function in Julia to compute all the tensors
-a=jl.call('red_stiff_tensors', elements, ...
-    nodes, conn, C, V, XGauss, WGauss);
+
+%  a=jl.call('red_stiff_tensors', elements, ...
+  %    nodes, conn, C, V, XGauss, WGauss);
+
+%--------------------------------------------------- i added this
+b=cell(1,10);
+[b{1:10}]=jl.call('red_stiff_tensors', elements,nodes, conn, C, V, XGauss, WGauss);
+    
+%----------------------------------------------------
 
 % unpack results __________________________________________________________
-Q2 = getfield(a,'1'); %#ok<*GFLD>
-Q3 = tensor(getfield(a,'2'));
-Q4 = tensor(getfield(a,'3'));
-time = double(getfield(a,'4'))/1000;
+% Q2 = getfield(a,'1'); %#ok<*GFLD>
+% Q3 = tensor(getfield(a,'2'));
+% Q4 = tensor(getfield(a,'3'));
+% time = double(getfield(a,'4'))/1000;
+
+Q2=cell2mat(b(1,1));
+Q3=tensor(cell2mat(b(1,2)));
+Q4=tensor(cell2mat(b(1,3)));
+time=double(cell2mat(b(1,4)))/1000;
+
+
+
 
 fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
 fprintf(' SPEED: %.1f el/s\n',nel/time)

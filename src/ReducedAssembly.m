@@ -133,7 +133,7 @@ classdef ReducedAssembly < Assembly
             elementSet = find(elementWeights);
             
             % Computing element level contributions
-            parfor j = elementSet
+            for j = elementSet
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
@@ -142,7 +142,7 @@ classdef ReducedAssembly < Assembly
                 f = f + elementWeights(j) * (Ve.' * fe);
             end
         end
-        
+    
         function [T] = tensor(self,elementMethodName,SIZE,sumDIMS,varargin)
             % This function assembles a generic finite element vector from
             % its element level counterpart.
@@ -189,6 +189,55 @@ classdef ReducedAssembly < Assembly
             T = sptensor(subs, T, SIZE);
         end
 
-    end
+        end
+        
+            function [G, b] = constructGbass(self,qq, varargin)
+            % This function assembles a generic finite element matrix and
+            % vector from its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            
+            K = zeros(m,m);
+            f = zeros(m,1);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            nt=size(qq,2);
+            G=sparse(zeros(m*nt,self.Mesh.nElements));
+            b=sparse(zeros(m*nt,1));
+            % Computing element level contributions
+            for k=1:nt
+             
+                z2=k*m;
+                z1=z2-m;
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                [Ke, fe] = thisElement.('tangent_stiffness_and_force')(V*qq(:,k));
+                
+               
+                f = elementWeights(j) * (Ve.' * fe);
+                G(z1+1:z2,elementSet(j))=f;
+                 G=sparse(G);
+            end
+           
+           b(z1+1:z2)=sum( G(z1+1:z2,:),2);
+           b=sparse(b);
+            end
+        1
+            end
     end
 end

@@ -77,7 +77,7 @@ end
 % JULIA ___________________________________________________________________
 % add current path in Julia
 a = jl.eval('LOAD_PATH');
-if a{end}~='.'
+if a{end}~='.' 
     jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
     jleval push!(LOAD_PATH, pwd() * "\\DpROM");
     jleval push!(LOAD_PATH, ".")
@@ -92,8 +92,6 @@ fprintf(' dKdq, assembling %d elements ...', nel)
 % call the function in Julia to compute all the tensors
 dKdq = jl.call('stiffness_matrix_derivative', elements, ...
     nodes, conn, C, V, XGauss, WGauss);
-
-dKdq = sparse(dKdq);
 
 fprintf(' %.2f s\n',toc(t0))
 
