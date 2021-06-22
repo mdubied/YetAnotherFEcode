@@ -41,6 +41,18 @@ classdef Assembly < handle
             [K, f] = self.matrix_and_vector('tangent_stiffness_and_force',...
                 varargin{:});
         end
+         function [K, f] = tangent_stiffness_and_force_defected(self, varargin)
+            [K, f] = self.matrix_and_vector('tangent_stiffness_and_force_defected',...
+                varargin{:});
+        end
+         function [K, f] = tangent_stiffness_and_force_hyper(self, varargin)
+            [K, f] = self.matrix_and_vector_hyper('tangent_stiffness_and_force',...
+                varargin{:});
+         end
+        function [K, f] = tangent_stiffness_and_force_defected_hyper(self, varargin)
+            [K, f] = self.matrix_and_vector_hyper('tangent_stiffness_and_force_defected',...
+                varargin{:});
+        end
          function [G, b] = constructGb(self,qq,varargin)
              [G, b] = self.constructGbass(qq,varargin{:});
          end
@@ -370,7 +382,7 @@ classdef Assembly < handle
             
             % locate position of 'weights' string
             iWeights = find(strcmpi(varargin,'weights'));
-            
+              
             
             if ~isempty(iWeights)
                 % extract user-supplied value of weights

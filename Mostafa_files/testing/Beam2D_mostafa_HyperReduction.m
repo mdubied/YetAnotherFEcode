@@ -82,7 +82,7 @@ C= 0*M+0*K;
 Kc = BeamAssembly.constrain_matrix(K);
 Mc = BeamAssembly.constrain_matrix(M);
 Cc=BeamAssembly.constrain_matrix(C);
-n_VMs = 15;
+n_VMs = 3;
 [VMs,f0,time_vm]=BeamAssembly.VMs_compute(n_VMs,1);
 %figure('units','normalized','position',[.2 .1 .6 .8])
 
@@ -102,7 +102,7 @@ for ii = 1:size(VMs,2)
 end
 
 % PLOT
-for mod=1
+for mod=1:5
     % mod = 4;
     elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
     %subplot(4,3,mod)
@@ -115,10 +115,10 @@ for mod=1
     
 end
 %% MDs
-NMDs =15;
-[MDs,MDs_names,time_md] = BeamAssembly.MDs_compute( n_VMs,NMDs,u0);
-%[MDss,MDss_names]= modal_derivatives(BeamAssembly,elements,VMs);  using
-%julia
+NMDs =n_VMs*(n_VMs+1)/2;
+%[MDs,MDs_names,time_md] = BeamAssembly.MDs_compute( n_VMs,NMDs,u0);
+[MDs,MDs_names]= modal_derivatives(BeamAssembly,elements,VMs);  
+%using%julia
 %   figure('units','normalized','position',[.2 .1 .6 .8])
 % PNxx=ceil(size(MDs,2)/2); %Plot number
 % PNyy=size(MDs,2)-PNxx;
@@ -224,7 +224,7 @@ TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,BeamAssembly,F_ext);
 
 % Linearized Time Integration
-tmax = 10*T;
+tmax = 100*T;
 %% Linear Dynamic Response
 %tmax=0.002;
 tic
@@ -260,6 +260,7 @@ FullNLduration=toc
 % TI_NL_alpha = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
 % TI_NL_alpha.Integrate(q0,qd0,qdd0,tmax,residual);
 % TI_NL_alpha.Solution.u = BeamAssembly.unconstrain_vector(TI_NL_alpha.Solution.q);
+
 %% Reduced solution
 LROM=[];
 Ltime=[];
@@ -364,6 +365,144 @@ for ii=1:max_index
     s=length(f0c);
     f0_ROM(1:s,ii)=f0c;
 end
+%% HyperReduced Solution
+LROMH=[];
+LtimeH=[];
+LdurationH=[];
+NLROMH=[];
+NLtimeH=[];
+NLdurationH=[]; 
+f0c_ROMH={};
+
+nfsense = find_node(Lx/2,Ly/2,[],nodes); % node where to see the results
+dof = get_index(nfsense, myMesh.nDOFPerNode );
+dof=dof(2);
+
+countH=0;
+VbModeH=[];
+MDeriH=[];
+for m=3;% m=[2 3 7 10]
+    for n=6 % n=[0 m*(m+1)/2]
+        
+        t=m+n;
+      
+%%
+        
+        if n==0
+            V = [VMs(:,1:m)];
+        else
+            V = [VMs(:,1:m) MDs(:,1:n)];
+        end
+        %V=[ MDs(:,1:6)];
+        %mass normalization
+        for ii = 1 : size(V, 2)
+            V(:,ii) = V(:,ii) / (V(:,ii)'*(BeamAssembly.mass_matrix)*V(:,ii));
+        end
+        BeamReducedAssembly  = ReducedAssembly(myMesh,V);
+        
+        
+        BeamReducedAssembly.DATA.M = BeamReducedAssembly.mass_matrix();
+        BeamReducedAssembly.DATA.C = BeamReducedAssembly.damping_matrix(0,0,u0);
+        BeamReducedAssembly.DATA.K =  BeamReducedAssembly.stiffness_matrix(u0);
+        
+        %% algorithm 3
+        V_H=V(:,1:m)
+        Lin_sol=TI_lin.Solution.u;
+        Lin_sol_snap=[];
+        for ii=1:size(Lin_sol,2)
+            if rem(ii,10)==0
+                Lin_sol_snap=[Lin_sol_snap Lin_sol(:,ii)];
+            end
+        end
+        eta=V_H'*Lin_sol_snap;
+        
+        Theta = QM_Theta_from_SMDs(V(:,m+1:m+n), MDs_names(1:n,:));
+        %QM uplifting
+        uu = zeros(size(V_H,1), size(eta, 2));
+        for tt = 1 : size(eta, 2)
+            uu(:,tt) = einsum('Iij,iJ,jK->IJK', Theta, eta(:,tt), eta(:,tt));
+        end
+        u_lin_ECSW = V_H * eta + 1/2*uu;
+     
+        %Construct Gb
+        qq=(V'*V)^-1*V'*u_lin_ECSW;
+        tic
+        [G,b]=BeamReducedAssembly.constructGb(qq);
+        GBconstructTime=toc;
+        %%fNNLS
+        tic
+        [x_fnnls,w_fnnls]=fnnls(G'*G,G'*b,norm(b)*0.01);
+        fnnlsTime=toc
+        tic;[x_nnls,w_nnls,info]=nnls(full(G),full(b),struct('Accy',1,'Tol',1/((norm(b)*5))));
+        nnlTime=toc
+        options = optimset('TolX',1/(norm(b)*0.01));
+        tic;x_lsq=lsqnonneg(G,b,options);
+        lsqTime=toc
+        nnz(x_fnnls)
+        nnz(x_nnls)
+        nnz(x_lsq)
+         x_sNNLS=sNNLS(G,b,0.0035);
+         nnz(x_sNNLS)
+        BeamReducedAssembly.DATA.elementWeights=x_sNNLS;
+        %%
+        f0_ROM_i= sort(sqrt(eig(BeamReducedAssembly.DATA.M\BeamReducedAssembly...
+            .DATA.K))/2/pi) ;
+        f0c_ROMH=[f0c_ROMH f0_ROM_i];
+        %
+        q0 = zeros(t,1);
+        qd0 = zeros(t,1);
+        qdd0 = zeros(t,1);
+        
+        
+        TI_lin_red = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
+        
+        % Modal linear Residual evaluation function handle
+        Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear(q,qd,qdd,t,BeamReducedAssembly,F_ext);
+        
+        % time integration
+        tic
+        TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
+        TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+        durationL=toc
+        LdurationH=[LdurationH durationL];
+        LtimeH=[LtimeH TI_lin_red.Solution.time'];
+        LROMH=[LROMH TI_lin_red.Solution.u(dof,:)'];
+        
+        %% Reduced solution Noninear
+        % For demonstration purposes, we simply reduce the nonlinear system using
+        % out-of-plane bending modes. This is expected to produce bad results when
+        % in-plane stretching is involved in the response.
+        
+        
+        %TI_NL_alpha_red = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
+        TI_NL_alpha_red = ImplicitNewmark('timestep',h,'alpha',0.005);
+        
+        % Modal nonlinear Residual evaluation function handle
+        Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hyper(q,qd,qdd,t,BeamReducedAssembly,F_ext);
+        
+        % time integration
+        tic
+        TI_NL_alpha_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+        TI_NL_alpha_red.Solution.u = V * TI_NL_alpha_red.Solution.q;
+        durationNL=toc
+        
+        NLdurationH=[NLdurationH durationNL];
+        
+        NLtimeH=[NLtimeH TI_NL_alpha_red.Solution.time'];
+        NLROMH=[NLROMH TI_NL_alpha_red.Solution.u(dof,:)'];
+        
+        countH=countH+1;
+        VbModeH=[VbModeH m];
+        MDeriH=[MDeriH n];
+    end
+end
+[max_size, max_index] = max(cellfun('size', f0c_ROMH, 1));
+f0_ROM=zeros(max_size,size(f0c_ROMH,2));
+for ii=1:max_index
+    f0c=f0c_ROMH{ii};
+    s=length(f0c);
+    f0_ROM(1:s,ii)=f0c;
+end
 %% Reduced solution  Tensor Approach (normal ROM) (name of variable ***T)
 LROMT=[];
 LtimeT=[];
@@ -382,7 +521,7 @@ VbModeT=[];
 MDeriT=[];
 
 for m=3 %m=[2 3 7 10]
-    for n=4% n=[0 m*(m+1)/2]
+    for n=6% n=[0 m*(m+1)/2]
         t=m+n;
         % normalization
         %  for ii = 1:m
@@ -396,7 +535,7 @@ for m=3 %m=[2 3 7 10]
         if n==0
             V = [VMs(:,1:m)];
         else
-            V = [VMs(:,1:m) MDs(:,[MD1 MD2 MD3 MD4])];
+            V = [VMs(:,1:m) MDs(:,1:n)];
         end
         
         %mass normalization
@@ -547,10 +686,12 @@ for ii=1:max_indexT
     f0_ROMT(1:s,ii)=f0c;
 end
 %% HFM-d init (Defected mesh) first VM
-U=VMs(:,1);      %defect Basis
-xi=0.05;
-U1 = reshape(U(:,1), 2, []).';
-nodes_defected=nodes+ U1*xi;
+U=[VMs(:,1)];      %defect Basis
+xi=[0.05];
+U1 = reshape(U(:,1), 2, []).'*xi(1);
+%U2=reshape(U(:,2), 2, []).'*xi(2);
+Ut=U1%+U2;
+nodes_defected=nodes+ Ut;%U1*xi;
 % Mesh
 MeshDefected=Mesh(nodes_defected);
 MeshDefected.create_elements_table(elements,myElementConstructor);
@@ -565,7 +706,7 @@ BeamDefectedAssembly.DATA.M = Md;
 BeamDefectedAssembly.DATA.C= 0*Md+0*Kd;
 
 % Vm and Md computation for defected Mesh
-n_Vmd=15;
+n_Vmd=7;
 % Vibration Modes (VM): defected------------------------------------------
 Kdc = BeamDefectedAssembly.constrain_matrix(Kd);
 Mdc = BeamDefectedAssembly.constrain_matrix(Md);
@@ -610,6 +751,21 @@ for mod=1%:size(MDd,2)
     title(['\theta_{' num2str(MDd_names(mod,1)) num2str(MDd_names(mod,2)) '}'])
     axis on; grid on; box on
 end
+%% NL full order model with defects (using tangenstiff_defected) 
+q0 = BeamAssembly.constrain_vector(u0);
+qd0 = BeamAssembly.constrain_vector(v0);
+qdd0 = BeamAssembly.constrain_vector(a0);
+TI_NL_def = ImplicitNewmark('timestep',h,'alpha',0.005);
+BeamAssembly.DATA.Ud=U*xi;
+% Linear Residual evaluation function handle
+residual = @(q,qd,qdd,t)residual_nonlinear_defected(q,qd,qdd,t,BeamAssembly,F_ext);
+
+% Nonlinear Time Integration
+
+tic
+TI_NL_def.Integrate(q0,qd0,qdd0,tmax,residual);
+TI_NL_def.Solution.u = BeamAssembly.unconstrain_vector(TI_NL_def.Solution.q);
+FullNLdefduration=toc
 %% HFOM-d Linear 
 % Initial condition: equilibrium
 u00 = zeros(BeamDefectedAssembly.Mesh.nDOFs, 1);
@@ -795,8 +951,9 @@ VOLUME=1 ;        % defected volume =1 . nominal volume=0
 % U = V(:,1:2);       % defect basis
 % xi = rand(size(U,2),1)*0;
 ndef=size(U,2); %number of defects
-[DS, names] = defect_sensitivities(BeamAssembly, elements, VMs, U, ...
+[DS, DSnames] = defect_sensitivities(BeamAssembly, elements, VMs, U, ...
     FORMULATION); % for DpROM
+
 %%  DpROM VM (name of variable **DpROM) 1st VM
 LDPROM=[];
 LtimeDP=[];
@@ -814,9 +971,9 @@ countDP=0;
 VbModeDp=[];
 MDeriDp=[];
 DSenti=[];
-for m=6 %=[2 3 7 10]
+for m=3 %=[2 3 7 10]
     for  n=6 %n=[0 m*(m+1)/2]
-        for k=[0 ndef*m] % always include DS or so
+        for k=[ndef*m] % always include DS or so
             
             if n==0 && k~=0
                 break
@@ -986,6 +1143,158 @@ for ii=1:max_indexT
     s=length(f0c);
     f0_DpROM(1:s,ii)=f0c;
 end
+%% HyperReduced Solution defected
+LROMHd=[];
+LtimeHd=[];
+LdurationHd=[];
+NLROMHd=[];
+NLtimeHd=[];
+NLdurationHd=[];
+f0c_ROMHd={};
+
+nfsense = find_node(Lx/2,Ly/2,[],nodes); % node where to see the results
+dof = get_index(nfsense, myMesh.nDOFPerNode );
+dof=dof(2);
+
+countHd=0;
+VbModeHd=[];
+MDeriHd=[];
+DSentiHd=[];
+for m=3;% m=[2 3 7 10]
+    for n=m*(m+1)/2
+     for k=m
+        
+        t=m+n+k;
+      
+%%
+        
+        if n==0
+            V = [VMs(:,1:m)];
+        else
+            V = [VMs(:,1:m) MDs(:,1:n) DS(:,1:k)];
+        end
+        %V=[ MDs(:,1:6)];
+        %mass normalization
+        for ii = 1 : size(V, 2)
+            V(:,ii) = V(:,ii) / (V(:,ii)'*(BeamAssembly.mass_matrix)*V(:,ii));
+        end
+        BeamReducedAssemblyDefected  = ReducedAssembly(myMesh,V);
+        
+        
+        BeamReducedAssemblyDefected.DATA.M = BeamReducedAssemblyDefected.mass_matrix();
+        BeamReducedAssemblyDefected.DATA.C = BeamReducedAssemblyDefected.damping_matrix(0,0,u0);
+        BeamReducedAssemblyDefected.DATA.K =  BeamReducedAssemblyDefected.stiffness_matrix(u0);
+        BeamReducedAssemblyDefected.DATA.Ud=U*xi;
+
+        %% algorithm 3d
+        V_H=V(:,1:m)
+        Lin_sol=TI_lin.Solution.u;
+        Lin_sol_snap=[];
+        for ii=1:size(Lin_sol,2)
+            if rem(ii,10)==0
+                Lin_sol_snap=[Lin_sol_snap Lin_sol(:,ii)];
+            end
+        end
+        eta=V_H'*Lin_sol_snap;
+        
+        Theta = QM_Theta_from_SMDs(V(:,m+1:m+n), MDs_names(1:n,:));
+        Xi = DS_Xi_QM(V(:,m+n+1:m+n+k), DSnames);
+        %QM uplifting
+        uu = zeros(size(V_H,1), size(eta, 2));
+        for tt = 1 : size(eta, 2)
+            uu(:,tt) = einsum('Iij,iJ,jK->IJK', Theta, eta(:,tt), eta(:,tt));
+        end
+        %
+                uud = zeros(size(V_H,1), size(eta, 2));
+        for tt = 1 : size(eta, 2)
+            for ii= 1:size(xi,2)
+                uud(:,tt) =uud(:,tt)+ einsum('Iij,iJ,jK->IJK', Xi, eta(:,tt), xi(:,ii));
+            end
+        end
+        
+        u_lin_ECSW = V_H * eta + 1/2*uu+uud;
+     
+        %Construct Gb
+        qq=(V'*V)^-1*V'*u_lin_ECSW;
+        tic
+        [G,b]=BeamReducedAssemblyDefected.constructGb(qq);
+        GBconstructTime2=toc;
+        %fNNLS
+        tic
+        [x_fnnls,w_fnnls]=fnnls(G'*G,G'*b,(norm(b)*0.01));
+        fnnlsTime=toc
+        tic;[x_nnls,w_nnls,info]=nnls(full(G),full(b),struct('Accy',1,'Tol',1/((norm(b)*5))));
+        nnlTime=toc
+%         options = optimset('TolX',(norm(b)*0.01));
+%         tic;x_lsq=lsqnonneg(G,b,options);
+        lsqTime=toc
+        nnz(x_fnnls)
+        nnz(x_nnls)
+%         nnz(x_lsq)
+ x_sNNLS=sNNLS(G,b,0.0035);
+         nnz(x_sNNLS)
+        BeamReducedAssemblyDefected.DATA.elementWeights=x_sNNLS;
+        %%
+        f0_ROM_i= sort(sqrt(eig(BeamReducedAssemblyDefected.DATA.M\BeamReducedAssemblyDefected...
+            .DATA.K))/2/pi) ;
+        f0c_ROMHd=[f0c_ROMHd f0_ROM_i];
+        %
+        q0 = zeros(t,1);
+        qd0 = zeros(t,1);
+        qdd0 = zeros(t,1);
+        
+        
+        TI_lin_red = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
+        
+        % Modal linear Residual evaluation function handle
+        Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear(q,qd,qdd,t,BeamReducedAssemblyDefected,F_ext);
+        
+        % time integration
+        tic
+        TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
+        TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+        durationL=toc
+        LdurationHd=[LdurationHd durationL];
+        LtimeHd=[LtimeHd TI_lin_red.Solution.time'];
+        LROMHd=[LROMHd TI_lin_red.Solution.u(dof,:)'];
+        
+        %% Reduced solution Noninear
+        % For demonstration purposes, we simply reduce the nonlinear system using
+        % out-of-plane bending modes. This is expected to produce bad results when
+        % in-plane stretching is involved in the response.
+        
+        
+        %TI_NL_alpha_red = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
+        TI_NL_alpha_red = ImplicitNewmark('timestep',h,'alpha',0.005);
+        
+        % Modal nonlinear Residual evaluation function handle
+        Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hyper_defected(q,qd,qdd,t,BeamReducedAssemblyDefected,F_ext);
+        
+        % time integration
+        tic
+        TI_NL_alpha_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+        TI_NL_alpha_red.Solution.u = V * TI_NL_alpha_red.Solution.q;
+        durationNL=toc
+        
+        NLdurationHd=[NLdurationHd durationNL];
+        
+        NLtimeHd=[NLtimeHd TI_NL_alpha_red.Solution.time'];
+        NLROMHd=[NLROMHd TI_NL_alpha_red.Solution.u(dof,:)'];
+        
+        countHd=countHd+1;
+        VbModeHd=[VbModeHd m];
+        MDeriHd=[MDeriHd n];
+          DSentiHd=[DSentiHd k];
+    end
+    end
+end
+[max_size, max_index] = max(cellfun('size', f0c_ROMHd, 1));
+f0_ROM=zeros(max_size,size(f0c_ROMHd,2));
+for ii=1:max_index
+    f0c=f0c_ROMHd{ii};
+    s=length(f0c);
+    f0_ROM(1:s,ii)=f0c;
+end
 %% Plotting
 nfsense = find_node(Lx/2,Ly/2,[],nodes); % node where to see the results
 dof = get_index(nfsense, myMesh.nDOFPerNode );
@@ -1004,7 +1313,9 @@ plot(TI_lin_HFMd.Solution.time, TI_lin_HFMd.Solution.ud(dof,:),'DisplayName', ['
 hold on
 plot(TI_NL_HFMd.Solution.time, TI_NL_HFMd.Solution.ud(dof,:),'DisplayName', ['Full nonlinear Defected(Newmark) ' 'time= ' num2str(FullNLdurationHFMd)])
 hold on
-
+%plot FOM with tangenstiff def
+plot(TI_NL_def.Solution.time, TI_NL_def.Solution.u(dof,:),'DisplayName', ['Full nonlinear defKF ' 'time= ' num2str(FullNLdefduration)])
+hold on
 %plot normal ROM
 for i=1:count
     Vmode=VbMode(i);
@@ -1012,6 +1323,15 @@ for i=1:count
     plot(Ltime(:,i), LROM(:,i),'DisplayName', ['Reduced linear (Newmark) ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(Lduration(i)) 's'])
     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
     plot(NLtime(:,i), NLROM(:,i),'DisplayName', ['Reduced nonlinear (Newmark) ' ' VM=' num2str(Vmode) ' MD=' num2str(Mderi) ' time=' num2str(NLduration(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+%plot ROM-Hyper
+for i=1:countH
+    VmodeH=VbModeH(i);
+    MderiH=MDeriH(i);
+    plot(LtimeH(:,i), LROMH(:,i),'DisplayName', ['Hyperreduced linear (Newmark) ' ' VM=' num2str(VmodeH) ' MD=' num2str(MderiH) ' time=' num2str(LdurationH(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+    plot(NLtimeH(:,i), NLROMH(:,i),'DisplayName', ['Hyperreduced nonlinear (Newmark) ' ' VM=' num2str(VmodeH) ' MD=' num2str(MderiH) ' time=' num2str(NLdurationH(i)) 's'])
     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
 end
 %plot Tensor normal ROM
@@ -1051,3 +1371,14 @@ for i=1:countdd
     plot(NLtimedd(:,i), NLROMdd(:,i),'DisplayName', ['Reduced nonlinear defected Mesh(Newmark) TensorApproach ' ' VM=' num2str(Vmoded) ' MD=' num2str(Mderid) ' time=' num2str(totalduration_i) 's'])
     xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
 end
+%plot defected Hyper
+for i=1:countHd
+    VmodeHd=VbModeHd(i);
+    MderiHd=MDeriHd(i);
+    DSsentiHd=DSentiHd(i)
+      plot(LtimeHd(:,i), LROMHd(:,i),'DisplayName', ['hyperDPROM L (Newmark)  ' ' VM=' num2str(VmodeHd) ' MD=' num2str(MderiHd) ' DS=' num2str(DSsentiHd) ' time=' num2str(LdurationHd(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+    plot(NLtimeHd(:,i), NLROMHd(:,i),'DisplayName', ['HyperDPROM NL (Newmark)  ' ' VM=' num2str(VmodeHd) ' MD=' num2str(MderiHd) ' DS=' num2str(MderiHd) ' time=' num2str(NLdurationHd(i)) 's'])
+    xlabel('time'); ylabel('u'); grid on; axis tight; legend('show')
+end
+%plot Tensor normal ROM

@@ -144,7 +144,54 @@ classdef Quad8Element < Element
 
             end
         end
-        
+        function [K,F] = tangent_stiffness_and_force_defected(self, x,Ud)
+            p = self.extract_element_data(x);
+            d= self.extract_element_data(Ud); %element defect
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            K = self.initialization.K;
+            F = self.initialization.F;
+            C = self.initialization.C;
+            H = self.initialization.H;
+            ZZ = self.initialization.Z;
+
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
+                [G,detJ,dH] = shape_function_derivatives(self,g,h);
+                %E1l
+                th  = G*p;
+                A =	[th(1)	0     th(3) 0;
+                     0    	th(2) 0     th(4);
+                     th(2)	th(1) th(4) th(3)];
+                %Eld
+                thd=G*d;
+                A2=-1*[thd(1)    thd(3)      0       0;
+                       0        0       thd(2)       thd(4);
+                       thd(2)   thd(4)  thd(1)      thd(3)];
+                A3=-0.5*[2*thd(1)       0       th(3);
+                        0           2*th(4)     th(2);
+                        2*thd(2)    2*th(3)     (thd(1)+thd(4))];                 
+                % Green Strain tensor
+                E = (H + 1/2*A+A2+A3*A)*th;
+                % second Piola-Kirchhoff stress tensor
+                s = C*E; % s = [S11 S22 S12]
+                S = [s(1), s(3); s(3), s(2)];
+                Bnl = (H + A+A2+2*A3*A)*G;
+                
+                % functions to integrate over volume
+                int_K1 = Bnl'*C*Bnl;
+                HSH = dH'*S*dH;
+                int_Ks = [HSH ZZ; ZZ HSH]; % (faster than blkdiag)
+                int_K = int_K1 + int_Ks;
+                int_F = Bnl'*s;
+                % integration of K and F through Gauss quadrature
+                K = K + int_K * (we * detJ);
+                F = F + int_F * (we * detJ);
+
+            end
+        end
         function xe = extract_element_data(self, x)
             % x is a vector of full DOFs
             index = get_index(self.nodeIDs, self.nDOFPerNode);

@@ -245,7 +245,7 @@ qd0 = FreqDivAssembly.constrain_vector(v0);
 qdd0 = FreqDivAssembly.constrain_vector(a0);
 
 % time step for integration
-h = T/150;
+h = T/50;
 
 % Precompute data for Assembly object
 % FreqDivAssembly.DATA.M = M;
@@ -269,8 +269,8 @@ dof3=dof3(1);
 
 %% Linear Dynamic Response
 % Instantiate object for linear time integration
-tmax=0.002;
-TI_lin = ImplicitNewmark('timestep',T/50,'alpha',0.005,'linear',true); %h is different fast
+
+TI_lin = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true); %h is different fast
 
 % Linear Residual evaluation function handle
 residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,FreqDivAssembly,F_ext);
@@ -644,7 +644,497 @@ end
  save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROM\f0_ROMT', ...
     'f0_ROMT','-v7.3');
 1;
- 
+%% HFM-d init (Defected mesh) first VM
+U=VMs(:,1);%[VMs(:,1) VMs(:,2) VMs(:,4)]     %defect Basis
+xi=2e-6;   %xi=[2e-6 2e-6 2e-6];
+U1 = reshape(U(:,1), 2, []).';  %U1r = reshape(U(:,1), 2, []).'*xi; U=U1+U2+..
+nodes_defected=nodes+ U1*xi;     %+U1r
+% Mesh
+MeshDefected=Mesh(nodes_defected);
+MeshDefected.create_elements_table(elements,myElementConstructor);
+%MeshDefected.set_essential_boundary_condition([nset{1} nset{3}],1:2,0);
+MeshDefected.set_essential_boundary_condition((fixed_nodes),1:2,0)
+% Assembly
+FreqDivDefectedAssembly = Assembly(MeshDefected);
+Md = FreqDivDefectedAssembly.mass_matrix();
+[Kd,~] = FreqDivDefectedAssembly.tangent_stiffness_and_force(u0);
+% store matrices
+FreqDivDefectedAssembly.DATA.K = Kd;
+FreqDivDefectedAssembly.DATA.M = Md;
+FreqDivDefectedAssembly.DATA.C= alfa*Md+beta*Kd;
+%plot the defected Mesh
+
+elementPlot =elements(:,1:4); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMesh(nodes_defected, elementPlot, 0);
+hold on
+plot(nodes_defected(fixed_nodes,1),nodes_defected(fixed_nodes,2),'r*')
+
+
+% Vm and Md computation for defected Mesh
+n_Vmd=15;
+% Vibration Modes (VM): defected------------------------------------------
+Kdc = FreqDivDefectedAssembly.constrain_matrix(Kd);
+Mdc = FreqDivDefectedAssembly.constrain_matrix(Md);
+[VMd,om] = eigs(Kdc, Mdc, n_Vmd, 'SM');
+[f0d,ind] = sort(sqrt(diag(om))/2/pi);
+VMd = VMd(:,ind);
+for ii = 1:n_Vmd
+    VMd(:,ii) = VMd(:,ii)/max(sqrt(sum(VMd(:,ii).^2,2)));
+end
+VMd = FreqDivDefectedAssembly.unconstrain_vector(VMd);
+
+% Modal Derivative Defected------------------------------------------------
+[MDd, MDd_names] = modal_derivatives(FreqDivDefectedAssembly, elements, VMd);
+for ii = 1:size(MDd,2)
+    MDd(:,ii) = MDd(:,ii)/max(sqrt(sum(MDd(:,ii).^2,2)));
+end
+% ploting VMd------------------------------------------------------
+for mod=3
+    % mod = 4;
+    elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+    %subplot(4,3,mod)
+    figure('units','normalized','position',[.2 .1 .6 .8])
+    
+    PlotMesh(nodes_defected, elementPlot, 0);
+    v1 = reshape(VMd(:,mod), 2, []).';
+    factor = 0.1*max(nodes_defected(:,2));
+    PlotFieldonDeformedMesh(nodes_defected, elementPlot, v1, 'factor', factor);
+    title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0d(mod),3) ' Hz'])
+    grid on;
+end
+
+% Plot MDd
+for mod=1%:size(MDd,2)
+    
+    elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+    figure('units','normalized','position',[.2 .1 .6 .8])
+    
+    PlotMesh(nodes_defected, elementPlot, 0);
+    d1 = reshape(MDd(:,mod), 2, []).';
+    PlotFieldonDeformedMesh(nodes_defected, elementPlot, d1, 'factor', 1e-5 );
+    %title(['MD:' MDs_names{mod}])
+    title(['\theta_{' num2str(MDd_names(mod,1)) num2str(MDd_names(mod,2)) '}'])
+    grid on; box on
+end
+%% HFOM-d Linear
+tmax = 1200*T;
+% Initial condition: equilibrium
+u00 = zeros(FreqDivDefectedAssembly.Mesh.nDOFs, 1);
+v00 = zeros(FreqDivDefectedAssembly.Mesh.nDOFs, 1);
+a00 = zeros(FreqDivDefectedAssembly.Mesh.nDOFs, 1); % a0 = M\(F_ext(0)-C*v0-F(u0))
+
+q0 = FreqDivDefectedAssembly.constrain_vector(u00);
+qd0 = FreqDivDefectedAssembly.constrain_vector(v00);
+qdd0 = FreqDivDefectedAssembly.constrain_vector(a00);
+
+% Instantiate object for linear time integration
+TI_lin_HFMd = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
+
+% Linear Residual evaluation function handle
+residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,FreqDivDefectedAssembly,F_ext);
+
+tic
+TI_lin_HFMd.Integrate(q0,qd0,qdd0,tmax,residual_lin);
+
+% obtain full solution
+TI_lin_HFMd.Solution.ud = FreqDivDefectedAssembly.unconstrain_vector(TI_lin_HFMd.Solution.q);
+FullLDurationHFMd=toc
+
+TI_lin_HFMd_time= TI_lin_HFMd.Solution.time';
+TI_lin_HFMd_dof1= TI_lin_HFMd.Solution.ud(dof1,:)';
+TI_lin_HFMd_dof2= TI_lin_HFMd.Solution.ud(dof2,:)';
+TI_lin_HFMd_dof3= TI_lin_HFMd.Solution.ud(dof3,:)';
+
+save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\HFMd\TI_lin_d', ...
+    'FullLDurationHFMd','TI_lin_HFMd_time','TI_lin_HFMd_dof1','TI_lin_HFMd_dof2','TI_lin_HFMd_dof3','-v7.3');
+%% HFOM-d NL
+tmax = 1*T;
+% Instantiate object for nonlinear time integration
+TI_NL_HFMd = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% Linear Residual evaluation function handle
+residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,FreqDivDefectedAssembly,F_ext);
+
+% Nonlinear Time Integration
+
+tic
+TI_NL_HFMd.Integrate(q0,qd0,qdd0,tmax,residual);
+TI_NL_HFMd.Solution.ud = FreqDivDefectedAssembly.unconstrain_vector(TI_NL_HFMd.Solution.q);
+FullNLdurationHFMd=toc
+
+TI_NL_HFMd_time= TI_NL_HFMd.Solution.time';
+TI_NL_HFMd_dof1= TI_NL_HFMd.Solution.ud(dof1,:)';
+TI_NL_HFMd_dof2= TI_NL_HFMd.Solution.ud(dof2,:)';
+TI_NL_HFMd_dof3= TI_NL_HFMd.Solution.ud(dof3,:)';
+
+save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\HFMd\TI_NL_d', ...
+    'FullNLdurationHFMd','TI_NL_HFMd_time','TI_NL_HFMd_dof1','TI_NL_HFMd_dof2','TI_NL_HFMd_dof3','-v7.3');
+%% Maixmum Modal interaction  MMI for defected case
+
+%Linear Solution is Needed to Get the Best MDs
+%Sorts the MDs index based on highest to lowest modal interaction (time
+% depedent)
+Wd=[];
+Wd_names=[];
+eta_d=VMd'*TI_lin_HFMd.Solution.ud;
+
+for ii=1:size(eta_d,1)
+    for jj=ii:size(eta_d,1)
+        Wd_names=[ii ;jj];
+        MMI= max(eta_d(ii,:).*eta_d(jj,:));
+        Wd=[Wd [Wd_names ; MMI]];
+    end
+end
+
+figure()
+
+hold on
+
+scatterbar3(Wd(1,:),Wd(2,:),Wd(3,:),1)
+scatter3(Wd(1,:),Wd(2,:),Wd(3,:),'*')
+grid on ;box on;
+xticks(unique(Wd(1,:)))
+yticks(unique(Wd(2,:)))
+
+sortedWd=sortrows(Wd',3,'descend')';
+
+sortedMDd=[];
+for ii=1:size(sortedWd,2)
+    I_index=sortedWd(1,ii);
+    J_index=sortedWd(2,ii);
+    MDd_ii=find(and(MDd_names(:,1)== I_index,MDd_names(:,2)== J_index));
+    if isempty(MDd_ii)
+        MDd_ii=find(and(MDd_names(:,1)== J_index,MDd_names(:,2)== I_index));
+    end
+    sortedMDd=[sortedMDd MDd_ii];
+end
+save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\HFMd\sortedMDd', ...
+    'sortedMDd','-v7.3');
+%% ROM for defected Mesh ROM-d using tensors
+tmax = 1200*T;
+LROMdd1=[];
+LROMdd2=[];
+LROMdd3=[];
+
+Ltimedd=[];
+Ldurationdd=[];
+
+NLROMdd1=[];
+NLROMdd2=[];
+NLROMdd3=[];
+NLtimedd=[];
+
+NLdurationdd=[];
+ASEMdurationdd=[];
+f0c_ROMdd={};
+
+countdd=0;
+VbModedd=[];
+MDeridd=[];
+%   VMss=orth(VMs);
+%  MDss=orth(MDs);
+for m=[15]
+    for  n=[55] %m*(m+1)/2]
+        t=m+n;
+        if n==0
+            V = [VMd(:,1:m)];
+        else
+            V = [VMd(:,1:m) MDd(:,[sortedMDd(1:n)])];
+        end
+        V=orth(V);
+        %mass normalization
+        for ii = 1 : size(V, 2)
+            V(:,ii) = V(:,ii) / (V(:,ii)'*(FreqDivDefectedAssembly.DATA.M)*V(:,ii));
+        end
+        
+        
+        FreqDivDefectedReducedAssembly  = ReducedAssembly(MeshDefected,V);
+        
+        
+        %         FreqDivReducedAssembly.DATA.M = FreqDivReducedAssembly.mass_matrix();
+        %         FreqDivReducedAssembly.DATA.C = FreqDivReducedAssembly.damping_matrix(0,0,u0);
+        %         FreqDivReducedAssembly.DATA.K =  FreqDivReducedAssembly.stiffness_matrix(u0);
+        
+        FreqDivDefectedReducedAssembly.DATA.M =V'*FreqDivDefectedAssembly.DATA.M*V;
+        FreqDivDefectedReducedAssembly.DATA.K =V'*FreqDivDefectedAssembly.DATA.K*V;
+        
+        FreqDivDefectedReducedAssembly.DATA.C = alfa*FreqDivDefectedReducedAssembly.DATA.M+beta*FreqDivDefectedReducedAssembly.DATA.K;
+        
+        %% using Julia
+        tic
+        
+        tensors_ROM = reduced_tensors_ROM(FreqDivDefectedAssembly, elements, V);
+        Q2=tensors_ROM.Q2;
+        Q3=tensors_ROM.Q3;
+        Q4=tensors_ROM.Q4;
+         
+        Q3t = Q3 + permute(Q3,[1 3 2]);
+        Q4t = Q4 + permute(Q4,[1 3 2 4]) + permute(Q4,[1 4 2 3]);
+        durationTensor=toc;
+        ASEMdurationdd=[ASEMdurationdd durationTensor];
+        
+        %compute Natural Freq
+        f0_ROM_i= sort(sqrt(eig(FreqDivDefectedReducedAssembly...
+            .DATA.M\Q2))/2/pi) ;
+        
+        f0c_ROMdd=[f0c_ROMdd f0_ROM_i];
+        
+          save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROMd\V15M55ROMdTensors', ...
+    'Q2','Q3','Q4','Q3t','Q4t','ASEMdurationdd','-v7.3');
+        %% L sim
+       
+        
+        % q0 = zeros(t,1);
+        % qd0 = zeros(t,1);
+        % qdd0 = zeros(t,1);
+        q0=V'*u0;
+        qd0=V'*v0;
+        qdd0=V'*a0;
+        TI_lin_red = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
+        
+        % Modal linear Residual evaluation function handle
+        Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear_tensor(q,qd,qdd,t,FreqDivDefectedReducedAssembly,F_ext,Q2);
+        
+        % time integration
+        tic
+        TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
+%         TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+        durationL=toc
+        Ldurationdd=[Ldurationdd durationL];
+        Ltimedd=[Ltimedd TI_lin_red.Solution.time'];
+
+        LROMdd1=[LROMdd1 (V(dof1,:)*TI_lin_red.Solution.q)'];
+        LROMdd2=[LROMdd2 (V(dof2,:)*TI_lin_red.Solution.q)'];
+        LROMdd3=[LROMdd3 (V(dof3,:)*TI_lin_red.Solution.q)'];
+        
+        
+         save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROMd\LROMd', ...
+    'Ldurationdd','Ltimedd','LROMdd1','LROMdd2','LROMdd3','-v7.3');
+        %% NL
+        
+        TI_NL_newmark_red = ImplicitNewmark('timestep',h,'alpha',0.005);
+        % Modal nonlinear Residual evaluation function handle
+        Residual_NL_newmark_red = @(q,qd,qdd,t)residual_reduced_nonlinear_tensor(q,qd,qdd,t,FreqDivDefectedReducedAssembly,F_ext,Q2,Q3,Q4,Q3t,Q4t);
+        
+        % time integration
+        tic
+        TI_NL_newmark_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_newmark_red);
+        %TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
+        durationNL=toc
+        
+        NLdurationdd=[NLdurationdd durationNL];
+        
+        NLtimedd=[NLtimedd TI_NL_newmark_red.Solution.time'];
+        %         NLROMdd1=[NLROMdd1 TI_NL_newmark_red.Solution.u(dof1,:)'];
+        %         NLROMdd2=[NLROMdd2 TI_NL_newmark_red.Solution.u(dof2,:)'];
+        %         NLROMdd3=[NLROMdd3 TI_NL_newmark_red.Solution.u(dof3,:)'];
+        
+        
+        NLROMdd1=[NLROMdd1 (V(dof1,:)*TI_NL_newmark_red.Solution.q)'];
+        
+        NLROMdd2=[NLROMdd2 (V(dof2,:)*TI_NL_newmark_red.Solution.q)'];
+        
+        NLROMdd3=[NLROMdd3 (V(dof3,:)*TI_NL_newmark_red.Solution.q)'];
+        
+        save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROMd\NLROMd', ...
+    'NLdurationdd','NLtimedd','NLROMdd1','NLROMdd2','NLROMdd3','-v7.3');
+        %%
+        countdd=countdd+1;
+        VbModedd=[VbModedd m];
+        MDeridd=[MDeridd n];
+        
+         save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROMd\ROMcountd', ...
+    'countdd','VbModedd','MDeridd','-v7.3');
+    end
+end
+
+[max_sizeT, max_indexT] = max(cellfun('size', f0c_ROMdd, 1));
+f0_ROMdd=zeros(max_sizeT,size(f0c_ROMdd,2));
+
+for ii=1:max_indexT
+    f0c=f0c_ROMdd{ii};
+    s=length(f0c);
+    f0_ROMdd(1:s,ii)=f0c;
+end
+ save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\ROMd\f0_ROMdd', ...
+    'f0_ROMdd','-v7.3');
+%% DPROM init and Defect Sensitivities (choose the defect, 1st VM)
+FORMULATION='N1' % N1/N1t/N0
+VOLUME=1 ;        % defected volume =1 . nominal volume=0
+
+% U = V(:,1:2);       % defect basis
+% xi = rand(size(U,2),1)*0;
+ndef=size(U,2); %number of defects
+[DS, names] = defect_sensitivities(FreqDivAssembly, elements, VMs, U, ...
+    FORMULATION); % for DpROM
+% for ii = 1:size(DS,2)
+%     DS(:,ii) = DS(:,ii)/max(sqrt(sum(DS(:,ii).^2,2)));
+% end
+%%  DpROM VM (name of variable **DpROM) 1st VM
+tmax = 1200*T;
+LDPROM1=[];
+LDPROM2=[];
+LDPROM3=[];
+
+
+LtimeDP=[];
+LdurationDP=[];
+NLDPROM1=[];
+NLDPROM2=[];
+NLDPROM3=[];
+
+
+
+NLtimeDP=[];
+NLdurationDP=[];
+ASEMdurationDP=[];
+f0c_DPROM={};
+
+
+countDP=0;
+VbModeDp=[];
+MDeriDp=[];
+DSenti=[];
+for m=[15]
+    for  n=[55]
+        for k=[m]%ndef*m] % always include DS or so
+            
+            if n==0 && k~=0
+                break
+            end
+            
+            t=m+n+k;
+            
+            if n==0
+                V = [VMs(:,1:m)];
+            else
+                %                 if k<7
+                V = [VMs(:,1:m) MDs(:,[sortedMDs(1:n)]) DS(:,1:k)];
+                %                 elseif k>7
+                %                     V = [VMs(:,1:m) MDs(:,1:n) DS(:,1:7) DS(:,9:k)];
+                %                 end
+            end
+            V=orth(V);
+            %mass normalization
+            for ii = 1 : size(V, 2)
+                V(:,ii) = V(:,ii) / (V(:,ii)'*(FreqDivAssembly.mass_matrix)*V(:,ii));
+            end
+            
+            %             V=orth(V);
+            
+            FreqDivDefectedDPROMAssembly  = ReducedAssembly(myMesh,V);
+            
+            
+            
+            
+            FreqDivDefectedDPROMAssembly.DATA.M =V'*FreqDivAssembly.DATA.M*V;
+            FreqDivDefectedDPROMAssembly.DATA.K =V'*FreqDivAssembly.DATA.K*V;
+            
+            FreqDivDefectedDPROMAssembly.DATA.C = alfa*FreqDivDefectedDPROMAssembly.DATA.M+beta*FreqDivDefectedDPROMAssembly.DATA.K;
+            
+            
+            
+            %% using Julia
+            tic
+            
+            tensors_DpROM = reduced_tensors_DpROM(FreqDivAssembly, elements, V,U ...
+                ,FORMULATION,VOLUME);
+            % evaluate the defected tensors at xi
+            [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors_DpROM, xi);
+            
+            durationDPensor=toc;
+            ASEMdurationDP=[ASEMdurationDP durationDPensor];
+            %compute Natural Freq
+            f0_ROM_i= sort(sqrt(eig(FreqDivDefectedDPROMAssembly...
+                .DATA.M\Q2))/2/pi) ;
+            
+            f0c_DPROM=[f0c_DPROM f0_ROM_i];
+            
+             save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\DpROM\V15M55ROMDpROMTensors', ...
+    'Q2','Q3','Q4','Q3t','Q4t','ASEMdurationDP','-v7.3');
+            %% L
+            
+            % q0 = zeros(t,1);
+            % qd0 = zeros(t,1);
+            % qdd0 = zeros(t,1);
+            q0=V'*u0;
+            qd0=V'*v0;
+            qdd0=V'*a0;
+            TI_lin_red = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true);
+            
+            % Modal linear Residual evaluation function handle
+            Residual_lin_red = @(q,qd,qdd,t)residual_reduced_linear_tensor(q,qd,qdd,t,FreqDivDefectedDPROMAssembly,F_ext,Q2);
+            
+            % time integration
+            tic
+            TI_lin_red.Integrate(q0,qd0,qdd0,tmax,Residual_lin_red);
+%             TI_lin_red.Solution.u = V * TI_lin_red.Solution.q;
+            durationL=toc
+            LdurationDP=[LdurationDP durationL];
+            LtimeDP=[LtimeDP TI_lin_red.Solution.time'];
+            
+            LDPROM1=[LDPROM1  (V(dof1,:)*TI_lin_red.Solution.q)'];
+            LDPROM2=[LDPROM2 (V(dof2,:)*TI_lin_red.Solution.q)'];
+            LDPROM3=[LDPROM3 (V(dof3,:)*TI_lin_red.Solution.q)'];
+            
+            
+         save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\DpROM\DpLROM', ...
+    'LdurationDP','LtimeDP','LDPROM1','LDPROM2','LDPROM3','-v7.3');
+            
+            
+            %% NL
+            tmax=1000*T;
+            
+            TI_NL_newmark_red = ImplicitNewmark('timestep',h,'alpha',0.005);
+            % Modal nonlinear Residual evaluation function handle
+            Residual_NL_newmark_red = @(q,qd,qdd,t)residual_reduced_nonlinear_tensor(q,qd,qdd,t,FreqDivDefectedDPROMAssembly,F_ext,Q2,Q3,Q4,Q3t,Q4t);
+            %Residual_NL_newmark_red = @(q,qd,qdd,t)residual_reduced_nonlinear_tensor_diffApp(q,qd,qdd,t,BeamAssembly,F_ext,Q2,Q3,Q4,Q3t,Q4t,Vr,Mrrr,Crrr);
+            
+            % time integration
+            tic
+            
+            TI_NL_newmark_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_newmark_red);
+            %TI_NL_newmark_red.Solution.u = V * TI_NL_newmark_red.Solution.q;
+            durationNL=toc
+            
+            NLdurationDP=[NLdurationDP durationNL];
+            
+            NLtimeDP=[NLtimeDP TI_NL_newmark_red.Solution.time'];
+            %             NLDPROM1=[NLDPROM1 TI_NL_newmark_red.Solution.u(dof1,:)'];
+            %             NLDPROM2=[NLDPROM2 TI_NL_newmark_red.Solution.u(dof2,:)'];
+            %             NLDPROM3=[NLDPROM3 TI_NL_newmark_red.Solution.u(dof3,:)'];
+            
+            
+            NLDPROM1=[NLDPROM1 (V(dof1,:)*TI_NL_newmark_red.Solution.q)'];
+            
+            NLDPROM2=[NLDPROM2 (V(dof2,:)*TI_NL_newmark_red.Solution.q)'];
+            
+            NLDPROM3=[NLDPROM3 (V(dof3,:)*TI_NL_newmark_red.Solution.q)'];
+            
+              save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\DpROM\DpNLROM', ...
+    'NLdurationDP','NLtimeDP','NLDPROM1','NLDPROM2','NLDPROM3','-v7.3');
+            %%
+            countDP=countDP+1;
+            VbModeDp=[VbModeDp m];
+            MDeriDp=[MDeriDp n];
+            DSenti=[DSenti k];
+             save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\DpROM\DpROMcount', ...
+    'countDP','VbModeDp','MDeriDp','DSenti','-v7.3');
+            
+        end
+    end
+end
+[max_sizeT, max_indexT] = max(cellfun('size', f0c_DPROM, 1));
+f0_DpROM=zeros(max_sizeT,size(f0c_DPROM,2));
+
+for ii=1:max_indexT
+    f0c=f0c_DPROM{ii};
+    s=length(f0c);
+    f0_DpROM(1:s,ii)=f0c;
+end
+save('C:\Users\mosta\OneDrive\Documents\GitHub\saved_var\DpROM\f0_DpROM', ...
+    'f0_DpROM','-v7.3');
 %% Comparison A
 % Linear
 %dof = 66; % random degree of freedom at which time response is compared
