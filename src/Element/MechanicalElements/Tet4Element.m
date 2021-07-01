@@ -1,9 +1,9 @@
-classdef Tet10Element < Element
+classdef Tet4Element < Element
     properties
         nodes = []          % global coordinates of element nodes
         nodeIDs = []        % the index location of element nodes
         nDOFPerNode = 3     % number of DOFs per node
-        nNodes = 10         % number of nodes per element
+        nNodes = 4          % number of nodes per element
         nDim = 3            % number of dimensions in local coordinates
     end
     
@@ -22,11 +22,11 @@ classdef Tet10Element < Element
         
         % MINIMUM REQUIRED FUNCTIONS ______________________________________
         
-        function self = Tet10Element(Material, Ngauss)
+        function self = Tet4Element(Material, Ngauss)
             % _____________________________________________________________
             %
             % SELF-FUNCTION
-            % self = Tet10Element(Material,Ngauss)
+            % self = Tet4Element(Material,Ngauss)
             % defines element's properties
             %______________________________________________________________
             self.Material = Material;
@@ -48,10 +48,10 @@ classdef Tet10Element < Element
                 0 0 1 0 0 0 1 0 0;
                 0 0 0 0 0 1 0 1 0];
             self.initialization.A = zeros(6,9); % nonlinear strain
-            self.initialization.G = zeros(9,30);% shape function derivatives
-            self.initialization.Z = zeros(10);  % zero-matrix
-            self.initialization.K = zeros(30);  % stiffness-element matrix
-            self.initialization.F = zeros(30,1);% internal forces (element)
+            self.initialization.G = zeros(9,12);% shape function derivatives
+            self.initialization.Z = zeros(4);   % zero-matrix
+            self.initialization.K = zeros(12);  % stiffness-element matrix
+            self.initialization.F = zeros(12,1);% internal forces (element)
             self.initialization.C = C;          % constitutive law matrix
             self.initialization.H = H;          % linear strain
         end
@@ -65,16 +65,16 @@ classdef Tet10Element < Element
             X = self.quadrature.X;
             W = self.quadrature.W;
             rho = self.Material.DENSITY;
-            Mel = zeros(30);
+            Mel = zeros(12);
             for ii = 1:length(self.quadrature.W)
                 g = X(1,ii);
                 h = X(2,ii);
                 r = X(3,ii);
                 N = self.shape_functions(g,h,r);
                 [~,detJ] = shape_function_derivatives(self,g,h,r);
-                NN(1,1:3:30) = N;
-                NN(2,2:3:30) = N;
-                NN(3,3:3:30) = N;
+                NN(1,1:3:12) = N;
+                NN(2,2:3:12) = N;
+                NN(3,3:3:12) = N;
                 % integration of K and M through GAUSS quadrature
                 Mel = Mel + W(ii)*(NN'*NN)*detJ;
             end
@@ -83,19 +83,19 @@ classdef Tet10Element < Element
         
         function [K,F] = tangent_stiffness_and_force(self, x)
             displ = self.extract_element_data(x);
-            X = self.quadrature.X;
-            W = self.quadrature.W;
+%             X = self.quadrature.X;
+%             W = self.quadrature.W;
             K = self.initialization.K;
             F = self.initialization.F;
             C = self.initialization.C;
             H = self.initialization.H;
             ZZ = self.initialization.Z;
-            for ii = 1:length(self.quadrature.W)
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                we = W(ii); % weights
-                [G,detJ,dH] = shape_function_derivatives(self,g,h,r);
+%             for ii = 1:length(self.quadrature.W)
+%                 g = X(1,ii);
+%                 h = X(2,ii);
+%                 r = X(3,ii);
+%                 we = W(ii); % weights
+                [G,detJ,dH] = shape_function_derivatives(self);
                 th  = G*displ;
                 A = self.initialization.A;
                 A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
@@ -117,9 +117,9 @@ classdef Tet10Element < Element
                 int_K = int_K1 + int_Ks;
                 int_F = Bnl'*s;
                 % integration of K and F through Gauss quadrature
-                K = K + (we * detJ) * int_K;
-                F = F + (we * detJ) * int_F;
-            end
+                K = K + detJ * int_K;
+                F = F + we * detJ * int_F;
+%             end
         end
          
         function xe = extract_element_data(self, x)
@@ -128,13 +128,13 @@ classdef Tet10Element < Element
             xe = x(index,:);
         end
         
-        function F = get.uniformBodyForce(self)
+        function  f = get.uniformBodyForce(self)
             % This function computes a load along direction=3(Z) by
-            % dividing the load on the 10 nodes according to the element
-            % volume (V/10) [it might not be the best way, but still...]
+            % dividing the load on the 4 nodes according to the element
+            % volume (V/4) [it might not be the best way, but still...]
             %______________________________________________________________
-            F = sparse(30,1);
-            F(3:3:end) = self.vol/10; % uniformly distributed pressure on the structure
+            f = sparse(12,1);
+            f(3:3:end) = self.vol/4; % uniformly distributed pressure on the structure
         end
         
         function [T2, globalSubs] = T2(self)
@@ -148,8 +148,8 @@ classdef Tet10Element < Element
             % location of each dimension of tensor in global DOFs
             globalSubs = {index, index, index};
                         
-            X = self.quadrature.X;
-            W = self.quadrature.W;
+%             X = self.quadrature.X;
+%             W = self.quadrature.W;
 
             C = self.initialization.C;  % constitutive law matrix
             H = self.initialization.H;  % Linear strain matrix: eps_l = H*th
@@ -169,12 +169,12 @@ classdef Tet10Element < Element
             m = self.nNodes*self.nDOFPerNode;
             Q3h = tenzeros([m,m,m]);
             
-            for ii = 1:length(self.quadrature.W)
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                we = W(ii); % weights
-                [G,detJ,~] = shape_function_derivatives(self,g,h,r); %get shape function derivative
+%             for ii = 1:length(self.quadrature.W)
+%                 g = X(1,ii);
+%                 h = X(2,ii);
+%                 r = X(3,ii);
+%                 we = W(ii); % weights
+                [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
                 % G(x,y,z) and detJ from the position of the gauss points
                 
                 %construct core part of the tensors for each gauss point
@@ -183,8 +183,8 @@ classdef Tet10Element < Element
                 LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
                 Q3h_int = ttt(GHC,LGG,2,1);                
-                Q3h = Q3h + Q3h_int*detJ*we;        
-            end
+                Q3h = Q3h + Q3h_int*detJ;        
+%             end
             
             % build third order tensors using Q3h
             Q3ht = permute(Q3h,[3 2 1]);
@@ -203,8 +203,8 @@ classdef Tet10Element < Element
             globalSubs = cell(4,1);
             globalSubs(:) = {index};
                         
-            X = self.quadrature.X;
-            W = self.quadrature.W;
+%             X = self.quadrature.X;
+%             W = self.quadrature.W;
 
             C = self.initialization.C;  % constitutive law matrix
             
@@ -223,12 +223,12 @@ classdef Tet10Element < Element
             m = self.nNodes*self.nDOFPerNode;
             T3 = tenzeros([m,m,m,m]);
             
-            for ii = 1:length(self.quadrature.W)
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                we = W(ii); % weights
-                [G,detJ,~] = shape_function_derivatives(self,g,h,r); %get shape function derivative
+%             for ii = 1:length(self.quadrature.W) % G is constant for TET4
+%                 g = X(1,ii);
+%                 h = X(2,ii);
+%                 r = X(3,ii);
+%                 we = W(ii); % weights
+                [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
                 % G(x,y,z) and detJ from the position of the gauss points
                 
                 %construct core part of the tensors for each gauss point
@@ -237,8 +237,8 @@ classdef Tet10Element < Element
                 LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
                 Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);                
-                T3 = T3 + Q4h_int*detJ*we/2;
-            end           
+                T3 = T3 + Q4h_int*(detJ/2);
+%             end           
            
         end
         
@@ -261,25 +261,22 @@ classdef Tet10Element < Element
             V = detJ;
         end
         
-        function [G,detJ,dH] = shape_function_derivatives(self,g,h,r)
+        function [G,detJ,dH] = shape_function_derivatives(self)
             %______________________________________________________________
             %
-            % [G,detJ,dH] = shape_function_derivatives(self,g,h,r)
+            % [G,detJ,dH] = shape_function_derivatives(self)
             % G = shape function derivatives in physical coordinates, s.t.
             % th=G*p with th={ux uy uz vx vy vz wx wy wz}' (ux=du/dx...)
-            % and p={u1,v1,w1,...,u10,v10,w10}' (nodal displacements).
+            % and p={u1,v1,w1,...,u4,v4,w4}' (nodal displacements).
             % detJ = det(J), J=jacobian
             %______________________________________________________________
             xyz = self.nodes;
-            % shape function derivatives in natural coordinates
-            dHn = [0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0];
-            dHn(1,1)=4*g+4*h+4*r-3; dHn(1,2)=4*g-1;         dHn(1,5)=4-4*h-4*r-8*g;
-            dHn(1,6)=4*h;           dHn(1,7)=-4*h;          dHn(1,8)=-4*r;
-            dHn(1,9)=4*r;           dHn(2,1)=4*g+4*h+4*r-3; dHn(2,3)=4*h-1;
-            dHn(2,5)=-4*g;          dHn(2,6)=4*g;           dHn(2,7)=4-8*h-4*r-4*g;
-            dHn(2,8)=-4*r;          dHn(2,10)=4*r;          dHn(3,1)=4*g+4*h+4*r-3;
-            dHn(3,4)=4*r-1;         dHn(3,5)=-4*g;          dHn(3,7)=-4*h;
-            dHn(3,8)=4-4*h-8*r-4*g; dHn(3,9)=4*g;           dHn(3,10)=4*h;
+            % First order thetrahedron. Shape functions:
+            %   N = [(1-g-h-r), g, h, r].';
+            % Shape function derivatives in natural coordinates:
+            dHn = [ -1, 1, 0, 0;
+                    -1, 0, 1, 0;
+                    -1, 0, 0, 1];    
             
             J = dHn*xyz;
             J1 = [0 0 0; 0 0 0; 0 0 0];
@@ -295,12 +292,12 @@ classdef Tet10Element < Element
             detJ = J(1,1)*J1(1,1) + J(1,2)*J1(2,1) + J(1,3)*J1(3,1);
             J1 = J1/detJ;
             dH = J1*dHn;   	% derivatives in physical coordinates,
-                            % 3x10 matrix, [dNi_dx; dNi_dy; dNi_dz]
-                            % with i = 1...10
+                            % 3x4 matrix, [dNi_dx; dNi_dy; dNi_dz]
+                            % with i = 1...4
             G = self.initialization.G;
-            G(1:3,1:3:30) = dH;
-            G(4:6,2:3:30) = dH;
-            G(7:9,3:3:30) = dH;
+            G(1:3,1:3:12) = dH;
+            G(4:6,2:3:12) = dH;
+            G(7:9,3:3:12) = dH;
         end
         
     end % methods
@@ -309,20 +306,14 @@ classdef Tet10Element < Element
         
         function N = shape_functions(g,h,r)
             % N = shape_functions(g,h,r)
-            % SHAPE FUNCTIONS FOR A 10-NODED TETRAHEDRON
+            % SHAPE FUNCTIONS FOR A 4-NODED TETRAHEDRON
             % - see Abaqus documentation:
             % Abaqus theory guide > Elements > Continuum elements > ...
             % ... > 3.2.6 Triangular, tetrahedral, and wedge elements
             N = [(2*(1-g-h-r)-1)*(1-g-h-r)
                     (2*g-1)*g
                     (2*h-1)*h
-                    (2*r-1)*r
-                    4*(1-g-h-r)*g
-                    4*g*h
-                    4*(1-g-h-r)*h
-                    4*(1-g-h-r)*r
-                    4*g*r
-                    4*h*r];
+                    (2*r-1)*r];
         end
         
         function X = natural_coordinates
@@ -330,13 +321,7 @@ classdef Tet10Element < Element
                 0 0 0
                 1 0 0
                 0 1 0
-                0 0 1
-                .5 0 0
-                .5 .5 0
-                0 .5 0
-                0 0 .5
-                .5 0 .5
-                0 .5 .5];
+                0 0 1];
         end
         
     end
