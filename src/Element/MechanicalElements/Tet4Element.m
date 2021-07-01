@@ -62,39 +62,19 @@ classdef Tet4Element < Element
             % Mel = mass_matrix_global(self,nodes,~);
             % Mel: element-level mass matrix (in global coordinates)
             %______________________________________________________________
-            X = self.quadrature.X;
-            W = self.quadrature.W;
             rho = self.Material.DENSITY;
-            Mel = zeros(12);
-            for ii = 1:length(self.quadrature.W)
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                N = self.shape_functions(g,h,r);
-                [~,detJ] = shape_function_derivatives(self,g,h,r);
-                NN(1,1:3:12) = N;
-                NN(2,2:3:12) = N;
-                NN(3,3:3:12) = N;
-                % integration of K and M through GAUSS quadrature
-                Mel = Mel + W(ii)*(NN'*NN)*detJ;
-            end
-            Mel = sparse(rho*Mel);
+            m = self.vol * rho / 4; % lumped masses are better for TET4
+            Mel = sparse(eye(12)*m);
         end
         
         function [K,F] = tangent_stiffness_and_force(self, x)
             displ = self.extract_element_data(x);
-%             X = self.quadrature.X;
-%             W = self.quadrature.W;
             K = self.initialization.K;
             F = self.initialization.F;
             C = self.initialization.C;
             H = self.initialization.H;
             ZZ = self.initialization.Z;
-%             for ii = 1:length(self.quadrature.W)
-%                 g = X(1,ii);
-%                 h = X(2,ii);
-%                 r = X(3,ii);
-%                 we = W(ii); % weights
+            % no gauss integration required (G is constant)
                 [G,detJ,dH] = shape_function_derivatives(self);
                 th  = G*displ;
                 A = self.initialization.A;
@@ -118,8 +98,7 @@ classdef Tet4Element < Element
                 int_F = Bnl'*s;
                 % integration of K and F through Gauss quadrature
                 K = K + detJ * int_K;
-                F = F + we * detJ * int_F;
-%             end
+                F = F + detJ * int_F;
         end
          
         function xe = extract_element_data(self, x)
@@ -169,11 +148,7 @@ classdef Tet4Element < Element
             m = self.nNodes*self.nDOFPerNode;
             Q3h = tenzeros([m,m,m]);
             
-%             for ii = 1:length(self.quadrature.W)
-%                 g = X(1,ii);
-%                 h = X(2,ii);
-%                 r = X(3,ii);
-%                 we = W(ii); % weights
+%           % no gauss integration required (G is constant)
                 [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
                 % G(x,y,z) and detJ from the position of the gauss points
                 
@@ -184,7 +159,6 @@ classdef Tet4Element < Element
 
                 Q3h_int = ttt(GHC,LGG,2,1);                
                 Q3h = Q3h + Q3h_int*detJ;        
-%             end
             
             % build third order tensors using Q3h
             Q3ht = permute(Q3h,[3 2 1]);
@@ -223,11 +197,7 @@ classdef Tet4Element < Element
             m = self.nNodes*self.nDOFPerNode;
             T3 = tenzeros([m,m,m,m]);
             
-%             for ii = 1:length(self.quadrature.W) % G is constant for TET4
-%                 g = X(1,ii);
-%                 h = X(2,ii);
-%                 r = X(3,ii);
-%                 we = W(ii); % weights
+            % no gauss integration required (G is constant)
                 [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
                 % G(x,y,z) and detJ from the position of the gauss points
                 
@@ -237,8 +207,7 @@ classdef Tet4Element < Element
                 LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
                 Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);                
-                T3 = T3 + Q4h_int*(detJ/2);
-%             end           
+                T3 = T3 + Q4h_int*(detJ/2);          
            
         end
         
@@ -248,16 +217,9 @@ classdef Tet4Element < Element
             % volume is given by the integral of detJ (jacobian from 
             % isoparametric to physical space) over the volume of the
             % isoparametric element
-            detJ = 0;
-            W = self.quadrature.W;
-            X = self.quadrature.X;
-            for ii = 1 : length( w )
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                [~, detJ_i] = shape_function_derivatives(self,g,h,r);
-                detJ = detJ + detJ_i * W(ii);
-            end
+            
+            % no gauss integration required (G is constant)
+            [~, detJ] = shape_function_derivatives(self);
             V = detJ;
         end
         
