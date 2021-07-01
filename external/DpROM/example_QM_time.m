@@ -37,7 +37,7 @@ MeshNominal.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
 
 % defected mesh
     % arch defect
-    xi = .1;                                     % defect amplitude
+    xi = 1;                                     % defect amplitude
     yd = Ly * sin(pi/Lx * nodes(:,1));          % y-displacement 
     nodes_defected = nodes + [yd*0 yd]*xi;   	% new nodes
     arc_defect = zeros(numel(nodes),1);         
@@ -118,9 +118,10 @@ VMd = DefectedAssembly.unconstrain_vector(VMd);
 
 % Damping _________________________________________________________________
 alfa = 3.1;
-beta = 6.3*1e-6;
+beta = 0;%6.3*1e-6;
 D = alfa*Mn + beta*Kn;
 NominalAssembly.DATA.D = D;
+DefectedAssembly.DATA.C = D;
 Dc = NominalAssembly.constrain_matrix(D);
 
 
@@ -263,23 +264,25 @@ tmax = 5 * 1/f0d(1);
 
 % % % FULL ORDER MODEL INTEGRATION ________________________________________
 % % Initial condition: equilibrium
-% u0 = zeros(myAssembly.Mesh.nDOFs, 1);
-% v0 = zeros(myAssembly.Mesh.nDOFs, 1);
-% a0 = zeros(myAssembly.Mesh.nDOFs, 1); % a0 = M\(F_ext(0)-C*v0-F(u0)) 
+% u0 = zeros(DefectedAssembly.Mesh.nDOFs, 1);
+% v0 = zeros(DefectedAssembly.Mesh.nDOFs, 1);
+% a0 = zeros(DefectedAssembly.Mesh.nDOFs, 1); % a0 = M\(F_ext(0)-C*v0-F(u0)) 
 % 
-% q0 = myAssembly.constrain_vector(u0);
-% qd0 = myAssembly.constrain_vector(v0);
-% qdd0 = myAssembly.constrain_vector(a0);
+% q0 = DefectedAssembly.constrain_vector(u0);
+% qd0 = DefectedAssembly.constrain_vector(v0);
+% qdd0 = DefectedAssembly.constrain_vector(a0);
 % 
 % % linear
-% TI_lin = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);
-% TI_lin.Integrate(q0,qd0,qdd0,tmax,residual_lin);
-% TI_lin.Solution.u = myAssembly.unconstrain_vector(TI_lin_alpha.Solution.q);
+% residual_lin = @(q,qd,qdd,t)residual_linear(q,qd,qdd,t,DefectedAssembly,F_ext);
+% TI_linF = GeneralizedAlpha('timestep',h,'rho_inf',0.7, 'linear',true);
+% TI_linF.Integrate(q0,qd0,qdd0,tmax,residual_lin);
+% TI_linF.Solution.u = DefectedAssembly.unconstrain_vector(TI_linF.Solution.q);
 % 
 % % nonlinear
-% TI_NL = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
-% TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
-% TI_NL.Solution.u = myAssembly.unconstrain_vector(TI_NL_alpha.Solution.q);
+% residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,DefectedAssembly,F_ext);
+% TI_NLF = GeneralizedAlpha('timestep',h,'rho_inf',0.7);
+% TI_NLF.Integrate(q0,qd0,qdd0,tmax,residual);
+% TI_NLF.Solution.u = DefectedAssembly.unconstrain_vector(TI_NLF.Solution.q);
 
 
 % REDUCED ORDER MODEL INTEGRATION _________________________________________
@@ -347,7 +350,7 @@ end
 TI_QM_red.Solution.u = Phi * q + 1/2*uu;
 
 
-%% Comparison L vs NL                                               
+%% Plot all responses                                               
 
 dof = forced_dof;
 
@@ -364,10 +367,11 @@ plot(TI_NL_red.Solution.time, TI_NL_red.Solution.u(dof,:)/D, ...
 % Nonlinear QM
 plot(TI_QM_red.Solution.time, TI_QM_red.Solution.u(dof,:)/D, '--', ...
     'linewidth',2,'DisplayName', ['QM (' num2str(size(TI_QM_red.Solution.q,1)) ' dofs, ' num2str(TI_QM_red.Solution.soltime) ' s)'])
-xlabel('time'); ylabel('u'); 
+xlabel('time'); ylabel('u/D'); 
 grid on; axis tight; legend('show')
-
-
+% Nonlinear FULL
+plot(TI_NLF.Solution.time, TI_NLF.Solution.u(dof,:)/D, 'k-', ...
+    'linewidth',1,'DisplayName', ['FOM (' num2str(size(TI_NLF.Solution.q,1)) ' dofs, ' num2str(TI_NLF.Solution.soltime) ' s)'])
 
 
 
