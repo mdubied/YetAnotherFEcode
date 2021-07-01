@@ -60,15 +60,12 @@ F = Assembly.constrain_vector(Fint - Fext);
 end
 
 
-
 function [nsteps,tol,method,maxIter] = parse_inputs(varargin)
-
 %% parsing inputs
 defaultnsteps = 100;
 defaulttol = 1e-6;
 defaultmethod = 'fsolve';
 defaultmaxiter = 100;
-
 p = inputParser;
 addParameter(p,'nsteps',defaultnsteps, @(x)validateattributes(x, ...
     {'numeric'},{'nonempty','integer','positive'}) );
@@ -78,13 +75,10 @@ addParameter(p,'tol',defaulttol, @(x)validateattributes(x, ...
     {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'method',defaultmethod,@(x)validateattributes(x, ...
     {'char'},{'nonempty'}))
-addParameter(p,'display',defaultdisplay,@(x)validateattributes(x, ...
-    {'char'},{'nonempty'}))
 parse(p,varargin{:});
 
 nsteps = p.Results.nsteps;
 tol = p.Results.tol;
 method = p.Results.method;
 maxIter = p.Results.maxIter;
-
 end
