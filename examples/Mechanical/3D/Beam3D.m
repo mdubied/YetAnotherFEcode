@@ -4,6 +4,8 @@ close all;
 clc
 
 % elementType = 'HEX20';
+elementType = 'TET10';
+
 % elementType = 'TET10';
 elementType = 'WED15';
 
@@ -42,18 +44,17 @@ nz = 2;
 % filename = 'Job-BeamHex';
 % [nodes, elements, nset, elset] = mesh_ABAQUSread(filename); % HEX20 mesh
 
-myMesh = Mesh(nodes);
-myMesh.create_elements_table(elements,myElementConstructor);
+MyMesh = Mesh(nodes);
+MyMesh.create_elements_table(elements,myElementConstructor);
 
 % MESH > BOUNDARY CONDITONS
-myMesh.set_essential_boundary_condition([nset{1} nset{4}],1:3,0)
-% myMesh.BC.set_dirichlet_dofs([nset{2} nset{3}],1:3,0) % abaqus
+MyMesh.set_essential_boundary_condition([nset{1} nset{4}],1:3,0)
+% MyMesh.BC.set_dirichlet_dofs([nset{2} nset{3}],1:3,0) % abaqus
 
 % ASSEMBLY ________________________________________________________________
-BeamAssembly = Assembly(myMesh);
+BeamAssembly = Assembly(MyMesh);
 M = BeamAssembly.mass_matrix();
-nNodes = size(nodes,1);
-u0 = zeros( myMesh.nDOFs, 1);
+u0 = zeros(MyMesh.nDOFs,1);
 [K,~] = BeamAssembly.tangent_stiffness_and_force(u0);
 
 % store matrices
@@ -84,6 +85,9 @@ PlotFieldonDeformedMesh(nodes,elements,v1,'factor',1)
 title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
 drawnow
 
+%% nonlinear tensors
+% T2 = BeamAssembly.tensor('T2',[MyMesh.nDOFs, MyMesh.nDOFs, MyMesh.nDOFs], [2,3]);
+% T3 = BeamAssembly.tensor('T3',[MyMesh.nDOFs, MyMesh.nDOFs, MyMesh.nDOFs, MyMesh.nDOFs], [2,3,4]);
 
 %% EXAMPLE 2                                                        
 
@@ -93,12 +97,16 @@ drawnow
 % F = Pressure * BeamAssembly.uniform_body_force();
 
 % Nodal force
-F = zeros(myMesh.nDOFs,1);
+F = zeros(MyMesh.nDOFs,1);
 nf = find_node(l/2,w/2,t/2,nodes); % node where to put the force
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
 F(node_force_dofs(3)) = 1e3;
 
-u_lin = BeamAssembly.solve_system(K, F);
+node_force_dofs = get_index(nf,MyMesh.nDOFPerNode);
+F(node_force_dofs(3)) = 10e3;
+
+u_lin = BeamAssembly.solve_system(K,F);
+
 ULIN = reshape(u_lin,3,[]).';	% Linear response
 u = static_equilibrium(BeamAssembly, F, 'display', 'iter-detailed');
 UNL = reshape(u,3,[]).';        % Nonlinear response
