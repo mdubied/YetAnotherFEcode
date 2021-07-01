@@ -140,7 +140,7 @@ classdef Hex20Element < Element
             xe = x(index,:);
         end
         
-        function  F = get.uniformBodyForce(self)
+        function F = get.uniformBodyForce(self)
             % _____________________________________________________________
             %
             % F = uniform_body_force(self,direction)
@@ -148,8 +148,8 @@ classdef Hex20Element < Element
             % dividing the load on the 20 nodes according to the element
             % volume (V/20) [it might not be the best way, but still...]
             %______________________________________________________________
-            f = sparse(60,1);
-            f(3:3:end) = self.vol/20; % uniformly distributed pressure on the structure
+            F = sparse(60,1);
+            F(3:3:end) = self.vol/20; % uniformly distributed pressure on the structure
         end
         
         function [T2, globalSubs] = T2(self)
@@ -183,27 +183,22 @@ classdef Hex20Element < Element
 
             m = self.nNodes*self.nDOFPerNode;
             Q3h = tenzeros([m,m,m]);
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    for kk = 1:self.quadrature.Ng
-                        g = X(ii);              % natural coordinates
-                        h = X(jj);              % natural coordinates
-                        r = X(kk);              % natural coordinates
-                        we = W(ii)*W(jj)*W(kk); % weights
-                        [G,detJ,~] = self.G_HEX20(g,h,r);
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                r = X(3,ii);
+                we = W(ii); % weights
+                [G,detJ] = shape_function_derivatives(self,g,h,r);
 
-                        % G(x,y,z) and detJ from the position of the gauss points
+                % G(x,y,z) and detJ from the position of the gauss points
 
-                        %construct core part of the tensors for each gauss point
-                        GHC = tensor((C*H*G)');
-                        TG = tensor(G);  %create tensor object out of matrix
-                        LGG = ttt(ttt(L,TG,3,1),TG,2,1);
+                %construct core part of the tensors for each gauss point
+                GHC = tensor((C*H*G)');
+                TG = tensor(G);  %create tensor object out of matrix
+                LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
-                        Q3h_int = ttt(GHC,LGG,2,1);
-                        Q3h = Q3h + Q3h_int*detJ*we;
-
-                    end
-                end
+                Q3h_int = ttt(GHC,LGG,2,1);
+                Q3h = Q3h + Q3h_int*detJ*we;
             end
 
             % build third order tensors using Q3h
@@ -243,30 +238,26 @@ classdef Hex20Element < Element
             m = self.nNodes*self.nDOFPerNode;
             T3 = tenzeros([m,m,m,m]);
 
-            for ii = 1:self.quadrature.Ng
-                for jj = 1:self.quadrature.Ng
-                    for kk = 1:self.quadrature.Ng
-                        g = X(ii);              % natural coordinates
-                        h = X(jj);              % natural coordinates
-                        r = X(kk);              % natural coordinates
-                        we = W(ii)*W(jj)*W(kk); % weights
-                        [G,detJ,~] = self.G_HEX20(g,h,r);
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                r = X(3,ii);
+                we = W(ii); % weights
+                [G,detJ] = shape_function_derivatives(self,g,h,r);
 
-                        % G(x,y,z) and detJ from the position of the gauss points
+                % G(x,y,z) and detJ from the position of the gauss points
 
-                        %construct core part of the tensors for each gauss point
-                        TC = tensor(C);  %create tensor object, rename it to distinguish
-                        TG = tensor(G);  %create tensor object out of matrix
-                        LGG = ttt(ttt(L,TG,3,1),TG,2,1);
+                %construct core part of the tensors for each gauss point
+                TC = tensor(C);  %create tensor object, rename it to distinguish
+                TG = tensor(G);  %create tensor object out of matrix
+                LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
-                        Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);
-                        T3 = T3 + Q4h_int*detJ*we/2;
-
-                    end
-                end
+                Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);
+                T3 = T3 + Q4h_int*detJ*we/2;
             end
            
         end
+        
         % ANCILLARY FUNCTIONS _____________________________________________
         
         function V = get.vol(self)
