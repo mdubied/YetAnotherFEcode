@@ -167,7 +167,7 @@ classdef ReducedAssembly < Assembly
             
             % Computing element level contributions
 
-            parfor j = elementSet
+            for j = elementSet
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:); %#ok<*PFBNS>
