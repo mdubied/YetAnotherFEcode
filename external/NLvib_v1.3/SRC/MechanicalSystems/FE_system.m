@@ -60,8 +60,6 @@ classdef FE_system < MechanicalSystem
         % Constructor
         function obj = FE_system(myAssembly, Fext, nonlinearity_type)
             
-         	global fnl_CUSTOM
-            
             ntot = myAssembly.Mesh.nDOFs;
             n = length(myAssembly.Mesh.EBC.unconstrainedDOFs);
             
@@ -104,7 +102,7 @@ classdef FE_system < MechanicalSystem
                 'assembly', myAssembly);
             nonlinearity.force_direction = Fext*0+1; % for shooting method
             if strcmp(nonlinearity_type, 'custom')
-                nonlinearity.custom_function = fnl_CUSTOM;
+                nonlinearity.custom_function = myAssembly.DATA.fnl_CUSTOM;
             end
             
             nonlinearity = { nonlinearity };

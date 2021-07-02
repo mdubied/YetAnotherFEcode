@@ -388,7 +388,7 @@ for nl=1:length(nonlinear_elements)
                 end
                 
             case 'custom'
-                myAssembly = nonlinear_elements{nl}.assembly;
+                % myAssembly = nonlinear_elements{nl}.assembly;
                 fnl_CUSTOM = nonlinear_elements{nl}.custom_function;
                 
                 % Inverse FFT
@@ -403,7 +403,10 @@ for nl=1:length(nonlinear_elements)
                 df_dql_all  = zeros(N,n,n);
                 for iii = 1 : size( q , 1 )
                     x = q(iii, :)';                    
-                    [Kt, fint] = fnl_CUSTOM( myAssembly, x );
+                    [Kt, fint] = fnl_CUSTOM( x );
+                    % note for future realese: fnl_CUSTOM( x, \dot x, \ddot x );
+                    %                          (this will also require to
+                    %                          change dF)
                     df_dql_all(iii, :, :) = Kt;
                     fnl(iii, :) = fint;                    
                 end

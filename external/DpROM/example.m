@@ -195,13 +195,13 @@ ROMd_Assembly = Assembly(MeshDefected, Vd);
 ROMd_Assembly.DATA.K = Kr;
 ROMd_Assembly.DATA.M = Mr;
 ROMd_Assembly.DATA.D = Dr;
+% the function to compute the nonlinear forces and the jacobian in NLvib:
+fnl_CUSTOM = @(q) tensors_KF_NLvib(tensors_ROM.Q3,...
+    tensors_ROM.Q4, tensors_ROM.Q3t, tensors_ROM.Q4t, q);
+ROMd_Assembly.DATA.fnl_CUSTOM = fnl_CUSTOM;
+% create MechanicalSystem object
 ROMd_System = FE_system(ROMd_Assembly, Fr, 'custom');
 
-% the function to compute the nonlinear forces and the jacobian are passed
-% to NLvib through a global function handle:
-global fnl_CUSTOM
-fnl_CUSTOM = @(myAssembly, q) tensors_KF_NLvib(tensors_ROM.Q3,...
-    tensors_ROM.Q4, tensors_ROM.Q3t, tensors_ROM.Q4t, q);
 
 % ANALYSIS PARAMETERS _____________________________________________________
 imod = 1;               % eigenfreq to study
