@@ -102,9 +102,11 @@ myAssembly.DATA.D = D;
 Dc = myAssembly.constrain_matrix(D);
 
 
-%% Modal Derivatives & Defect Sensitivities                         
+%% Modal Derivatives                                                
 
+tic
 [MD, MDnames] = modal_derivatives(myAssembly, elements, VM); % nominal
+toc
 
 % PLOT an MD
 nwho = 1;
@@ -251,10 +253,12 @@ end
 drawnow
 
 
-%% auxiliary function                                               
 
-function [MD, names] = modal_derivatives(myAssembly, elements, Phi)
 
+%% auxiliary function (MDs)                                         
+
+function [MD, names] = modal_derivatives(myAssembly, Phi)
+    
     n = size(Phi,1);
     n_VMs = size(Phi,2);
 
@@ -268,10 +272,8 @@ function [MD, names] = modal_derivatives(myAssembly, elements, Phi)
 
         Phi_j = Phi(:, jj);
         
-        % CHANGE THIS WITH IN-BUILT FUNCTIONS <<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-        dK_deta_j = stiffness_matrix_derivative(myAssembly, elements, Phi_j);
+        dK_deta_j = myAssembly.stiffness_derivative(Phi_j);
         dK_deta_j = myAssembly.constrain_matrix( dK_deta_j );
-        % <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         for ii = 1 : n_VMs
             if ii < jj
@@ -287,6 +289,4 @@ function [MD, names] = modal_derivatives(myAssembly, elements, Phi)
             kk = kk + 1;
         end
     end
-    disp(' ')
-
 end

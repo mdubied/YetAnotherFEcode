@@ -4,8 +4,9 @@ close all;
 clc
 
 % elementType = 'HEX20';
-% elementType = 'TET10';
-elementType = 'WED15';
+% elementType = 'TET4'; % good for code-testing, VERY BAD for real use
+elementType = 'TET10';
+% elementType = 'WED15';
 
 
 %% PREPARE MODEL                                                    
@@ -22,6 +23,8 @@ set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
 switch elementType
     case 'HEX20'
         myElementConstructor = @()Hex20Element(myMaterial);
+    case 'TET4'
+        myElementConstructor = @()Tet4Element(myMaterial);
     case 'TET10'
         myElementConstructor = @()Tet10Element(myMaterial);
     case 'WED15'
@@ -61,7 +64,7 @@ BeamAssembly.DATA.K = K;
 BeamAssembly.DATA.M = M;
 
 
-%% EXAMPLE 1                                                        
+%% EXAMPLE 1: vibration modes                                       
 
 % Eigenvalue problem_______________________________________________________
 n_VMs = 3; % first n_VMs modes with lowest frequency calculated
@@ -85,7 +88,7 @@ title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
 drawnow
 
 
-%% EXAMPLE 2                                                        
+%% EXAMPLE 2: static test                                           
 
 % % Define external force:
 % % Body force
@@ -114,3 +117,25 @@ PlotFieldonDeformedMesh(nodes,elements,UNL,'factor',scale,'color','w')
 colormap jet
 title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
 
+
+%% EXAMPLE 3: compute modal derivatives                             
+
+% take the first eigenmode
+Phi1 = V0(:,1);
+Phi1_c = BeamAssembly.constrain_vector(Phi1);
+
+% compute dK/dq1
+dK = BeamAssembly.stiffness_derivative(Phi1);
+dK_c = BeamAssembly.constrain_matrix(dK);
+
+% compute MD11
+MD11_c = -Kc\(dK_c * Phi1_c);
+MD11 = BeamAssembly.unconstrain_vector(MD11_c);
+MD11 = -MD11/max(abs(MD11(:))); % normalize to 1
+
+% PLOT
+figure('units','normalized','position',[.2 .1 .6 .8])
+v1 = reshape(MD11,3,[]).';
+PlotFieldonDeformedMesh(nodes,elements,v1,'factor',.1,'component','U1')
+title('MD_{11} (U1)')
+drawnow

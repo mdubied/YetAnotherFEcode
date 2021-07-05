@@ -233,6 +233,43 @@ classdef Quad8Element < Element
            
         end
         
+        function [Kd] = stiffness_derivative(self,x)
+            % this function computes the element stiffness derivative matrix
+            % with respect to the amplitude q of an imposed displacement
+            % field U (directional derivative), that is:
+            %      dK|         dK(Uq)|
+            % Kd = --|       = ----- |
+            %      dq|_{q=0}    dq   |_{q=0}
+            % and evaluated for q=0.
+            % x : element DOF values of U
+            
+            displ = self.extract_element_data(x);
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            Kd= self.initialization.K;
+            C = self.initialization.C;
+            H = self.initialization.H;
+            % Quadratic strain matrix: A = L.th, eps_quad = A*th
+            L = zeros([3,4,4]);
+            L(1,1,1) = 1; L(3,2,1) = 1; L(3,1,2) = 1; L(2,2,2) = 1;
+            L(1,3,3) = 1; L(3,4,3) = 1; L(3,3,4) = 1; L(2,4,4) = 1;
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                we = W(ii); % weights
+                [G,detJ] = shape_function_derivatives(self,g,h);
+                th  = G*displ;
+                A =	[th(1)	0     th(3) 0;
+                     0    	th(2) 0     th(4);
+                     th(2)	th(1) th(4) th(3)];
+                b1 = einsum('ijk,kl->ijl',L,G);
+                b2 = einsum('ijk,il->jkl',b1,C*H*th);
+                b = G'*b2;
+                int_dK = G'*(H'*C*A + A'*C*H)*G + b;
+                Kd = Kd + int_dK * detJ * we;
+            end
+        end
+        
         % ANCILLARY FUNCTIONS _____________________________________________
         
         function A = get.area(self)

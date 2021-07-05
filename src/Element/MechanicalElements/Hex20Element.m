@@ -258,6 +258,55 @@ classdef Hex20Element < Element
            
         end
         
+        function [Kd] = stiffness_derivative(self,x)
+            % this function computes the element stiffness derivative matrix
+            % with respect to the amplitude q of an imposed displacement
+            % field U (directional derivative), that is:
+            %      dK|         dK(Uq)|
+            % Kd = --|       = ----- |
+            %      dq|_{q=0}    dq   |_{q=0}
+            % and evaluated for q=0.
+            % x : element DOF values of U
+
+            displ = self.extract_element_data(x);
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            Kd= self.initialization.K;
+            C = self.initialization.C;
+            H = self.initialization.H;
+            A = self.initialization.A;
+            % Quadratic strain matrix: A = L.th, eps_quad = A*th
+            L = zeros([3,4,4]);
+            L(1,1,1)=1; L(4,2,1)=1; L(5,3,1)=1;
+            L(4,1,2)=1; L(2,2,2)=1; L(6,3,2)=1;
+            L(5,1,3)=1; L(6,2,3)=1; L(3,3,3)=1;
+            L(1,4,4)=1; L(4,5,4)=1; L(5,6,4)=1;
+            L(4,4,5)=1; L(2,5,5)=1; L(6,6,5)=1;
+            L(5,4,6)=1; L(6,5,6)=1; L(3,6,6)=1;
+            L(1,7,7)=1; L(4,8,7)=1; L(5,9,7)=1;
+            L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1;
+            L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
+            for ii = 1:length(W)
+                g = X(1,ii);
+                h = X(2,ii);
+                r = X(3,ii);
+                we = W(ii); % weights
+                [G,detJ] = shape_function_derivatives(self,g,h,r);
+                th  = G*displ;
+                A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
+                A(6,2)=th(3); A(3,3)=th(3); A(5,3)=th(1); A(6,3)=th(2); A(1,4)=th(4);
+                A(4,4)=th(5); A(5,4)=th(6); A(2,5)=th(5); A(4,5)=th(4); A(6,5)=th(6);
+                A(3,6)=th(6); A(5,6)=th(4); A(6,6)=th(5); A(1,7)=th(7); A(4,7)=th(8);
+                A(5,7)=th(9); A(2,8)=th(8); A(4,8)=th(7); A(6,8)=th(9); A(3,9)=th(9);
+                A(5,9)=th(7); A(6,9)=th(8);
+                b1 = einsum('ijk,kl->ijl',L,G);
+                b2 = einsum('ijk,il->jkl',b1,C*H*th);
+                b = G'*b2;
+                int_dK = G'*(H'*C*A + A'*C*H)*G + b;
+                Kd = Kd + int_dK * detJ * we;
+            end
+        end
+        
         % ANCILLARY FUNCTIONS _____________________________________________
         
         function V = get.vol(self)
