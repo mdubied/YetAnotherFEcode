@@ -137,10 +137,19 @@ classdef Tet10Element < Element
             F(3:3:end) = self.vol/10; % uniformly distributed pressure on the structure
         end
         
-        function [T2, globalSubs] = T2(self)
+        function [T2, globalSubs] = T2(self, varargin)
             % this function computes the 3-tensor corresponding to the 
             % quadratic component of the nonlinear internal force in 
             % global coordinates at the element level.
+            
+            if ~isempty(varargin)
+                Ve = varargin{1};
+                m = size(Ve, 2);
+                Vflag = true;
+            else
+                m = self.nNodes*self.nDOFPerNode;
+                Vflag = false;
+            end
                         
             % global DOFs associated to the element nodes
             index = get_index(self.nodeIDs,self.nDOFPerNode);
@@ -166,7 +175,6 @@ classdef Tet10Element < Element
             L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1; 
             L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
             
-            m = self.nNodes*self.nDOFPerNode;
             Q3h = tenzeros([m,m,m]);
             
             for ii = 1:length(self.quadrature.W)
@@ -176,6 +184,9 @@ classdef Tet10Element < Element
                 we = W(ii); % weights
                 [G,detJ,~] = shape_function_derivatives(self,g,h,r); %get shape function derivative
                 % G(x,y,z) and detJ from the position of the gauss points
+                if Vflag
+                    G = G*Ve;
+                end
                 
                 %construct core part of the tensors for each gauss point
                 GHC = tensor((C*H*G)');
@@ -191,11 +202,20 @@ classdef Tet10Element < Element
             T2 = Q3h./2 + Q3ht;
         end
         
-        function [T3, globalSubs] = T3(self)
+        function [T3, globalSubs] = T3(self, varargin)
             % this function computes the 4-tensor corresponding to the 
             % quadratic component of the nonlinear internal force in 
             % global coordinates at the element level.
-                        
+                  
+            if ~isempty(varargin)
+                Ve = varargin{1};
+                m = size(Ve, 2);
+                Vflag = true;
+            else
+                m = self.nNodes*self.nDOFPerNode;
+                Vflag = false;
+            end
+            
             % global DOFs associated to the element nodes
             index = get_index(self.nodeIDs,self.nDOFPerNode);
             
@@ -220,7 +240,6 @@ classdef Tet10Element < Element
             L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1; 
             L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
             
-            m = self.nNodes*self.nDOFPerNode;
             T3 = tenzeros([m,m,m,m]);
             
             for ii = 1:length(self.quadrature.W)
@@ -230,6 +249,9 @@ classdef Tet10Element < Element
                 we = W(ii); % weights
                 [G,detJ,~] = shape_function_derivatives(self,g,h,r); %get shape function derivative
                 % G(x,y,z) and detJ from the position of the gauss points
+                if Vflag
+                    G = G*Ve; %element-level projection
+                end
                 
                 %construct core part of the tensors for each gauss point
                 TC = tensor(C);  %create tensor object, rename it to distinguish

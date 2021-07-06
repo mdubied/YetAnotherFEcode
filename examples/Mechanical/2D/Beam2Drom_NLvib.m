@@ -105,7 +105,7 @@ Dc = myAssembly.constrain_matrix(D);
 %% Modal Derivatives                                                
 
 tic
-[MD, MDnames] = modal_derivatives(myAssembly, elements, VM); % nominal
+[MD, MDnames] = modal_derivatives(myAssembly, VM); % nominal
 toc
 
 % PLOT an MD
@@ -135,9 +135,10 @@ Mr = V'*M*V; 	% reduced mass matrix
 ROM_Assembly = ReducedAssembly(MeshDefected, V);
 
 % compute reduced stiffness tensors (using in-built functions)
+mode = 'ELP'; %element-level projection mode
 Q2 = V'*K*V;
-Q3 = tensor( ROM_Assembly.tensor('T2',[m m m], [2 3]) );
-Q4 = tensor( ROM_Assembly.tensor('T3',[m m m m], [2 3 4]) );
+Q3 = tensor( ROM_Assembly.tensor('T2',[m m m], [2 3], mode) );
+Q4 = tensor( ROM_Assembly.tensor('T3',[m m m m], [2 3 4], mode) );
 
 % compute tensors for the tangent stiffness matrix (see tensors_KF_NLvib)
 Q3t = Q3 + permute(Q3, [1 3 2]); 

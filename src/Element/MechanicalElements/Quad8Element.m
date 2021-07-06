@@ -143,11 +143,20 @@ classdef Quad8Element < Element
             F(2:2:end) = self.area/8; % uniformly distributed pressure on the structure
         end
         
-        function [T2, globalSubs] = T2(self)
+        function [T2, globalSubs] = T2(self, varargin)
             % this function computes the 3-tensor corresponding to the 
             % quadratic component of the nonlinear internal force in 
             % global coordinates at the element level.
-                        
+            
+            if ~isempty(varargin)
+                Ve = varargin{1};
+                m = size(Ve, 2);
+                Vflag = true;
+            else
+                m = self.nNodes*self.nDOFPerNode;
+                Vflag = false;
+            end
+            
             % global DOFs associated to the element nodes
             index = get_index(self.nodeIDs,self.nDOFPerNode);
             
@@ -164,15 +173,16 @@ classdef Quad8Element < Element
             L = tenzeros([3,4,4]);
             L(1,1,1) = 1; L(3,2,1) = 1; L(3,1,2) = 1; L(2,2,2) = 1;
             L(1,3,3) = 1; L(3,4,3) = 1; L(3,3,4) = 1; L(2,4,4) = 1;
-
-            m = self.nNodes*self.nDOFPerNode;
+            
             Q3h = tenzeros([m,m,m]);
             for ii = 1:length(W)
                 g = X(1,ii);
                 h = X(2,ii);
                 we = W(ii); % weights
                 [G,detJ] = shape_function_derivatives(self,g,h);
-
+                if Vflag
+                    G = G*Ve;
+                end
                 % G(x,y,z) and detJ from the position of the gauss points
 
                 %construct core part of the tensors for each gauss point
@@ -189,11 +199,20 @@ classdef Quad8Element < Element
             T2 = Q3h./2 + Q3ht;           
         end
         
-        function [T3, globalSubs] = T3(self)
+        function [T3, globalSubs] = T3(self, varargin)
             % this function computes the 4-tensor corresponding to the 
             % quadratic component of the nonlinear internal force in 
             % global coordinates at the element level.
-                        
+            
+            if ~isempty(varargin)
+                Ve = varargin{1};
+                m = size(Ve, 2);
+                Vflag = true;
+            else
+                m = self.nNodes*self.nDOFPerNode;
+                Vflag = false;
+            end
+            
             % global DOFs associated to the element nodes
             index = get_index(self.nodeIDs,self.nDOFPerNode);
             
@@ -210,8 +229,7 @@ classdef Quad8Element < Element
             L = tenzeros([3,4,4]);
             L(1,1,1) = 1; L(3,2,1) = 1; L(3,1,2) = 1; L(2,2,2) = 1;
             L(1,3,3) = 1; L(3,4,3) = 1; L(3,3,4) = 1; L(2,4,4) = 1;
-
-            m = self.nNodes*self.nDOFPerNode;
+            
             T3 = tenzeros([m,m,m,m]);
 
             for ii = 1:length(W)
@@ -219,7 +237,9 @@ classdef Quad8Element < Element
                 h = X(2,ii);
                 we = W(ii); % weights
                 [G,detJ] = shape_function_derivatives(self,g,h);
-
+                if Vflag
+                    G = G*Ve;
+                end
                 % G(x,y,z) and detJ from the position of the gauss points
 
                 %construct core part of the tensors for each gauss point

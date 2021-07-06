@@ -114,19 +114,23 @@ classdef Tet4Element < Element
             f(3:3:end) = self.vol/4; % uniformly distributed pressure on the structure
         end
         
-        function [T2, globalSubs] = T2(self)
+        function [T2, globalSubs] = T2(self, varargin)
             % this function computes the 3-tensor corresponding to the 
             % quadratic component of the nonlinear internal force in 
             % global coordinates at the element level.
-                        
+            
+            if ~isempty(varargin)
+                Ve = varargin{1};
+                Vflag = true;
+            else
+                Vflag = false;
+            end
+            
             % global DOFs associated to the element nodes
             index = get_index(self.nodeIDs,self.nDOFPerNode);
             
             % location of each dimension of tensor in global DOFs
             globalSubs = {index, index, index};
-                        
-%             X = self.quadrature.X;
-%             W = self.quadrature.W;
 
             C = self.initialization.C;  % constitutive law matrix
             H = self.initialization.H;  % Linear strain matrix: eps_l = H*th
@@ -143,41 +147,45 @@ classdef Tet4Element < Element
             L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1; 
             L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
             
-            m = self.nNodes*self.nDOFPerNode;
-            Q3h = tenzeros([m,m,m]);
+            % no gauss integration required (G is constant)
+            [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
+            % G(x,y,z) and detJ from the position of the gauss points
+            if Vflag
+                G = G*Ve;
+            end
             
-%           % no gauss integration required (G is constant)
-                [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
-                % G(x,y,z) and detJ from the position of the gauss points
-                
-                %construct core part of the tensors for each gauss point
-                GHC = tensor((C*H*G)');
-                TG = tensor(G);  %create tensor object out of matrix
-                LGG = ttt(ttt(L,TG,3,1),TG,2,1);
+            %construct core part of the tensors for each gauss point
+            GHC = tensor((C*H*G)');
+            TG = tensor(G);  %create tensor object out of matrix
+            LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
-                Q3h_int = ttt(GHC,LGG,2,1);                
-                Q3h = Q3h + Q3h_int*detJ;        
+            Q3h_int = ttt(GHC,LGG,2,1);                
+            Q3h = Q3h_int*detJ;        
             
             % build third order tensors using Q3h
             Q3ht = permute(Q3h,[3 2 1]);
             T2 = Q3h./2 + Q3ht;
         end
         
-        function [T3, globalSubs] = T3(self)
+        function [T3, globalSubs] = T3(self, varargin)
             % this function computes the 4-tensor corresponding to the 
             % quadratic component of the nonlinear internal force in 
             % global coordinates at the element level.
-                        
+            
+            if ~isempty(varargin)
+                Ve = varargin{1};
+                Vflag = true;
+            else
+                Vflag = false;
+            end
+            
             % global DOFs associated to the element nodes
             index = get_index(self.nodeIDs,self.nDOFPerNode);
             
             % location of each dimension of tensor in global DOFs
             globalSubs = cell(4,1);
             globalSubs(:) = {index};
-                        
-%             X = self.quadrature.X;
-%             W = self.quadrature.W;
-
+            
             C = self.initialization.C;  % constitutive law matrix
             
             % Quadratic strain matrix: A = L.th, eps_quad = A*th
@@ -192,20 +200,20 @@ classdef Tet4Element < Element
             L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1; 
             L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
             
-            m = self.nNodes*self.nDOFPerNode;
-            T3 = tenzeros([m,m,m,m]);
-            
             % no gauss integration required (G is constant)
-                [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
-                % G(x,y,z) and detJ from the position of the gauss points
-                
-                %construct core part of the tensors for each gauss point
-                TC = tensor(C);  %create tensor object, rename it to distinguish
-                TG = tensor(G);  %create tensor object out of matrix
-                LGG = ttt(ttt(L,TG,3,1),TG,2,1);
+            [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
+            % G(x,y,z) and detJ from the position of the gauss points
+            if Vflag
+                G = G*Ve;
+            end
+            
+            %construct core part of the tensors for each gauss point
+            TC = tensor(C);  %create tensor object, rename it to distinguish
+            TG = tensor(G);  %create tensor object out of matrix
+            LGG = ttt(ttt(L,TG,3,1),TG,2,1);
 
-                Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);                
-                T3 = T3 + Q4h_int*(detJ/2);          
+            Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);                
+            T3 = Q4h_int*(detJ/2);          
            
         end
         

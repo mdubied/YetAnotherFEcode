@@ -5,8 +5,8 @@ clc
 
 % elementType = 'HEX20';
 % elementType = 'TET4'; % good for code-testing, VERY BAD for real use
-elementType = 'TET10';
-% elementType = 'WED15';
+% elementType = 'TET10';
+elementType = 'WED15';
 
 
 %% PREPARE MODEL                                                    
@@ -83,7 +83,7 @@ mod = 1;
 figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMesh(nodes,elements,0);
 v1 = reshape(V0(:,mod),3,[]).';
-PlotFieldonDeformedMesh(nodes,elements,v1,'factor',1)
+PlotFieldonDeformedMesh(nodes,elements,v1,'factor',1);
 title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0(mod),3) ' Hz'])
 drawnow
 
@@ -101,21 +101,21 @@ nf = find_node(l/2,w/2,t/2,nodes); % node where to put the force
 node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
 F(node_force_dofs(3)) = 1e3;
 
-u_lin = BeamAssembly.solve_system(K, F);
-ULIN = reshape(u_lin,3,[]).';	% Linear response
-u = static_equilibrium(BeamAssembly, F, 'display', 'iter-detailed');
-UNL = reshape(u,3,[]).';        % Nonlinear response
-
-fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
-    '  Nonlinear:\t%.3i \n\n'],max(u_lin(:)),max(u(:)))
-
-% PLOT
-figure('units','normalized','position',[.2 .1 .6 .8])
-scale = 10;
-PlotMesh(nodes,elements,0);
-PlotFieldonDeformedMesh(nodes,elements,UNL,'factor',scale,'color','w')
-colormap jet
-title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
+% u_lin = BeamAssembly.solve_system(K, F);
+% ULIN = reshape(u_lin,3,[]).';	% Linear response
+% u = static_equilibrium(BeamAssembly, F, 'display', 'iter-detailed');
+% UNL = reshape(u,3,[]).';        % Nonlinear response
+% 
+% fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
+%     '  Nonlinear:\t%.3i \n\n'],max(u_lin(:)),max(u(:)))
+% 
+% % PLOT
+% figure('units','normalized','position',[.2 .1 .6 .8])
+% scale = 10;
+% PlotMesh(nodes,elements,0);
+% PlotFieldonDeformedMesh(nodes,elements,UNL,'factor',scale,'color','w');
+% colormap jet
+% title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
 
 
 %% EXAMPLE 3: compute modal derivatives                             
@@ -136,6 +136,49 @@ MD11 = -MD11/max(abs(MD11(:))); % normalize to 1
 % PLOT
 figure('units','normalized','position',[.2 .1 .6 .8])
 v1 = reshape(MD11,3,[]).';
-PlotFieldonDeformedMesh(nodes,elements,v1,'factor',.1,'component','U1')
+PlotFieldonDeformedMesh(nodes,elements,v1,'factor',.1,'component','U1');
 title('MD_{11} (U1)')
 drawnow
+
+
+%% EXAMPLE 4: reduced stiffness tensors                             
+
+RB = [V0(:,1) MD11]; % reduced basis with VM_1 and MD_11
+m = size(RB,2);
+
+RBeamAssembly = ReducedAssembly(myMesh, RB);
+
+% reduced stiffness tensors
+K2r = RB'*K*RB;
+ndofs_per_element = myMesh.Elements(1).Object.nNodes * myMesh.Elements(1).Object.nDim;
+if m > ndofs_per_element 
+    % compute element tensor (size ndofs_per_element), then project
+    mode = 'standard';
+    
+    tic
+    K3r = RBeamAssembly.tensor('T2',[m m m], [2 3], mode);
+    fprintf(' K3r... %.2f s (%.1f elem/s)\n',toc,myMesh.nElements/toc)
+    
+    tic
+    K4r = RBeamAssembly.tensor('T3',[m m m m], [2 3 4], mode);
+    fprintf(' K4r... %.2f s (%.1f elem/s)\n',toc,myMesh.nElements/toc)
+else
+    % use Element-Level Projection (directly computes the projected tensor, of size m)
+    mode = 'ELP';
+    
+    tic
+    K3r = RBeamAssembly.tensor('T2',[m m m], [2 3], mode);
+    fprintf(' K3r... %.2f s (%.1f elem/s)\n',toc,myMesh.nElements/toc)
+
+    tic
+    K4r = RBeamAssembly.tensor('T3',[m m m m], [2 3 4], mode);
+    fprintf(' K4r... %.2f s (%.1f elem/s)\n',toc,myMesh.nElements/toc)
+end
+
+% compute tensors for the tangent stiffness matrix
+K3rt = K3r + permute(K3r, [1 3 2]); 
+K4rt = K4r + permute(K4r, [1 3 2 4]) + permute(K4r, [1 4 2 3]);
+
+
+
+
