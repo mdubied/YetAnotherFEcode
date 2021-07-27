@@ -454,6 +454,18 @@ function Amatrices2D()
               th[2] th[3] th[1]/2+th[4]/2]/2
     A1, A2, A3
 end
+#function Amatrices2D()
+    A1(th) = [th[1]     0 th[3]     0;
+                  0 th[2]     0 th[4];
+              th[2] th[1] th[4] th[3]]
+    A2(th) =-[th[1] th[3]     0     0;
+                  0     0 th[2] th[4];
+              th[2] th[4] th[1] th[3]]
+    A3(th) = -0.5*[2*th[1]     0 th[3];
+                  0 2*th[4] th[2];
+              2*th[2] 2*th[3] th[1]+th[4]]
+    A1, A2, A3
+	
 function Gselector(nDIM,ndofs)
 
     if nDIM == 3                # 3D continuum elements

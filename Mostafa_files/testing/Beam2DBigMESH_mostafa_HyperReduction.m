@@ -23,8 +23,8 @@ myElementConstructor = @()Quad8Element(thickness, myMaterial);
 % MESH_____________________________________________________________________
 Lx = 3;
 Ly = .3;
-nx = 30;
-ny = 3;
+nx = 100;
+ny = 5;
 switch upper( whichModel )
     case 'CUSTOM'
         [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny);
@@ -210,7 +210,7 @@ qd0 = BeamAssembly.constrain_vector(v0);
 qdd0 = BeamAssembly.constrain_vector(a0);
 
 % time step for integration
-h = T/100;
+h = T/150;
 
 % Precompute data for Assembly object
 BeamAssembly.DATA.M = M;
@@ -236,9 +236,9 @@ FullLDuration=toc
 % Animate solution on Mesh (very slow)
 %AnimateFieldonDeformedMesh(myMesh.nodes,myMesh.Elements,TI_lin.Solution.u ,'factor',1,'index',1:2,'filename','lineardisp')
 
-%% NL Dynamic Response
+  %% NL Dynamic Response
 % Instantiate object for nonlinear time integration
-TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
+TI_NL = ImplicitNewmark('timestep',h/2,'alpha',0.005);
 
 % Linear Residual evaluation function handle
 residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamAssembly,F_ext);
@@ -246,7 +246,7 @@ residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamAssembly,F_ext);
 % Nonlinear Time Integration
 
 tic
-TI_NL.Integrate(q0,qd0,qdd0,tmax,residual);
+TI_NL.Integrate(q0,qd0,qdd0,1*T,residual);
 TI_NL.Solution.u = BeamAssembly.unconstrain_vector(TI_NL.Solution.q);
 FullNLduration=toc
 %  save('TI_NL.mat','TI_NL');
@@ -429,24 +429,21 @@ for m=3;% m=[2 3 7 10]
         tic
         [G,b]=BeamReducedAssembly.constructGb(qq);
         GBconstructTime=toc;
-        %%fNNLS
-        tic
-        [x_fnnls,w_fnnls]=fnnls(G'*G,G'*b,norm(b)*0.01);
-        fnnlsTime=toc
-        nnz(x_fnnls)
-        %nnls
-        tic;[x_nnls,w_nnls,info]=nnls(full(G),full(b),struct('Accy',1,'Tol',1/((norm(b)*5))));
-        nnlTime=toc
-        nnz(x_nnls)
-        %lsq
-        options = optimset('TolX',1/(norm(b)*0.01));
-        tic;x_lsq=lsqnonneg(G,b,options);
-        lsqTime=toc
-        nnz(x_lsq)
-        %mostafa snlls
-         x_sNNLS=sNNLS(G,b,0.0035);
-         nnz(x_sNNLS)
-        %jain_snnls
+%         %%fNNLS
+%         tic
+%         [x_fnnls,w_fnnls]=fnnls(G'*G,G'*b,norm(b)*0.01);
+% 
+%         fnnlsTime=toc
+%         tic;[x_nnls,w_nnls,info]=nnls(full(G),full(b),struct('Accy',1,'Tol',1/((norm(b)*10))));
+%         nnlTime=toc
+%         options = optimset('TolX',(norm(b)*0.01));
+%         tic;x_lsq=lsqnonneg(G,b,options);
+%         lsqTime=toc
+%         nnz(x_fnnls)
+%         nnz(x_nnls)
+%         nnz(x_lsq)
+%          x_sNNLS=sNNLS(G,b,0.01);
+%          nnz(x_sNNLS)
         [E_jain, xi_jain]=snnls_j(full(G),full(b),0.0001)
         nnz(xi_jain)
         BeamReducedAssembly.DATA.elementWeights=xi_jain;
@@ -692,9 +689,15 @@ for ii=1:max_indexT
     f0_ROMT(1:s,ii)=f0c;
 end
 %% HFM-d init (Defected mesh) first VM
-U=[VMs(:,1)];      %defect Basis
+% U=[VMs(:,1)];      %defect Basis
 xi=[0.05];
-U1 = reshape(U(:,1), 2, []).'*xi(1);
+% U1 = reshape(U(:,1), 2, []).'*xi(1);
+
+%arch defect
+U1=[nodes(:,1) Ly*sin(pi()*nodes(:,1)/Lx)]*xi(1);
+U=reshape(U1',[1 2*size(U1,1)])'/xi(1);
+
+
 %U2=reshape(U(:,2), 2, []).'*xi(2);
 Ut=U1%+U2;
 nodes_defected=nodes+ Ut;%U1*xi;
@@ -712,7 +715,7 @@ BeamDefectedAssembly.DATA.M = Md;
 BeamDefectedAssembly.DATA.C= 0*Md+0*Kd;
 
 % Vm and Md computation for defected Mesh
-n_Vmd=7;
+n_Vmd=3;
 % Vibration Modes (VM): defected------------------------------------------
 Kdc = BeamDefectedAssembly.constrain_matrix(Kd);
 Mdc = BeamDefectedAssembly.constrain_matrix(Md);
@@ -757,21 +760,22 @@ for mod=1%:size(MDd,2)
     title(['\theta_{' num2str(MDd_names(mod,1)) num2str(MDd_names(mod,2)) '}'])
     axis on; grid on; box on
 end
+
 %% NL full order model with defects (using tangenstiff_defected) 
-q0 = BeamAssembly.constrain_vector(u0);
-qd0 = BeamAssembly.constrain_vector(v0);
-qdd0 = BeamAssembly.constrain_vector(a0);
-TI_NL_def = ImplicitNewmark('timestep',h,'alpha',0.005);
-BeamAssembly.DATA.Ud=U*xi;
-% Linear Residual evaluation function handle
-residual = @(q,qd,qdd,t)residual_nonlinear_defected(q,qd,qdd,t,BeamAssembly,F_ext);
-
-% Nonlinear Time Integration
-
-tic
-TI_NL_def.Integrate(q0,qd0,qdd0,tmax,residual);
-TI_NL_def.Solution.u = BeamAssembly.unconstrain_vector(TI_NL_def.Solution.q);
-FullNLdefduration=toc
+% q0 = BeamAssembly.constrain_vector(u0);
+% qd0 = BeamAssembly.constrain_vector(v0);
+% qdd0 = BeamAssembly.constrain_vector(a0);
+% TI_NL_def = ImplicitNewmark('timestep',h,'alpha',0.005);
+% BeamAssembly.DATA.Ud=U*xi;
+% % Linear Residual evaluation function handle
+% residual = @(q,qd,qdd,t)residual_nonlinear_defected(q,qd,qdd,t,BeamAssembly,F_ext);
+% 
+% % Nonlinear Time Integration
+% 
+% tic
+% TI_NL_def.Integrate(q0,qd0,qdd0,tmax,residual);
+% TI_NL_def.Solution.u = BeamAssembly.unconstrain_vector(TI_NL_def.Solution.q);
+% FullNLdefduration=toc
 %% HFOM-d Linear 
 % Initial condition: equilibrium
 u00 = zeros(BeamDefectedAssembly.Mesh.nDOFs, 1);
@@ -795,18 +799,18 @@ TI_lin_HFMd.Integrate(q0,qd0,qdd0,tmax,residual_lin);
 TI_lin_HFMd.Solution.ud = BeamDefectedAssembly.unconstrain_vector(TI_lin_HFMd.Solution.q);
 FullLDurationHFMd=toc
 %% HFOM-d NL
-% Instantiate object for nonlinear time integration
-TI_NL_HFMd = ImplicitNewmark('timestep',h,'alpha',0.005);
-
-% Linear Residual evaluation function handle
-residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamDefectedAssembly,F_ext);
-
-% Nonlinear Time Integration
-
-tic
-TI_NL_HFMd.Integrate(q0,qd0,qdd0,tmax,residual);
-TI_NL_HFMd.Solution.ud = BeamDefectedAssembly.unconstrain_vector(TI_NL_HFMd.Solution.q);
-FullNLdurationHFMd=toc
+% % Instantiate object for nonlinear time integration
+% TI_NL_HFMd = ImplicitNewmark('timestep',h,'alpha',0.005);
+% 
+% % Linear Residual evaluation function handle
+% residual = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,BeamDefectedAssembly,F_ext);
+% 
+% % Nonlinear Time Integration
+% 
+% tic
+% TI_NL_HFMd.Integrate(q0,qd0,qdd0,1*T,residual);
+% TI_NL_HFMd.Solution.ud = BeamDefectedAssembly.unconstrain_vector(TI_NL_HFMd.Solution.q);
+% FullNLdurationHFMd=toc
 %% ROM for defected case ROM-d using tensors
 LROMdd=[];
 Ltimedd=[];
@@ -1184,7 +1188,7 @@ for m=3;% m=[2 3 7 10]
         for ii = 1 : size(V, 2)
             V(:,ii) = V(:,ii) / (V(:,ii)'*(BeamAssembly.mass_matrix)*V(:,ii));
         end
-        BeamReducedAssemblyDefected  = ReducedAssembly(myMesh,V);
+        BeamReducedAssemblyDefected  = ReducedAssembly(MeshDefected,V);
         
         
         BeamReducedAssemblyDefected.DATA.M = BeamReducedAssemblyDefected.mass_matrix();
@@ -1197,7 +1201,7 @@ for m=3;% m=[2 3 7 10]
         Lin_sol=TI_lin.Solution.u;
         Lin_sol_snap=[];
         for ii=1:size(Lin_sol,2)
-            if rem(ii,10)==0
+            if rem(ii,100)==0
                 Lin_sol_snap=[Lin_sol_snap Lin_sol(:,ii)];
             end
         end
@@ -1226,20 +1230,24 @@ for m=3;% m=[2 3 7 10]
         [G,b]=BeamReducedAssemblyDefected.constructGb(qq);
         GBconstructTime2=toc;
         %fNNLS
-        tic
-        [x_fnnls,w_fnnls]=fnnls(G'*G,G'*b,(norm(b)*0.01));
-        fnnlsTime=toc
-        tic;[x_nnls,w_nnls,info]=nnls(full(G),full(b),struct('Accy',1,'Tol',1/((norm(b)*5))));
-        nnlTime=toc
-%         options = optimset('TolX',(norm(b)*0.01));
-%         tic;x_lsq=lsqnonneg(G,b,options);
-        lsqTime=toc
-        nnz(x_fnnls)
-        nnz(x_nnls)
-%         nnz(x_lsq)
- x_sNNLS=sNNLS(G,b,0.0035);
-         nnz(x_sNNLS)
-        BeamReducedAssemblyDefected.DATA.elementWeights=x_sNNLS;
+%         tic
+%         [x_fnnls,w_fnnls]=fnnls(G'*G,G'*b,(norm(b)*0.01));
+%         fnnlsTime=toc
+%         tic;[x_nnls,w_nnls,info]=nnls(full(G),full(b),struct('Accy',1,'Tol',1/((norm(b)*10))));
+%         nnlTime=toc
+% %         options = optimset('TolX',(norm(b)*0.01));
+% %         tic;x_lsq=lsqnonneg(G,b,options);
+% %         lsqTime=toc
+% %         nnz(x_fnnls)
+% %         nnz(x_nnls)
+% %         nnz(x_lsq)
+% %         x_sNNLS=sNNLS(G,b,0.0035);
+% %          nnz(x_sNNLS)
+%         BeamReducedAssemblyDefected.DATA.elementWeights=x_nnls;
+        
+        [E_jain_d, xi_jain_d]=snnls_j(full(G),full(b),0.000001)
+        nnz(xi_jain_d)
+       BeamReducedAssemblyDefected.DATA.elementWeights=xi_jain_d;  %ones(500,1)
         %%
         f0_ROM_i= sort(sqrt(eig(BeamReducedAssemblyDefected.DATA.M\BeamReducedAssemblyDefected...
             .DATA.K))/2/pi) ;
@@ -1274,8 +1282,9 @@ for m=3;% m=[2 3 7 10]
         TI_NL_alpha_red = ImplicitNewmark('timestep',h,'alpha',0.005);
         
         % Modal nonlinear Residual evaluation function handle
-        Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hyper_defected(q,qd,qdd,t,BeamReducedAssemblyDefected,F_ext);
-        
+       % Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hyper_defected(q,qd,qdd,t,BeamReducedAssemblyDefected,F_ext);
+        Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hyper(q,qd,qdd,t,BeamReducedAssemblyDefected,F_ext);
+
         % time integration
         tic
         TI_NL_alpha_red.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);

@@ -2,8 +2,8 @@
 %  clear all
 
 Ts = h;     
-t=TI_NL.Solution.time(:);
-x=TI_NL.Solution.u(dof,:)';
+t=TI_lin.Solution.time(:);
+x=TI_lin.Solution.u(dof,:)';
 
 
 % t=t1;

@@ -1,4 +1,6 @@
 function [wei]=sNNLS(G,b,tole)
+iter=0;
+
 EE=[];
 Z=[1:size(G,2)];
 wei=sparse(zeros(size(G,2),1));
@@ -8,6 +10,7 @@ fullset=[1:size(G,2)];
  cntt=0;
  neta=0;
 while norm(G*wei-b,'fro')>tole*norm(b,'fro')
+    iter=iter+1
     muu=G'*(b-G*wei);
     [vv,ee]=max(muu);
     vv=abs(vv);
@@ -22,8 +25,9 @@ while norm(G*wei-b,'fro')>tole*norm(b,'fro')
             wei=zeta;
             break
         end
-        
+        subiter=0;
         for ii=EE
+            subiter=subiter+1
             netaMin1=min(wei(ii)/(wei(ii)-zeta(ii)));
             if cntt==0
                 neta=netaMin1;
