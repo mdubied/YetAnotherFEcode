@@ -226,7 +226,7 @@ classdef ReducedAssembly < Assembly
 
         end
         
-            function [G, b] = constructGbass(self,qq, varargin)
+            function [G, b, NL_b_forces] = constructGbass(self,qq, varargin)
             % This function assembles a generic finite element matrix and
             % vector from its element level counterpart.
             % elementMethodName is a string input containing the name of
@@ -252,6 +252,7 @@ classdef ReducedAssembly < Assembly
             nt=size(qq,2);
             G=sparse(zeros(m*nt,self.Mesh.nElements));
             b=sparse(zeros(m*nt,1));
+            NL_b_forces=sparse(zeros(self.Mesh.nDOFs,nt));
             % Computing element level contributions
             for k=1:nt
              
@@ -270,6 +271,7 @@ classdef ReducedAssembly < Assembly
             end
            
            b(z1+1:z2)=sum( G(z1+1:z2,:),2);
+           NL_b_forces(:,k)=V*b(z1+1:z2);
            b=sparse(b);
             end
         1

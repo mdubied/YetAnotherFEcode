@@ -286,7 +286,7 @@ TI_lin.Solution.u = FreqDivAssembly.unconstrain_vector(TI_lin.Solution.q);
 FullLDuration=toc
 
 TI_lin_time= TI_lin.Solution.time';
-TI_lin_dof1= TI_lin.Solution.u(dof1,:)';
+TI_lin_dof1= TI_lin.Solution.u(dof1,:)'; 
 TI_lin_dof2= TI_lin.Solution.u(dof2,:)';
 TI_lin_dof3= TI_lin.Solution.u(dof3,:)';
 
@@ -506,14 +506,14 @@ MDeriH=[];
 VMssH=orth(VMs);
 MDssH=orth(MDs);
 for m=[15]
-    for n=[45]% m*(m+1)/2]
+    for n=[100]% m*(m+1)/2]
 
         t=m+n;
 
         if n==0
             V = [VMs(:,1:m)];
         else
-            V = [VMs(:,1:m)  MDs(:,[sortedMDs(1:n)]) ]; %MDs(:,1:n)]; %
+            V = [VMs(:,1:m) MDs(:,[sortedMDs(1:n)]) ] %MDs(:,1:n)]; % MDs(:,[sortedMDs(1:n)]) ]; %
         end
         %mass normalization
         V=orth(V);
@@ -552,7 +552,7 @@ for m=[15]
         %Construct Gb
         qq=(V'*V)^-1*V'*u_lin_ECSW;
         tic
-        [G,b]=FreqDivReducedAssembly.constructGb(qq);
+        [G,b,bForce]=FreqDivReducedAssembly.constructGb(qq);
         GBconstructTime=toc;
         
          %%fNNLS
