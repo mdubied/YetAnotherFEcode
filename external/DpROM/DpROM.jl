@@ -540,12 +540,12 @@ function Amatrices3D()
            th[3]  th[6]  th[9]      0      0      0  th[1]  th[4]  th[7];
                0      0      0  th[3]  th[6]  th[9]  th[2]  th[5]  th[8]]
     A3(th) = -1/2*
-        [th[1]     0     0         th[4]/2         th[7]/2               0;
-             0 th[5]     0         th[2]/2               0         th[8]/2;
-             0	   0 th[9]               0         th[3]/2         th[6]/2;
-         th[2] th[4]     0 th[1]/2+th[5]/2         th[8]/2         th[7]/2;
-         th[3]     0 th[7]         th[6]/2 th[1]/2+th[9]/2         th[4]/2;
-             0 th[6] th[8]         th[3]/2         th[2]/2 th[5]/2+th[9]/2]
+        [2*th[1]       0       0       th[4]       th[7]           0;
+               0 2*th[5]       0       th[2]           0       th[8];
+               0	   0 2*th[9]           0       th[3]       th[6];
+         2*th[2] 2*th[4]       0 th[1]+th[5]       th[8]       th[7];
+         2*th[3]       0 2*th[7]       th[6] th[1]+th[9]       th[4];
+             0   2*th[6] 2*th[8]       th[3]       th[2] th[5]+th[9]]
     A1, A2, A3
 end
 function Amatrices2D()
@@ -555,9 +555,10 @@ function Amatrices2D()
     A2(th) =-[th[1] th[3]     0     0;
                   0     0 th[2] th[4];
               th[2] th[4] th[1] th[3]]
-    A3(th) = [th[1]     0 th[3]/2;
-                  0 th[4] th[2]/2;
-              th[2] th[3] th[1]/2+th[4]/2]/2
+    A3(th) = -1/2*
+             [2*th[1]       0 th[3];
+                    0 2*th[4] th[2];
+              2*th[2] 2*th[3] th[1]+th[4]]
     A1, A2, A3
 end
 # shape functions selector
