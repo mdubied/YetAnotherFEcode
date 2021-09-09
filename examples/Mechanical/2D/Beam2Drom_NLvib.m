@@ -182,7 +182,7 @@ H = 7;                  % harmonic order
 N = 3*H+1;              % number of time samples per period
 Om_s = omi * 0.80;   	% start frequency
 Om_e = omi * 1.1;    	% end frequency
-ds =  2;                % Path continuation step size
+ds =  5;                % Path continuation step size
 exc_lev = 4000;
 
 % COMPUTE FRs _____________________________________________________________

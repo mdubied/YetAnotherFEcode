@@ -15,36 +15,48 @@
 %           nset --> struct containing node sets (IDs) of the 4 external
 %           edges. They are ordered as: x=0, y=0, x=l, y=w.
 
-function [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny)
+function [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType)
 
 nel = nx*ny;
+elementType = upper(elementType);
 
-fprintf(' Meshing %d elements (Q8) ... ', nel)
+fprintf([' Meshing %d elements (' elementType ') ... '], nel)
 tic
 
-elnodes = [         % element coordinates in the natural space (/2)
-     0     0
-     1     0
-     1     1
-     0     1
-     0.5   0
-     1     0.5
-     0.5   1
-     0     0.5];
+switch elementType
+    case 'QUAD4'
+        nNodes = 4;
+        elnodes = [         % element coordinates in the natural space (/2)
+         0     0
+         1     0
+         1     1
+         0     1];
+    case 'QUAD8'
+        nNodes = 8;
+        elnodes = [         % element coordinates in the natural space (/2)
+             0     0
+             1     0
+             1     1
+             0     1
+             0.5   0
+             1     0.5
+             0.5   1
+             0     0.5];
+end
 lx = Lx/nx;
 ly = Ly/ny;
 elnodes(:,1) = elnodes(:,1)*lx; % element coordinates in physical space
 elnodes(:,2) = elnodes(:,2)*ly;
 % create nodes
-nodes = zeros(nel*8,2);
+nodes = zeros(nel*nNodes,2);
 nn = 1;
 for ii = 1:nx
     for jj = 1:ny   
         elnodes_temp = elnodes;
         elnodes_temp(:,1) = elnodes_temp(:,1)+lx*(ii-1);
         elnodes_temp(:,2) = elnodes_temp(:,2)+ly*(jj-1);
-        nodes(nn:nn+7,:)  = elnodes_temp;
-        nn = nn+8;
+        nodes(nn:nn+nNodes-1,:)  = elnodes_temp;
+        nn = nn+nNodes;
     end
 end
 
@@ -54,12 +66,12 @@ nodes = round(nodes*tol) / tol;
 % remove duplicate nodes from 'nodes' matrix
 [nodes, ~, ic] = unique(nodes, 'rows', 'stable');
 elements = ic;
-elements = reshape(elements, 8, nel)';
+elements = reshape(elements, nNodes, nel)';
 idb = reshape(1 : length(nodes(:)), 2, size(nodes,1))';
 
-conn = zeros(nel,8*2);
+conn = zeros(nel, nNodes*2);
 for ii = 1:nel
-    conn(ii,:) = reshape(idb(elements(ii,:),:)',1,8*2);
+    conn(ii,:) = reshape(idb(elements(ii,:),:)',1, nNodes*2);
 end
 
 % external surfaces

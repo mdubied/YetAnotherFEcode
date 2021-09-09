@@ -1,9 +1,9 @@
-classdef Quad8Element < ContinuumElement
+classdef Quad4Element < ContinuumElement
     properties
         nodes = []          % global coordinates of element nodes
         nodeIDs = []        % the index location of element nodes
         nDOFPerNode = 2     % number of DOFs per node
-        nNodes = 8          % number of nodes per element
+        nNodes = 4          % number of nodes per element
         nDim = 2            % number of dimensions in local coordinates
         nelDOFs
         quadrature       	% weights and points for gauss quadrature
@@ -20,7 +20,7 @@ classdef Quad8Element < ContinuumElement
         
         % MINIMUM REQUIRED FUNCTIONS ______________________________________
         
-        function self = Quad8Element(thickness, Material, Ngauss)
+        function self = Quad4Element(thickness, Material, Ngauss)
             % Self function (constructor)
             if nargin == 2
                 Ngauss = 2;
@@ -36,27 +36,22 @@ classdef Quad8Element < ContinuumElement
             % [G,detJ,dH] = shape_function_derivatives(self, X)
             % G = shape function derivatives in physical coordinates, s.t.
             % th=G*p with th={ux uy vx vy}' (ux=du/dx...)
-            % and p={u1,v1,...,u8,v8}' (nodal displacements).
+            % and p={u1,v1,...,u4,v4}' (nodal displacements).
             % detJ = det(J), J=jacobian
             %______________________________________________________________
-            g = X(1);
-            h = X(2);
+            r = X(1);
+            s = X(2);
             xy = self.nodes;
             % shape function derivatives in natural coordinates
-            dHn = [ ...
-                    -((h - 1)*(g + h + 1))/4 - ((g - 1)*(h - 1))/4, -((g - 1)*(g + h + 1))/4 - ((g - 1)*(h - 1))/4;
-                    ((h - 1)*(h - g + 1))/4 - ((g + 1)*(h - 1))/4,   ((g + 1)*(h - g + 1))/4 + ((g + 1)*(h - 1))/4;
-                    ((h + 1)*(g + h - 1))/4 + ((g + 1)*(h + 1))/4,   ((g + 1)*(g + h - 1))/4 + ((g + 1)*(h + 1))/4;
-                    ((h + 1)*(g - h + 1))/4 + ((g - 1)*(h + 1))/4,   ((g - 1)*(g - h + 1))/4 - ((g - 1)*(h + 1))/4;
-                                                        g*(h - 1),                                     g^2/2 - 1/2;
-                                                      1/2 - h^2/2,                                      -h*(g + 1);
-                                                       -g*(h + 1),                                     1/2 - g^2/2;
-                                                      h^2/2 - 1/2,                                       h*(g - 1)]';
+            dHn = 1/4*[ s-1,  r-1; 
+                        1-s, -r-1; 
+                        s+1,  r+1; 
+                       -s-1,  1-r].';
             J = dHn*xy;
             detJ = det(J);
             dH = J\dHn;	% derivatives in physical coordinates,
-                      	% 2x16 matrix, [dNi_dx; dNi_dy]
-                       	% with i = 1...10
+                      	% 2x8 matrix, [dNi_dx; dNi_dy]
+                       	% with i = 1...8
             G = self.initialization.G;
             G(1:2,1:2:end) = dH;
             G(3:4,2:2:end) = dH;
@@ -74,27 +69,17 @@ classdef Quad8Element < ContinuumElement
             % ... > 3.2.4 Solid isoparametric quadrilaterals and hexahedra
             g = X(1);
             h = X(2);
-            N = 1/4*[...
-                    -(1-g)*(1-h)*(1+g+h); 
-                    -(1+g)*(1-h)*(1-g+h);
-                    -(1+g)*(1+h)*(1-g-h); 
-                    -(1-g)*(1+h)*(1+g-h);
-                    2*(1-g)*(1+g)*(1-h);  
-                    2*(1-h)*(1+h)*(1+g);
-                    2*(1-g)*(1+g)*(1+h);  
-                    2*(1-h)*(1+h)*(1-g)];
+            N = 1/4*[ +(g - 1)*(h - 1); 
+                      -(g + 1)*(h - 1);
+                      +(g + 1)*(h + 1); 
+                      -(g - 1)*(h + 1)];
         end
         
         function X = natural_coordinates
-            X = [ ...
-                -1  -1  % node 1 (corner)
-                1   -1  % node 2 (corner)
-                1   1	% node 3 (corner)
-                -1  1   % node 4 (corner)
-                0   -1  % node 5
-                1   0   % node 6
-                0   1   % node 7
-                -1  0]; % node 8
+            X = [-1  -1   % node 1
+                  1  -1   % node 2
+                  1   1	  % node 3
+                 -1   1]; % node 4
         end
         
     end

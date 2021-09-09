@@ -3,11 +3,15 @@ clear;
 close all;
 clc
 
-% elementType = 'HEX20';
-% elementType = 'TET4'; % good for code-testing, VERY BAD for real use
-% elementType = 'TET10';
-elementType = 'WED15';
+% ***** Elements with linear shape functions (very slow mesh convergence, 
+%     good for fast code-testing)
+% elementType = 'HEX8';
+% elementType = 'TET4';
 
+% ***** Elements with quadratic shape functions
+% elementType = 'TET10';
+% elementType = 'WED15';
+elementType = 'HEX20';
 
 %% PREPARE MODEL                                                    
 
@@ -21,6 +25,8 @@ myMaterial = KirchoffMaterial();
 set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
 % Element
 switch elementType
+    case 'HEX8'
+        myElementConstructor = @()Hex8Element(myMaterial);
     case 'HEX20'
         myElementConstructor = @()Hex20Element(myMaterial);
     case 'TET4'
