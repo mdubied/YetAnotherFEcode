@@ -1,11 +1,11 @@
 % EXAMPLE: beam meshed with 2D element
 clear; 
-close all; 
+close all;
 clc
 format short g
 
 FORMULATION = 'N1'; % N1/N1t/N0
-
+USEJULIA = 0;
 
 %% PREPARE MODEL                                                    
 
@@ -28,7 +28,7 @@ Ly = .050;
 h = 2;
 nx = 20*h;
 ny = 1*h;
-[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny);
+[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny, 'QUAD8');
 
 % nominal mesh
 MeshNominal = Mesh(nodes);
@@ -126,11 +126,11 @@ Dc = NominalAssembly.constrain_matrix(D);
 
 %% Modal Derivatives & Defect Sensitivities                         
 
-[MDn, MDnames] = modal_derivatives(NominalAssembly, elements, VMn); % nominal
-MDd = modal_derivatives(DefectedAssembly, elements, VMd);           % defected
+[MDn, MDnames] = modal_derivatives(NominalAssembly,  elements, VMn, USEJULIA); % nominal
+MDd            = modal_derivatives(DefectedAssembly, elements, VMd, USEJULIA); % defected
 
 [DS, names] = defect_sensitivities(NominalAssembly, elements, VMn, U, ...
-    FORMULATION); % for DpROM
+    FORMULATION, USEJULIA); % for DpROM
 
 % PLOT a MD
 nwho = 1;

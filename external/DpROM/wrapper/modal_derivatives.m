@@ -1,7 +1,7 @@
 % modal_derivatives
 %
 % Synthax:
-% [MD, names] = modal_derivatives(myAssembly, elements, Phi)
+% [MD, names] = modal_derivatives(myAssembly, elements, Phi, USEJULIA)
 %
 % Description: compute Modal Derivatives.
 % INPUTS
@@ -10,25 +10,31 @@
 %   - elements: table of the elements
 %   - Phi: tall matrix containing by columns the selected Vibration Modes
 %     (unconstrained)
+%   - USEJULIA (optional): if set to 1, the Julia module "DpROM.jl" is used
+%     (default value is 0).
 % OUTPUTS
 %   - MD: tall matrix containing by columns all the Modal Derivatives that
 %     can be computed from the given Phi (unconstrained MDs are returned).
 %   - names: matrix containing the subscripts of the MDs, for convenience.
 %
 % Additional notes:
-%   - this function uses the stiffness_matrix_derivative function 
-%     implemented in the Julia module "DpROM.jl". 
-%   - as such, this function supports ONLY models meshed with the elements
-%     supported by both YetAnotherFEcode AND the DpROM.jl
+%   - if USEJULIA=1, this function uses the stiffness_matrix_derivative 
+%     function implemented in the Julia module "DpROM.jl". 
+%   - if USEJULIA=1, this function supports ONLY models meshed with the 
+%     elements supported by both YetAnotherFEcode AND the DpROM.jl
 %   - List of currently supported elements: 
-%     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
-%     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
+%     Q4, Q8, TET4, TET10, HEX8, HEX20, WED15   (in YetAnotherFEcode)
+%     Q4, Q8,       TET10, HEX8, HEX20, WED15 	(in DpROM.jl)
 %
 % Created: 14 May 2021
 % Author: Jacopo Marconi, Politecnico di Milano
 
 
-function [MD, names] = modal_derivatives(myAssembly, elements, Phi)
+function [MD, names] = modal_derivatives(myAssembly, elements, Phi, USEJULIA)
+
+if nargin < 4
+    USEJULIA = 0;
+end
 
 n = size(Phi,1);
 n_VMs = size(Phi,2);
@@ -42,7 +48,11 @@ kk = 1;
 for jj = 1 : n_VMs
     
     Phi_j = Phi(:, jj);
-    dK_deta_j = stiffness_matrix_derivative(myAssembly, elements, Phi_j);
+    if USEJULIA == 1
+        dK_deta_j = stiffness_matrix_derivative(myAssembly, elements, Phi_j);
+    else
+        dK_deta_j = myAssembly.matrix('stiffness_derivative',Phi_j);
+    end
     dK_deta_j = myAssembly.constrain_matrix( dK_deta_j );
     
     for ii = 1 : n_VMs
