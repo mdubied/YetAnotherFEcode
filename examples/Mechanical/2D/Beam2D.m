@@ -4,7 +4,8 @@ close all;
 clc
 
 whichModel = 'CUSTOM'; % or "ABAQUS"
-
+elementType = 'QUAD4';
+% elementType = 'QUAD8';
 
 %% PREPARE MODEL                                                    
 
@@ -19,7 +20,12 @@ myMaterial = KirchoffMaterial();
 set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
 myMaterial.PLANE_STRESS = true;	% set "false" for plane_strain
 % Element
-myElementConstructor = @()Quad8Element(thickness, myMaterial);
+switch elementType
+    case 'QUAD4'
+        myElementConstructor = @()Quad4Element(thickness, myMaterial);
+    case 'QUAD8'
+        myElementConstructor = @()Quad8Element(thickness, myMaterial);
+end
 
 % MESH_____________________________________________________________________
 Lx = 3;
@@ -28,7 +34,7 @@ nx = 30;
 ny = 3;
 switch upper( whichModel )
     case 'CUSTOM'
-        [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny);
+        [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
     case 'ABAQUS'
         % Alternatively, one can write an input file in ABAQUS and read it as:
         filename = 'Job-BeamQuad';

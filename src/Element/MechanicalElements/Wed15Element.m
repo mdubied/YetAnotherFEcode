@@ -1,21 +1,19 @@
-classdef Wed15Element < Element
+classdef Wed15Element < ContinuumElement
     properties
         nodes = []          % global coordinates of element nodes
         nodeIDs = []        % the index location of element nodes
         nDOFPerNode = 3     % number of DOFs per node
         nNodes = 15         % number of nodes per element
         nDim = 3            % number of dimensions in local coordinates
+        nelDOFs
+        quadrature       	% weights and points for gauss quadrature
+        Material           	% Object of class Material
+        initialization     	% some 0-matrices to speedup numerical integration
+        elType = 'WED'
     end
     
     properties
-        quadrature              % weights and points for gauss quadrature
-        Material                % Object of class Material
-        initialization          % some 0-matrices to speedup numerical integration
-    end
-    
-    properties (Dependent)
-        uniformBodyForce
-        vol                     % volume of the element
+        thickness = 1       % element thickness  
     end
     
     methods
@@ -34,132 +32,12 @@ classdef Wed15Element < Element
                 Ngauss.lin = 3;  % Line integration order (1 to 5)
                 Ngauss.tri = 03; % Triangle integration order (1,3,6,7,12)
             end
-            [ w, x ] = wedge_rule ( Ngauss.lin, Ngauss.tri );
-            self.quadrature.Ng = Ngauss;
-            self.quadrature.X = x;	% gauss integration points
-            self.quadrature.W = w;	% gauss integration weights
-            % INIZIALIZATION of some matrices (this should speedup
-            % numerical integration)
-            C = self.Material.get_stress_strain_matrix_3D;
-            H = [1 0 0 0 0 0 0 0 0;
-                0 0 0 0 1 0 0 0 0;
-                0 0 0 0 0 0 0 0 1;
-                0 1 0 1 0 0 0 0 0;
-                0 0 1 0 0 0 1 0 0;
-                0 0 0 0 0 1 0 1 0];
-            self.initialization.A = zeros(6,9); % nonlinear strain
-            self.initialization.G = zeros(9,45);% shape function derivatives
-            self.initialization.Z = zeros(15);  % zero-matrix
-            self.initialization.K = zeros(45);  % stiffness-element matrix
-            self.initialization.F = zeros(45,1);% internal forces (element)
-            self.initialization.C = C;          % constitutive law matrix
-            self.initialization.H = H;          % linear strain
+            self.thickness = 1;
+            self.nelDOFs = self.nNodes * self.nDOFPerNode;
+            ContinuumElementConstructor(self, Material, Ngauss);
         end
         
-        function Mel = mass_matrix(self)
-            % _____________________________________________________________
-            %
-            % Mel = mass_matrix(self);
-            % Mel: element-level mass matrix (in global coordinates)
-            %______________________________________________________________
-            X = self.quadrature.X;
-            W = self.quadrature.W;
-            rho = self.Material.DENSITY;
-            Mel = zeros(45);
-            for ii = 1:length(self.quadrature.W)
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                N = self.shape_functions(g,h,r);
-                [~,detJ] = shape_function_derivatives(self,g,h,r);
-                NN(1,1:3:45) = N;
-                NN(2,2:3:45) = N;
-                NN(3,3:3:45) = N;
-                % integration of K and M through GAUSS QUADRATURE
-                Mel = Mel + W(ii)*(NN'*NN)*detJ;
-            end
-            Mel = sparse(rho*Mel);
-        end
-        
-        function [K,F] = tangent_stiffness_and_force(self,x)
-            displ = self.extract_element_data(x);
-            X = self.quadrature.X;
-            W = self.quadrature.W;
-            K = self.initialization.K;
-            F = self.initialization.F;
-            C = self.initialization.C;
-            H = self.initialization.H;
-            ZZ = self.initialization.Z;
-            for ii = 1:length(self.quadrature.W)
-                g = X(1,ii);  	% natural coordinates
-                h = X(2,ii);	% natural coordinates
-                r = X(3,ii);	% natural coordinates
-                we = W(ii);     % weights
-                [G,detJ,dH] = shape_function_derivatives(self,g,h,r);
-                th  = G*displ;
-                A = self.initialization.A;
-                A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
-                A(6,2)=th(3); A(3,3)=th(3); A(5,3)=th(1); A(6,3)=th(2); A(1,4)=th(4);
-                A(4,4)=th(5); A(5,4)=th(6); A(2,5)=th(5); A(4,5)=th(4); A(6,5)=th(6);
-                A(3,6)=th(6); A(5,6)=th(4); A(6,6)=th(5); A(1,7)=th(7); A(4,7)=th(8);
-                A(5,7)=th(9); A(2,8)=th(8); A(4,8)=th(7); A(6,8)=th(9); A(3,9)=th(9);
-                A(5,9)=th(7); A(6,9)=th(8);
-                % Green Strain tensor
-                E = (H + 1/2*A)*th;
-                % second Piola-Kirchhoff stress tensor
-                s = C*E; % s = [S11 S22 S33 S12 S13 S23]
-                S = [s(1) s(4) s(5); s(4) s(2) s(6); s(5) s(6) s(3)];
-                Bnl = (H + A)*G;
-                % functions to integrate over volume
-                int_K1 = Bnl'*C*Bnl;
-                HSH = dH'*S*dH;
-                int_Ks = [HSH ZZ ZZ; ZZ HSH ZZ; ZZ ZZ HSH]; % (faster than blkdiag)
-                int_K = (int_K1 + int_Ks)*detJ;
-                int_F = (Bnl'*s)*detJ;
-                % integration of K and F through Gauss quadrature
-                K = K + we*int_K;
-                F = F + we*int_F;
-            end
-        end
-        
-        function xe = extract_element_data(self,x)
-            % x is a vector of full DOFs
-            index = get_index(self.nodeIDs,self.nDOFPerNode);
-            xe = x(index,:);
-        end
-        
-        function F = uniform_body_force(self)
-            % _____________________________________________________________
-            %
-            % F = uniform_body_force(self,direction)
-            % This function computes a load along direction=3(Z) by
-            % dividing the load on the 15 nodes according to the element
-            % volume (V/15) [it might not be the best way, but still...]
-            %______________________________________________________________
-            F = sparse(45,1);
-            F(3:3:end) = self.vol/15; % uniformly distributed pressure on the structure
-        end
-        
-        % ANCILLARY FUNCTIONS _____________________________________________
-        
-        function V = get.vol(self)
-            % volume is given by the integral of detJ (jacobian from 
-            % isoparametric to physical space) over the volume of the
-            % isoparametric element
-            detJ = 0;
-            W = self.quadrature.W;
-            X = self.quadrature.X;
-            for ii = 1 : length( w )
-                g = X(1,ii);
-                h = X(2,ii);
-                r = X(3,ii);
-                [~, detJ_i] = shape_function_derivatives(self,g,h,r);
-                detJ = detJ + detJ_i * W(ii);
-            end
-            V = detJ;
-        end
-        
-        function [G,detJ,dH] = shape_function_derivatives(self,g,h,r)
+        function [G,detJ,dH] = shape_function_derivatives(self, X)
             %______________________________________________________________
             %
             % [G,detJ,dH] = G_WED15(self,g,h,r)
@@ -168,6 +46,9 @@ classdef Wed15Element < Element
             % and p={u1,v1,w1,...,u15,v15,w15}' (nodal displacements).
             % detJ = det(J), J=jacobian
             %______________________________________________________________
+            g = X(1);
+            h = X(2);
+            r = X(3);
             xyz = self.nodes;
             % shape function derivatives in natural coordinates
             dHn = [0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0; 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0];
@@ -233,16 +114,19 @@ classdef Wed15Element < Element
             G(7:9,3:3:45) = dH;
         end
         
-    end % methods
+    end
     
     methods (Static)
         
-        function N = shape_functions(g,h,r)
+        function N = shape_functions(X)
             % N = shape_functions(g,h,r)
             % SHAPE FUNCTIONS FOR A 15-NODED WEDGE ELEMENT
             % - see Abaqus documentation:
             % Abaqus theory guide > Elements > Continuum elements > ...
             % ... > 3.2.6 Triangular, tetrahedral, and wedge elements
+            g = X(1);
+            h = X(2);
+            r = X(3);
             N = [...
                     1/2*((1-g-h)*(2*(1-g-h)-1)*(1-r)-(1-g-h)*(1-r^2)); % u1
                     1/2*(g*(2*g-1)*(1-r)-g*(1-r^2)); % u2

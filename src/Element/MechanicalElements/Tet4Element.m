@@ -1,59 +1,38 @@
-classdef Tet4Element < Element
+classdef Tet4Element < ContinuumElement
     properties
         nodes = []          % global coordinates of element nodes
         nodeIDs = []        % the index location of element nodes
         nDOFPerNode = 3     % number of DOFs per node
         nNodes = 4          % number of nodes per element
         nDim = 3            % number of dimensions in local coordinates
+        nelDOFs
+        quadrature       	% weights and points for gauss quadrature
+        Material           	% Object of class Material
+        initialization     	% some 0-matrices to speedup numerical integration
+        elType = 'TET'
     end
     
     properties
-        quadrature              % weights and points for gauss quadrature
-        Material                % Object of class Material
-        initialization          % some 0-matrices to speedup numerical integration        
-    end
-    
-    properties (Dependent)
-        uniformBodyForce
-        vol                     % volume of the element
+        thickness = 1       % element thickness  
     end
     
     methods
         
         % MINIMUM REQUIRED FUNCTIONS ______________________________________
         
-        function self = Tet4Element(Material, Ngauss)
+        function self = Tet4Element(Material)
             % _____________________________________________________________
             %
             % SELF-FUNCTION
             % self = Tet4Element(Material,Ngauss)
             % defines element's properties
             %______________________________________________________________
-            self.Material = Material;
-            if nargin == 1
-                Ngauss = 2;
-            end
-            [x,w] = inttet(Ngauss);
-            self.quadrature.Ng = Ngauss;
-            self.quadrature.X = x;	% gauss integration points
-            self.quadrature.W = w;	% gauss integration weights
-            
-            % INIZIALIZATION of some matrices (this should speedup
-            % numerical integration)
-            C = self.Material.get_stress_strain_matrix_3D;
-            H = [1 0 0 0 0 0 0 0 0;
-                0 0 0 0 1 0 0 0 0;
-                0 0 0 0 0 0 0 0 1;
-                0 1 0 1 0 0 0 0 0;
-                0 0 1 0 0 0 1 0 0;
-                0 0 0 0 0 1 0 1 0];
-            self.initialization.A = zeros(6,9); % nonlinear strain
-            self.initialization.G = zeros(9,12);% shape function derivatives
-            self.initialization.Z = zeros(4);   % zero-matrix
-            self.initialization.K = zeros(12);  % stiffness-element matrix
-            self.initialization.F = zeros(12,1);% internal forces (element)
-            self.initialization.C = C;          % constitutive law matrix
-            self.initialization.H = H;          % linear strain
+            Ngauss = 1; % note: shape function derivatives are constants,
+                        % and M is a lumped-parameter mass matrix. No
+                        % quadrature integration is actually needed.
+            self.thickness = 1;
+            self.nelDOFs = self.nNodes * self.nDOFPerNode;
+            ContinuumElementConstructor(self, Material, Ngauss);
         end
         
         function Mel = mass_matrix(self)
@@ -67,163 +46,7 @@ classdef Tet4Element < Element
             Mel = sparse(eye(12)*m);
         end
         
-        function [K,F] = tangent_stiffness_and_force(self, x)
-            displ = self.extract_element_data(x);
-            K = self.initialization.K;
-            F = self.initialization.F;
-            C = self.initialization.C;
-            H = self.initialization.H;
-            ZZ = self.initialization.Z;
-            % no gauss integration required (G is constant)
-                [G,detJ,dH] = shape_function_derivatives(self);
-                th  = G*displ;
-                A = self.initialization.A;
-                A(1,1)=th(1); A(4,1)=th(2); A(5,1)=th(3); A(2,2)=th(2); A(4,2)=th(1);
-                A(6,2)=th(3); A(3,3)=th(3); A(5,3)=th(1); A(6,3)=th(2); A(1,4)=th(4);
-                A(4,4)=th(5); A(5,4)=th(6); A(2,5)=th(5); A(4,5)=th(4); A(6,5)=th(6);
-                A(3,6)=th(6); A(5,6)=th(4); A(6,6)=th(5); A(1,7)=th(7); A(4,7)=th(8);
-                A(5,7)=th(9); A(2,8)=th(8); A(4,8)=th(7); A(6,8)=th(9); A(3,9)=th(9);
-                A(5,9)=th(7); A(6,9)=th(8);
-                % Green Strain tensor
-                E = (H + 1/2*A)*th;
-                % second Piola-Kirchhoff stress tensor
-                s = C*E; % s = [S11 S22 S33 S12 S13 S23]
-                S = [s(1) s(4) s(5); s(4) s(2) s(6); s(5) s(6) s(3)];
-                Bnl = (H + A)*G;
-                % functions to integrate over volume
-                int_K1 = Bnl'*C*Bnl;
-                HSH = dH'*S*dH;
-                int_Ks = [HSH ZZ ZZ; ZZ HSH ZZ; ZZ ZZ HSH]; % (faster than blkdiag)
-                int_K = int_K1 + int_Ks;
-                int_F = Bnl'*s;
-                % integration of K and F through Gauss quadrature
-                K = K + detJ * int_K;
-                F = F + detJ * int_F;
-        end
-         
-        function xe = extract_element_data(self, x)
-            % x is a vector of full DOFs
-            index = get_index(self.nodeIDs, self.nDOFPerNode);
-            xe = x(index,:);
-        end
-        
-        function  f = get.uniformBodyForce(self)
-            % This function computes a load along direction=3(Z) by
-            % dividing the load on the 4 nodes according to the element
-            % volume (V/4) [it might not be the best way, but still...]
-            %______________________________________________________________
-            f = sparse(12,1);
-            f(3:3:end) = self.vol/4; % uniformly distributed pressure on the structure
-        end
-        
-        function [T2, globalSubs] = T2(self)
-            % this function computes the 3-tensor corresponding to the 
-            % quadratic component of the nonlinear internal force in 
-            % global coordinates at the element level.
-                        
-            % global DOFs associated to the element nodes
-            index = get_index(self.nodeIDs,self.nDOFPerNode);
-            
-            % location of each dimension of tensor in global DOFs
-            globalSubs = {index, index, index};
-                        
-%             X = self.quadrature.X;
-%             W = self.quadrature.W;
-
-            C = self.initialization.C;  % constitutive law matrix
-            H = self.initialization.H;  % Linear strain matrix: eps_l = H*th
-
-            % Quadratic strain matrix: A = L.th, eps_quad = A*th
-            L = tenzeros([6,9,9]);
-            L(1,1,1)=1; L(4,2,1)=1; L(5,3,1)=1; 
-            L(4,1,2)=1; L(2,2,2)=1; L(6,3,2)=1; 
-            L(5,1,3)=1; L(6,2,3)=1; L(3,3,3)=1;
-            L(1,4,4)=1; L(4,5,4)=1; L(5,6,4)=1; 
-            L(4,4,5)=1; L(2,5,5)=1; L(6,6,5)=1; 
-            L(5,4,6)=1; L(6,5,6)=1; L(3,6,6)=1;
-            L(1,7,7)=1; L(4,8,7)=1; L(5,9,7)=1; 
-            L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1; 
-            L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
-            
-            m = self.nNodes*self.nDOFPerNode;
-            Q3h = tenzeros([m,m,m]);
-            
-%           % no gauss integration required (G is constant)
-                [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
-                % G(x,y,z) and detJ from the position of the gauss points
-                
-                %construct core part of the tensors for each gauss point
-                GHC = tensor((C*H*G)');
-                TG = tensor(G);  %create tensor object out of matrix
-                LGG = ttt(ttt(L,TG,3,1),TG,2,1);
-
-                Q3h_int = ttt(GHC,LGG,2,1);                
-                Q3h = Q3h + Q3h_int*detJ;        
-            
-            % build third order tensors using Q3h
-            Q3ht = permute(Q3h,[3 2 1]);
-            T2 = Q3h./2 + Q3ht;
-        end
-        
-        function [T3, globalSubs] = T3(self)
-            % this function computes the 4-tensor corresponding to the 
-            % quadratic component of the nonlinear internal force in 
-            % global coordinates at the element level.
-                        
-            % global DOFs associated to the element nodes
-            index = get_index(self.nodeIDs,self.nDOFPerNode);
-            
-            % location of each dimension of tensor in global DOFs
-            globalSubs = cell(4,1);
-            globalSubs(:) = {index};
-                        
-%             X = self.quadrature.X;
-%             W = self.quadrature.W;
-
-            C = self.initialization.C;  % constitutive law matrix
-            
-            % Quadratic strain matrix: A = L.th, eps_quad = A*th
-            L = tenzeros([6,9,9]);
-            L(1,1,1)=1; L(4,2,1)=1; L(5,3,1)=1; 
-            L(4,1,2)=1; L(2,2,2)=1; L(6,3,2)=1; 
-            L(5,1,3)=1; L(6,2,3)=1; L(3,3,3)=1;
-            L(1,4,4)=1; L(4,5,4)=1; L(5,6,4)=1; 
-            L(4,4,5)=1; L(2,5,5)=1; L(6,6,5)=1; 
-            L(5,4,6)=1; L(6,5,6)=1; L(3,6,6)=1;
-            L(1,7,7)=1; L(4,8,7)=1; L(5,9,7)=1; 
-            L(4,7,8)=1; L(2,8,8)=1; L(6,9,8)=1; 
-            L(5,7,9)=1; L(6,8,9)=1; L(3,9,9)=1;
-            
-            m = self.nNodes*self.nDOFPerNode;
-            T3 = tenzeros([m,m,m,m]);
-            
-            % no gauss integration required (G is constant)
-                [G,detJ,~] = shape_function_derivatives(self); %get shape function derivative
-                % G(x,y,z) and detJ from the position of the gauss points
-                
-                %construct core part of the tensors for each gauss point
-                TC = tensor(C);  %create tensor object, rename it to distinguish
-                TG = tensor(G);  %create tensor object out of matrix
-                LGG = ttt(ttt(L,TG,3,1),TG,2,1);
-
-                Q4h_int = ttt(ttt(permute(LGG,[2 1 3]),TC,2,1),LGG,3,1);                
-                T3 = T3 + Q4h_int*(detJ/2);          
-           
-        end
-        
-        % ANCILLARY FUNCTIONS _____________________________________________
-        
-        function V = get.vol(self)
-            % volume is given by the integral of detJ (jacobian from 
-            % isoparametric to physical space) over the volume of the
-            % isoparametric element
-            
-            % no gauss integration required (G is constant)
-            [~, detJ] = shape_function_derivatives(self);
-            V = detJ;
-        end
-        
-        function [G,detJ,dH] = shape_function_derivatives(self)
+        function [G,detJ,dH] = shape_function_derivatives(self, X)
             %______________________________________________________________
             %
             % [G,detJ,dH] = shape_function_derivatives(self)
@@ -262,16 +85,19 @@ classdef Tet4Element < Element
             G(7:9,3:3:12) = dH;
         end
         
-    end % methods
+    end
     
     methods (Static)
         
-        function N = shape_functions(g,h,r)
+        function N = shape_functions(X)
             % N = shape_functions(g,h,r)
             % SHAPE FUNCTIONS FOR A 4-NODED TETRAHEDRON
             % - see Abaqus documentation:
             % Abaqus theory guide > Elements > Continuum elements > ...
             % ... > 3.2.6 Triangular, tetrahedral, and wedge elements
+            g = X(1);
+            h = X(2);
+            r = X(3);
             N = [(2*(1-g-h-r)-1)*(1-g-h-r)
                     (2*g-1)*g
                     (2*h-1)*h
