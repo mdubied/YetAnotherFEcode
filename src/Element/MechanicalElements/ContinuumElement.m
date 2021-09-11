@@ -386,6 +386,93 @@ classdef ContinuumElement < Element
             end
         end
         
+        function Q = Qten_N1d(self, Ve, Ue, data)
+            L1 = data.L1;
+            L2 = data.L2;
+            L3 = data.L3;            
+            C0 = self.initialization.C;
+            H = self.initialization.H;
+            Q = data.Qinit;
+            nu = size(Ue,2);
+            
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            for ii = 1:length(W)
+                Xi = X(:, ii);  % quadrature points
+                we = W(ii);     % quadrature weights
+                [G, detJ] = shape_function_derivatives(self, Xi);               
+                Y = G*Ue;
+                G = G*Ve;
+                C = C0*(we * detJ); % <--- includes we and detJ!
+                
+                % Q2n, nominal
+                HG = H*G;
+                Q2n_i = HG'*C*HG;
+                
+                % Q3dd, defected
+                CHG = C*HG;
+                L2YG = einsum('kla,aK,lJ->kJK',L2,Y,G);
+                Q3d_i = einsum('kI,kJK->IJK',CHG,L2YG);
+                Q3d_i = Q3d_i + permute(Q3d_i,[2 1 3]);
+                
+                % Q4dd, defected
+                Q4dd_i = einsum('jIK,jk,kJL->IJKL',L2YG,C,L2YG);
+                
+                % Q3n, nominal 
+                L1GG = einsum('kla,aK,lJ->kJK',L1,G,G);
+                Q3n_i = einsum('kI,kJK->IJK',CHG,L1GG);
+                Q3n_i = 0.5 * Q3n_i + permute(Q3n_i,[2 1 3]);
+                
+                % Q4d, defected
+                Q4d_a = einsum('jIL,jk,kJK->IJKL',L2YG,C,L1GG);
+                Q4d_a = 0.5*Q4d_a + permute(Q4d_a,[3 2 1 4]);
+                L3YGG = einsum('klab,bL,aK,lJ->kJKL',L3,Y,G,G);
+                Q4d_b = einsum('kI,kJKL->IJKL',CHG,L3YGG);
+                Q4d_b = 2*permute(Q4d_b, [3 2 1 4]) + Q4d_b;
+                Q4d_i = Q4d_a + Q4d_b;
+                
+                % Q5dd, defected
+                Q5dd_i = einsum('jIL,jk,kJKM->IJKLM',L2YG,C,L3YGG);
+                Q5dd_i = 2*permute(Q5dd_i, [3 2 1 5 4]) + Q5dd_i;
+                
+                % Q4n, nominal
+                Q4n_i = 0.5 * einsum('jIK,jk,kLJ->IJKL',L1GG,C,L1GG);
+                
+                % Q5d, defected
+                Q5d_i = einsum('jIK,jk,kJLM->IKJLM',L1GG,C,L3YGG);
+                Q5d_i = Q5d_i + permute(Q5d_i, [4 3 2 1 5]);
+                
+                % Q6dd, defected
+                Q6dd_i = 2*einsum('jILM,jk,kJKN->IKJLMN',L3YGG,C,L3YGG);
+                
+                Q.Q2n{1}  = Q.Q2n{1}  + Q2n_i;
+                Q.Q3d{1}  = Q.Q3d{1}  + Q3d_i;
+                Q.Q4dd{1} = Q.Q4dd{1} + Q4dd_i;
+                Q.Q3n{1}  = Q.Q3n{1}  + Q3n_i;
+                Q.Q4d{1}  = Q.Q4d{1}  + Q4d_i;
+                Q.Q5dd{1} = Q.Q5dd{1} + Q5dd_i;
+                Q.Q4n{1}  = Q.Q4n{1}  + Q4n_i;
+                Q.Q5d{1}  = Q.Q5d{1}  + Q5d_i;
+                Q.Q6dd{1} = Q.Q6dd{1} + Q6dd_i;
+                
+                for d = 2 : nu + 1
+                    thd = Y(:, d-1);
+                    def_div = sum(thd(1 : self.nDim+1 : end));
+                    Q.Q2n{d}  = Q.Q2n{d}  + Q2n_i  * def_div;
+                    Q.Q3d{d}  = Q.Q3d{d}  + Q3d_i  * def_div;
+                    Q.Q4dd{d} = Q.Q4dd{d} + Q4dd_i * def_div;
+                    Q.Q3n{d}  = Q.Q3n{d}  + Q3n_i  * def_div;
+                    Q.Q4d{d}  = Q.Q4d{d}  + Q4d_i  * def_div;
+                    Q.Q5dd{d} = Q.Q5dd{d} + Q5dd_i * def_div;
+                    Q.Q4n{d}  = Q.Q4n{d}  + Q4n_i  * def_div;
+                    Q.Q5d{d}  = Q.Q5d{d}  + Q5d_i  * def_div;
+                    Q.Q6dd{d} = Q.Q6dd{d} + Q6dd_i * def_div;
+                end
+            end
+            
+            % ...
+        end
+        
         function A2 = A2_fun(self, th)
             if self.nDim == 2
                 A2 = -[th(1) th(3) 0     0;
@@ -400,88 +487,7 @@ classdef ContinuumElement < Element
                 th(3),  th(6),  th(9),      0,      0,      0,  th(1),  th(4),  th(7);
                     0,      0,      0,  th(3),  th(6),  th(9),  th(2),  th(5),  th(8)];
             end
-        end
-        
-        function A3 = A3_fun(self, th)
-            if self.nDim == 2
-                A3 = -[th(1),      0,      th(3)/2;
-                      0,          th(4),  th(2)/2;
-                      th(2),      th(3),  (th(1)+th(4))/2];
-            elseif self.nDim == 3
-                A3 = -[ ...
-                th(1) 0     0     th(4)/2         th(7)/2         0;
-                0	  th(5) 0     th(2)/2         0               th(8)/2;
-                0	  0	    th(9) 0               th(3)/2         th(6)/2;
-                th(2) th(4) 0     (th(1)+th(5))/2 th(8)/2         th(7)/2;
-                th(3) 0     th(7) th(6)/2         (th(1)+th(9))/2 th(4)/2;
-                0     th(6) th(8) th(3)/2         th(2)/2         (th(5)+th(9))/2];
-            end
-        end
-        
-        function L2 = L2_matrix(self)
-            if self.nDim == 2
-                L2(1,1,1) = 1; L2(3,3,1) = 1; L2(3,1,2) = 1; L2(2,3,2) = 1;
-                L2(1,2,3) = 1; L2(3,4,3) = 1; L2(3,2,4) = 1; L2(2,4,4) = 1;
-            elseif self.nDim == 3
-                L2(1,1,1) = 1; L2(4,4,1) = 1; L2(5,7,1) = 1; 
-                L2(4,1,2) = 1; L2(2,4,2) = 1; L2(6,7,2) = 1; 
-                L2(5,1,3) = 1; L2(6,4,3) = 1; L2(3,7,3) = 1; 
-                L2(1,2,4) = 1; L2(4,5,4) = 1; L2(5,8,4) = 1; 
-                L2(4,2,5) = 1; L2(2,5,5) = 1; L2(6,8,5) = 1;
-                L2(5,2,6) = 1; L2(6,5,6) = 1; L2(3,8,6) = 1; 
-                L2(1,3,7) = 1; L2(4,6,7) = 1; L2(5,9,7) = 1; 
-                L2(4,3,8) = 1; L2(2,6,8) = 1; L2(6,9,8) = 1; 
-                L2(5,3,9) = 1; L2(6,6,9) = 1; L2(3,9,9) = 1;
-            end
-            L2 = -L2;
-        end
-        
-        function L3 = L3_matrix(self)
-            if self.nDim == 2
-                L3(1,1,1,1) = 2; L3(3,2,1,1) = 1; L3(3,1,2,1) = 1; L3(1,3,3,1) = 2;
-                L3(3,4,3,1) = 1; L3(3,3,4,1) = 1; L3(3,1,1,2) = 2; L3(2,2,1,2) = 1;
-                L3(2,1,2,2) = 1; L3(3,3,3,2) = 2; L3(2,4,3,2) = 1; L3(2,3,4,2) = 1;
-                L3(1,2,1,3) = 1; L3(1,1,2,3) = 1; L3(3,2,2,3) = 2; L3(1,4,3,3) = 1;
-                L3(1,3,4,3) = 1; L3(3,4,4,3) = 2; L3(3,2,1,4) = 1; L3(3,1,2,4) = 1;
-                L3(2,2,2,4) = 2; L3(3,4,3,4) = 1; L3(3,3,4,4) = 1; L3(2,4,4,4) = 2;
-            elseif self.nDim == 3
-                L3(1,1,1,1) = 2; L3(4,2,1,1) = 1; L3(5,3,1,1) = 1; L3(4,1,2,1) = 1;
-                L3(5,1,3,1) = 1; L3(1,4,4,1) = 2; L3(4,5,4,1) = 1; L3(5,6,4,1) = 1;
-                L3(4,4,5,1) = 1; L3(5,4,6,1) = 1; L3(1,7,7,1) = 2; L3(4,8,7,1) = 1;
-                L3(5,9,7,1) = 1; L3(4,7,8,1) = 1; L3(5,7,9,1) = 1; L3(4,1,1,2) = 2;
-                L3(2,2,1,2) = 1; L3(6,3,1,2) = 1; L3(2,1,2,2) = 1; L3(6,1,3,2) = 1;
-                L3(4,4,4,2) = 2; L3(2,5,4,2) = 1; L3(6,6,4,2) = 1; L3(2,4,5,2) = 1;
-                L3(6,4,6,2) = 1; L3(4,7,7,2) = 2; L3(2,8,7,2) = 1; L3(6,9,7,2) = 1;
-                L3(2,7,8,2) = 1; L3(6,7,9,2) = 1; L3(5,1,1,3) = 2; L3(6,2,1,3) = 1;
-                L3(3,3,1,3) = 1; L3(6,1,2,3) = 1; L3(3,1,3,3) = 1; L3(5,4,4,3) = 2;
-                L3(6,5,4,3) = 1; L3(3,6,4,3) = 1; L3(6,4,5,3) = 1; L3(3,4,6,3) = 1;
-                L3(5,7,7,3) = 2; L3(6,8,7,3) = 1; L3(3,9,7,3) = 1; L3(6,7,8,3) = 1;
-                L3(3,7,9,3) = 1; L3(1,2,1,4) = 1; L3(1,1,2,4) = 1; L3(4,2,2,4) = 2;
-                L3(5,3,2,4) = 1; L3(5,2,3,4) = 1; L3(1,5,4,4) = 1; L3(1,4,5,4) = 1;
-                L3(4,5,5,4) = 2; L3(5,6,5,4) = 1; L3(5,5,6,4) = 1; L3(1,8,7,4) = 1;
-                L3(1,7,8,4) = 1; L3(4,8,8,4) = 2; L3(5,9,8,4) = 1; L3(5,8,9,4) = 1;
-                L3(4,2,1,5) = 1; L3(4,1,2,5) = 1; L3(2,2,2,5) = 2; L3(6,3,2,5) = 1;
-                L3(6,2,3,5) = 1; L3(4,5,4,5) = 1; L3(4,4,5,5) = 1; L3(2,5,5,5) = 2;
-                L3(6,6,5,5) = 1; L3(6,5,6,5) = 1; L3(4,8,7,5) = 1; L3(4,7,8,5) = 1;
-                L3(2,8,8,5) = 2; L3(6,9,8,5) = 1; L3(6,8,9,5) = 1; L3(5,2,1,6) = 1;
-                L3(5,1,2,6) = 1; L3(6,2,2,6) = 2; L3(3,3,2,6) = 1; L3(3,2,3,6) = 1;
-                L3(5,5,4,6) = 1; L3(5,4,5,6) = 1; L3(6,5,5,6) = 2; L3(3,6,5,6) = 1;
-                L3(3,5,6,6) = 1; L3(5,8,7,6) = 1; L3(5,7,8,6) = 1; L3(6,8,8,6) = 2;
-                L3(3,9,8,6) = 1; L3(3,8,9,6) = 1; L3(1,3,1,7) = 1; L3(4,3,2,7) = 1;
-                L3(1,1,3,7) = 1; L3(4,2,3,7) = 1; L3(5,3,3,7) = 2; L3(1,6,4,7) = 1;
-                L3(4,6,5,7) = 1; L3(1,4,6,7) = 1; L3(4,5,6,7) = 1; L3(5,6,6,7) = 2;
-                L3(1,9,7,7) = 1; L3(4,9,8,7) = 1; L3(1,7,9,7) = 1; L3(4,8,9,7) = 1;
-                L3(5,9,9,7) = 2; L3(4,3,1,8) = 1; L3(2,3,2,8) = 1; L3(4,1,3,8) = 1;
-                L3(2,2,3,8) = 1; L3(6,3,3,8) = 2; L3(4,6,4,8) = 1; L3(2,6,5,8) = 1;
-                L3(4,4,6,8) = 1; L3(2,5,6,8) = 1; L3(6,6,6,8) = 2; L3(4,9,7,8) = 1;
-                L3(2,9,8,8) = 1; L3(4,7,9,8) = 1; L3(2,8,9,8) = 1; L3(6,9,9,8) = 2;
-                L3(5,3,1,9) = 1; L3(6,3,2,9) = 1; L3(5,1,3,9) = 1; L3(6,2,3,9) = 1;
-                L3(3,3,3,9) = 2; L3(5,6,4,9) = 1; L3(6,6,5,9) = 1; L3(5,4,6,9) = 1;
-                L3(6,5,6,9) = 1; L3(3,6,6,9) = 2; L3(5,9,7,9) = 1; L3(6,9,8,9) = 1;
-                L3(5,7,9,9) = 1; L3(6,8,9,9) = 1; L3(3,9,9,9) = 2;
-            end
-            L3 = -L3/2;
-        end
+        end        
         
         % ANCILLARY FUNCTIONS _____________________________________________
         
@@ -549,7 +555,7 @@ classdef ContinuumElement < Element
     
     methods (Static)
         
-        % (no static methods)
+        % no static methods
         
     end
     

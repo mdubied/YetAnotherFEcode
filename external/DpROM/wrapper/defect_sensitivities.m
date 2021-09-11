@@ -59,11 +59,14 @@ DS = zeros(n, nm*nd);
 names = zeros(nm*nd, 2);
 cc = 1;
 for kk = 1 : nd
-    Uk = U(:,kk);    
+    Uk = U(:,kk);  
     if USEJULIA == 1
         dK_dxi_k = stiffness_matrix_sensitivity(myAssembly, elements, Uk, formulation);
     else
+        t0 = tic;
+        fprintf(' dKdxi, assembling %d elements ...', size(elements,1))
         dK_dxi_k = myAssembly.matrix('stiffness_defect_derivative',Uk, formulation);
+        fprintf(' %.2f s\n',toc(t0))
     end
     dK_dxi_k = myAssembly.constrain_matrix( dK_dxi_k );
     for ii = 1 : nm

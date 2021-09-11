@@ -51,7 +51,10 @@ for jj = 1 : n_VMs
     if USEJULIA == 1
         dK_deta_j = stiffness_matrix_derivative(myAssembly, elements, Phi_j);
     else
+        t0 = tic;
+        fprintf(' dKdq, assembling %d elements ...', size(elements,1))
         dK_deta_j = myAssembly.matrix('stiffness_derivative',Phi_j);
+        fprintf(' %.2f s\n',toc(t0))
     end
     dK_deta_j = myAssembly.constrain_matrix( dK_deta_j );
     
@@ -69,4 +72,3 @@ for jj = 1 : n_VMs
         kk = kk + 1;
     end
 end
-disp(' ')
