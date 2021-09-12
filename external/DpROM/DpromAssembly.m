@@ -26,15 +26,7 @@ classdef DpromAssembly < ReducedAssembly
         end
         
         function T = Qtensors(self, formulation, volume, varargin)
-            % This function assembles a generic finite element vector from
-            % its element level counterpart.
-            % elementMethodName is a string input containing the name of
-            % the method that returns the element level vector Fe.
-            % For this to work, a method named elementMethodName which
-            % returns the appropriate vector must be defined for all
-            % element types in the FE Mesh.            
-            % NOTE: in this function, we reduce all the dimensions with 
-            % the same reduction basis
+            % This function computes the tensors for DpROM.
             
             t0 = tic;            
             nv = size(self.V, 2);
