@@ -1,4 +1,4 @@
-function PlotMesh(Nodes,Elements,show)
+function p = PlotMesh(Nodes,Elements,show)
 %--------------------------------------------------------------------------
 % Purpose:
 %         To plot 2D and 3D Finite Element Method Mesh,currently
@@ -58,7 +58,7 @@ elseif dimension == 2           % For 2D plots
         Y = Nodes(Elements',2); Y = reshape(Y, nnel, nel);
         p = patch(X,Y,'w','DisplayName','Mesh');
     else % line
-        plot(Nodes(:,1),Nodes(:,2),'.-k', 'Markersize',10);
+        p = plot(Nodes(:,1),Nodes(:,2),'.-k', 'Markersize',10);
     end
     
 end
