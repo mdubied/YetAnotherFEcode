@@ -3,6 +3,7 @@
 # Data files
 *.mat
 !external/NLvib_v1.3/**/*.mat
+!external/SensitivityAnalysis/example2-DpROM/*.mat
 !examples/**/*.mat
 # Figures
 *.fig
