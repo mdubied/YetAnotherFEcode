@@ -14,15 +14,20 @@
 %   - Q2, Q3 and Q4: the reduced order stiffness tensors
 %   - Q3t, Q4t: tensors required to compute the reduced tangent stiffness
 %     matrix (see tensors_KF.m function)
+%   - M: parametrized mass matrix, computed using an approximated
+%     integration over the defected volume. The defected mass matrix can be
+%     obtained as:
+%           Md = M{1} + M{2}*xi(1) + M{3}*xi(2) + ... M{d+1}*xi(d)
 %
 % Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
 % order parametric nonlinear reduced order model for imperfect structures 
 % using Neumann expansion", Nonlinear Dynamics, 2021.
 %
 % Created: 14 May 2021
+% Last modified: 21 October 2021
 % Author: Jacopo Marconi, Politecnico di Milano
 
-function [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors, xi)
+function [Q2, Q3, Q4, Q3t, Q4t, M] = DefectedTensors(tensors, xi)
 
 nd = length(xi);
 
@@ -36,6 +41,7 @@ Q5d = tensors.Q5d{1};
 Q4dd = tensors.Q4dd{1};
 Q5dd = tensors.Q5dd{1};
 Q6dd = tensors.Q6dd{1};
+M = tensors.M{1};
 
 % apply volume correction to integrate over the defected volume
 if tensors.volume == 1
@@ -49,6 +55,7 @@ if tensors.volume == 1
         Q4dd = Q4dd + tensors.Q4dd{dd} * xi(dd-1);
         Q5dd = Q5dd + tensors.Q5dd{dd} * xi(dd-1);
         Q6dd = Q6dd + tensors.Q6dd{dd} * xi(dd-1);
+        M    = M    + tensors.M{dd}    * xi(dd-1);
     end
 end
 

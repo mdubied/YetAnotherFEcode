@@ -768,6 +768,34 @@ classdef ContinuumElement < Element
             end
         end
         
+        function M = Mten_d(self, Ve, Ue, Minit)
+            M = Minit;
+            nu = size(Ue,2);
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            rho = self.Material.DENSITY;
+            t = self.thickness;
+            for ii = 1:length(W)
+                Xi = X(:, ii);  % quadrature points
+                we = W(ii);     % quadrature weights
+                N = self.shape_functions(Xi);
+                NN = kron(N', eye(self.nDim));
+                [G, detJ] = shape_function_derivatives(self, Xi);
+                Y = G*Ue;
+                % integration of M through GAUSS QUADRATURE
+                Mel_i = (NN'*NN)*(rho*t * we*detJ);
+                Mel_i = Ve' * Mel_i * Ve;   % galerkin projection
+                M{1}  = M{1} + Mel_i;
+                % defect-additional mass matrices
+                for d = 2 : nu + 1
+                    thd = Y(:, d-1);
+                    % approximated jacobian
+                    def_div = sum(thd(1 : self.nDim+1 : end));
+                    M{d}  = M{d}  + Mel_i  * def_div;
+                end
+            end
+        end        
+        
         function A2 = A2_fun(self, th)
             if self.nDim == 2
                 A2 = -[th(1) th(3) 0     0;

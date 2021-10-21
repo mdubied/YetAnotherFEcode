@@ -197,6 +197,7 @@ else
     myMesh = myAssembly.Mesh;
     DpROM = DpromAssembly(myMesh, U, V);
     tensors = DpROM.Qtensors(FORMULATION, volume);
+    tensors.M = DpROM.ParametricMass;
     time = toc(t0);
     sftw = 'matlab';
 end

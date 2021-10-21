@@ -259,7 +259,7 @@ tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, ...
     V, U, FORMULATION, VOLUME, USEJULIA); %compute tensors
 
 % evaluate the defected tensors at xi
-[Q2, ~, ~, ~, ~] = DefectedTensors(tensors_DpROM, xi);
+[Q2, ~, ~, ~, ~, Mxi] = DefectedTensors(tensors_DpROM, xi);
 
 Mnr = Vn'*Mn*Vn; 	% reduced mass matrix (ROM-n)
 Mdr = Vd'*Md*Vd; 	% reduced mass matrix (ROM-d)
@@ -273,9 +273,10 @@ end
 f0_ROMn = sort(sqrt( eigs(tensors_ROMn.Q2, Mnr, n_VMs, 'SM') )/2/pi);
 f0_ROMd = sort(sqrt( eigs(tensors_ROMd.Q2, Mdr, n_VMs, 'SM') )/2/pi); 
 f0_DpROM = sort(sqrt( eigs(Q2, Mr, n_VMs, 'SM') )/2/pi);
+f0_DpROM_Mxi = sort(sqrt( eigs(Q2, Mxi, n_VMs, 'SM') )/2/pi);
 
 % disp eigenfrequencies in command window
-disp(table(f0n, f0_ROMn, f0d, f0_ROMd, f0_DpROM))
+disp(table(f0n, f0_ROMn, f0d, f0_ROMd, f0_DpROM, f0_DpROM_Mxi))
 
 
 %% Nominal solution + Sensitivity Analysis (HB)                     

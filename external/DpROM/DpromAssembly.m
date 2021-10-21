@@ -93,6 +93,37 @@ classdef DpromAssembly < ReducedAssembly
             T.time = toc(t0);
         end
         
+        function M = ParametricMass(self, varargin)
+            % This function computes the reduced order mass matrix for the
+            % DpROM, approximating the integral over the defected volume
+            % (same procedure used for the stiffness tensors).
+            % The defected mass matrix can be obtained as:
+            %   Md = M{1} + M{2}*xi(1) + M{3}*xi(2) + ... M{nu+1}*xi(nu)
+            
+            nv = size(self.V, 2);
+            nu = size(self.U, 2);
+            Elements = self.Mesh.Elements;
+            Nend = nu + 1;
+            
+            % initialize
+            for d = 1 : Nend
+                Minit{d}  = zeros(nv,nv); %#ok<AGROW>
+            end
+            M = Minit;
+            
+            % Computing element level contributions
+            for e = 1 : length(Elements)
+                thisElement = Elements(e).Object;
+                index = thisElement.iDOFs;          
+                Ve = self.V(index, :);
+                Ue = self.U(index, :);
+                Me = thisElement.('Mten_d')(Ve, Ue, Minit);
+                for d = 1 : Nend
+                    M{d}  = M{d}  + Me{d};
+                end
+            end
+        end
+        
         % Ancillary functions _____________________________________________
         
         function set.U(self,U)
