@@ -21,7 +21,7 @@
 %                       and mixed derivatives with respect to displacement
 %                       vector q and parameter vector p. These derivatives
 %                       are stored in the following fields:
-%                       'dfdp','dfdq',dfdq2','dfdp2','dfdqdp'.
+%                       'dfdp','dfdq',dfdq2','dfdp2','dfdqdp','dMdp'
 % 
 % REFERENCES:
 % [1] Marconi,Tiso,Quadrelli,Braghin, 'A higher-order parametric nonlinear
@@ -57,6 +57,8 @@ Q5d = tensors_DpROM.Q5d{1,1};
 Q4dd = tensors_DpROM.Q4dd{1,1};
 Q5dd = tensors_DpROM.Q5dd{1,1};
 Q6dd = tensors_DpROM.Q6dd{1,1};
+
+M = tensors_DpROM.M; %mass matrices, 
 
 % length of parameter vector
 if length(size(Q3d)) == 2 
@@ -96,7 +98,7 @@ end
 
 
 % *************************************************************************
-% Compute derivatives of internal forces
+% Compute derivatives of internal forces and mass matrix
 % *************************************************************************
 
 if m==1
@@ -170,7 +172,17 @@ else
 
         dfdqdp = permute(dfdpdq,[1,3,2]); %puoi togliere se modifichi codice
     end
-          
+    
+    if isIsochoric ~= 1
+        
+        n = size(M{1},1);
+        dMdp = zeros(n,n,m);
+        
+        for J = 1:m
+            dMdp(:,:,J) = M{J+1};
+        end
+        
+    end 
 end 
 
 
@@ -182,5 +194,9 @@ der.dfdq = double(dfdq);
 der.dfdq2 = double(dfdq2);
 der.dfdp2 = double(dfdp2);
 der.dfdqdp = double(dfdqdp);
+
+if isIsochoric ~= 1
+    der.dMdp = dMdp;
+end
 
 end

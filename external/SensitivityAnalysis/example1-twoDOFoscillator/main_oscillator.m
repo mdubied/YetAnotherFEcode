@@ -37,10 +37,10 @@ F = 1;
 % value and its variation from the nominal.
 
 % parameter nominal value
-p = [k11, k13, k21, k23]';
+p = [k11, k13, k21, k23, m1, m2, d1, d2]';
 
 % percentage parameter variation
-dp_perc = [20, 20, 20, 20]';
+dp_perc = [-10, -10, -10, -10, +20, +20, +30 , +30]';
 
 % actual parameter variation
 dp = p.*dp_perc/100;
@@ -172,6 +172,10 @@ k11 = k11 + dp(1);
 k13 = k13 + dp(2);
 k21 = k21 + dp(3);
 k23 = k23 + dp(4);
+m1 = m1 + dp(5);
+m2 = m2 + dp(6);
+d1 = d1 + dp(7);
+d2 = d2 + dp(8);
 
 % 1st cubic spring
 nonlinear_elements{1} = struct('type', 'cubicspring',...

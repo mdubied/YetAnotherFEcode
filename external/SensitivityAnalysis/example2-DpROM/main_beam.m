@@ -46,8 +46,8 @@ USEJULIA = 0;
 
 % Sensitivity Analysis settings ___________________________________________
 SENS = 0;	% perform sensitivity analysis (1) or used stored results (0).
-filename_sens = 'sens_2VM';	% file with sens analysis results stored
-method_sens = 'normal';     % possible options are 'normal' or 'omegaconst'
+filename_sens = 'sens_2VM_H3';	% file with sens analysis results stored
+method_sens = 'normal';         % available options are 'normal'/'omegaconst'
 
 % number of vibration modes used in modal reduction (MAKE SURE it's the
 % same as in the loaded data, if loading sensitivities - see above)
@@ -55,7 +55,7 @@ n_VMs = 2;
 
 % do you want to save sensitivity analysis results?
 save_sens = 0;
-save_as = 'sens_2VM.mat';	% name of the file you save results
+save_as = 'sens_2VM_H3.mat';	% name of the file you save results
 
 % DpROM settings __________________________________________________________
 % parametric formulation for defects
@@ -64,9 +64,9 @@ VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
 % defect amplitudes
 xi1 = 0.3;    % defect amplitude - arch
-xi2 = 0.3;	  % defect amplitude - shifted arch
-xi3 = 0.3;    % defect amplitude - wall angle
-xi4 = 0.0;    % defect amplitude - thinning beam
+xi2 = 0.1;	  % defect amplitude - shifted arch
+xi3 = 0.1;    % defect amplitude - wall angle
+xi4 = 0.1;    % defect amplitude - thinning beam
 
 % Common settings for HB __________________________________________________
 imod = 1;           % eigenfreq to study
@@ -126,7 +126,7 @@ wallangle(1:2:end) = ud;
 nodes_translated = [nodes(:,1), nodes(:,2) - Ly/2];
 shape_fun  = (2/Lx)^2 * (nodes_translated(:,1) - Lx/2).^2;
 nodes_def_thin = [nodes_translated(:,1), ...
-    nodes_translated(:,2).*shape_fun + Lx/2];
+    nodes_translated(:,2).*shape_fun + Ly/2 ];
 vd3 = nodes_def_thin(:,2) - nodes(:,2);
 thinbeam = zeros(numel(nodes),1);
 thinbeam(2:2:end) = vd3;
@@ -134,7 +134,7 @@ thinbeam(2:2:end) = vd3;
 
 
 % defected mesh
-U = [arc_defect, sh_arc_defect, wallangle, thinbeam]; % defect basis
+ U = [arc_defect, sh_arc_defect, wallangle, thinbeam]; % defect basis
 xi = [xi1 xi2 xi3 xi4]'; % parameter vector
 m = length(xi); % number of parameters
 
@@ -150,15 +150,16 @@ MeshDefected.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
     fprintf(' Wall angle:         %.1f° (xi = %.1f) \n', th*xi3, xi3)
     fprintf(' Thinning beam defect: %.1f * beam thickness \n\n\n', xi4)
 
-figure
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-PlotMesh(nodes, elementPlot, 0);
+figure('units','normalized','position',[.2 .3 .6 .4])
+elementPlot = elements(:,1:4); hold on % plot only corners (otherwise it's a mess)
+PlotMesh(nodes_defected, elementPlot, 0); 
+PlotMesh(nodes,elementPlot,0);
 v1 = reshape(U*xi, 2, []).';
-S = 2 * Ly / max(abs(v1(:)));
-PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+S = 1;%2 * Ly / max(abs(v1(:)));
+hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
 title(sprintf('Defect, \\xi=[%.1f, %.1f, %.1f, %.1f], S=%.1f\\times',...
     xi1, xi2, xi3, xi4, S))
-axis on; grid on; box on; drawnow
+axis normal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 
 % ASSEMBLY ________________________________________________________________
 % nominal
@@ -540,7 +541,7 @@ results.full.quad.RMS = RMS(results.full.quad, harm4rms); %quadratic
 %% Plot results                                                     
 
 % hv=0 for horizontal displ, hv=1 for vertical displ
-hv = 0; 
+hv = 1; 
 
 % PLOT DISPLACEMENTS_______________________________________________________
 % plot dofs along the beam... at locations (1/4*Lx, 1/2*Lx)

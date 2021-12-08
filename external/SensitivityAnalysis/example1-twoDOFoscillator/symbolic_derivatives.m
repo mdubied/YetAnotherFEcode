@@ -21,13 +21,13 @@ close all
 
 %% Input                                                            
 % declear generalized coordinates and parameters
-syms q1 q2 k11 k13 k21 k23 'real'
+syms q1 q2 k11 k13 k21 k23 m1 m2 d1 d2 'real'
 
 % generalized coordinates vector
 q = [q1,q2].';
 
 % parameter vector
-p = [k11 k13 k21 k23];
+p = [k11 k13 k21 k23 m1 m2 d1 d2];
 
 % define potential energy
 V_l = 1/2*k11*q1^2 + 1/2*k21*(q2-q1)^2;  %.. of linear forces

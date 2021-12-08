@@ -9,8 +9,12 @@
 % (1)E.o.m. in time domain for the studied problem must be in the form:
 %    Mq_dd + Dq_d + K(p)q + f_nl(q,p) + f_ex = 0. 
 % (2)Internal forces must be nonlinear only in q, (not in q_d) 
-% (3) parameter dependent terms are only internal stiffness forces 
-%    (M and D independent from parameter vector p)
+% (3) parameter dependent terms are nonlinear internal stiffness forces. 
+%  M, D and K can be only linearly dependent on p. Anyway it is still 
+%  possible to assume any particular dependence of K on p (not just
+%  linear) by considering it as part of nonlinear force vector.
+%  (put dKdp = 0, and consider in dfdp, dfdp2... the derivatives of linear
+%  forces in displacements.
 % 
 % INPUTS: 
 % (1)Xt:           multidimensional matrix containing solution point 
@@ -24,7 +28,15 @@
 %                  as a function of the vector of generalized displacements
 %                  q. Output of fderivatives(q) is a struct that must 
 %                  contain the following fieds: dfdp, dfdq, dfdq2,dfdp2,
-%                  dfdqdp.
+%                  dfdqdp. If Mass, damping and stiffness matrices depend
+%                  on parameters then function must contain fields dMdp,
+%                  dKdp, dDdp. If dMdp, dKdp, dDdp are not provided fileds,
+%                  then they are consider null. It is compulsary that K,M,D
+%                  are just linearly dependent on p. With a trick it is
+%                  also possible to consider K dependt on p with any
+%                  function law (not necessarely linear) (see point 3 of
+%                  function description).
+%     
 % (5)m:            lenght of parameter vector p
 % (6)Ns:           number of samples used in the AFT algorithm to compute
 %                  derivatives of the residual. 
@@ -42,7 +54,6 @@
 % effort!
 % (2) implement this function in such a way that nonlinear forces can
 % depend also on velocities f_nl = f_nl(x,x_d,p)
-% (3) implement this function in such a way that M and D depend also on p.
 %
 %
 % REFERENCES:
@@ -74,12 +85,32 @@ q = 2*real(Ns*ifft(Qce).'); %columns indicate time instant, rows dof. q contains
 
 %extract derivatives values of forces in time domain
 derivatives = extend_der_in_time(q,JacFunHandle);
+dMdKdD = feval(JacFunHandle,q(:,1)); %to find derivatives of K,M,D that do not depend on q.
 
 dfdq = derivatives.dfdq; %only nl forces
 dfdp = derivatives.dfdp; %linear + nl forces
 dfdq2 = derivatives.dfdq2; %only nl forces (linear forces der is null)
 dfdqdp = derivatives.dfdqdp; %linear + nl forces
 dfdp2 = derivatives.dfdp2; %linear + nl forces
+
+%extract derivatives of mass, stiffness and damping matrices
+if isfield(dMdKdD,'dMdp')
+    dMdp = tensor(dMdKdD.dMdp);
+else
+    dMdp = tensor(zeros(n,n,m)); %improve efficiency!!
+end
+
+if isfield(dMdKdD,'dKdp')
+    dKdp = tensor(dMdKdD.dKdp);
+else
+    dKdp = tensor(zeros(n,n,m));
+end
+
+if isfield(dMdKdD,'dDdp')
+    dDdp = tensor(dMdKdD.dDdp);
+else
+    dDdp = tensor(zeros(n,n,m));
+end
 
 
 %% dRdXt                                                            
@@ -140,19 +171,34 @@ dRdOmt(:,:,2) = -2*Om*M*squeeze(Xt(:,:,2)).*Jmat2 - D*squeeze(Xt(:,:,1)).*Jmat;
 
 %% dRdPt                                                            
 
-dRdPt = zeros(n,H+1,2,m);
+dRdP_nlt = zeros(n,H+1,2,m);%derivative of nonlinear part of res
+dRdP_lt = zeros(n,H+1,2,m); %derivative of linear part of res
 
-%fill dRdPt tensor
+%fill derivatives of nonlinear terms
 for I = 1:n
     for N = 1:m
         fft_p = fft(squeeze(dfdp(I,N,:))')/Ns; %column vector
         
-        dRdPt(I,:,1,N) = 2*real(fft_p(1:H+1));
-        dRdPt(I,:,2,N) = -2*imag(fft_p(1:H+1));
+        dRdP_nlt(I,:,1,N) = 2*real(fft_p(1:H+1));
+        dRdP_nlt(I,:,2,N) = -2*imag(fft_p(1:H+1));
     end
 end
-dRdPt(:,1,1,:) = dRdPt(:,1,1,:)/2; %divide static term by 2
+dRdP_nlt(:,1,1,:) = dRdP_nlt(:,1,1,:)/2; %divide static term by 2
 
+%fill derivatives of linear terms
+for J = 0:H
+          
+   dRdP_lt(:,J+1,1,:) =  - J^2*Om^2*double(ttv(dMdp,Xt(:,J+1,1),2)) +...
+                       + J*Om*double(ttv(dDdp,Xt(:,J+1,2),2))  +...
+                       + double(ttv(dKdp,Xt(:,J+1,1),2));
+   
+   dRdP_lt(:,J+1,2,:) =  - J^2*Om^2*double(ttv(dMdp,Xt(:,J+1,2),2)) +...
+                       - J*Om*double(ttv(dDdp,Xt(:,J+1,1),2))  +...
+                       + double(ttv(dKdp,Xt(:,J+1,1),2));  
+end
+    
+%sum linear and nonlinear contributions to total derivative
+dRdPt = dRdP_nlt + dRdP_lt; 
 
 %% dRdX2t                                                           
 %second order derivative of the linear part of the residual is null.
@@ -220,7 +266,8 @@ dRdOm2t(:,:,2) = -2*M*squeeze(Xt(:,:,2)).*Jmat2;
 
 %% dRdXdPt, dRdPdOmt                                                
 
-dRdXdPt = zeros(n,H+1,2,n,H+1,2,m);
+dRdXdP_nlt = zeros(n,H+1,2,n,H+1,2,m); %derivative of linear contribution of residual
+dRdXdP_lt = zeros(n,H+1,2,n,H+1,2,m); %derivative of nonlin contribution of residual
 
 for I = 1:n
     
@@ -235,22 +282,54 @@ for I = 1:n
                 fft_1 = fft(dfI_dqLdpO.*Mcosine(N,:))/Ns;
                 fft_2 = fft(dfI_dqLdpO.*Msine(N,:))/Ns;
 
-                dRdXdPt(I,:,1,L,N,1,O) = 2*real(fft_1(1:H+1));
-                dRdXdPt(I,:,1,L,N,2,O) = 2*real(fft_2(1:H+1));
+                dRdXdP_nlt(I,:,1,L,N,1,O) = 2*real(fft_1(1:H+1));
+                dRdXdP_nlt(I,:,1,L,N,2,O) = 2*real(fft_2(1:H+1));
 
-                dRdXdPt(I,:,2,L,N,1,O) = -2*imag(fft_1(1:H+1));
-                dRdXdPt(I,:,2,L,N,2,O) = -2*imag(fft_2(1:H+1));
+                dRdXdP_nlt(I,:,2,L,N,1,O) = -2*imag(fft_1(1:H+1));
+                dRdXdP_nlt(I,:,2,L,N,2,O) = -2*imag(fft_2(1:H+1));
             end
             
         end
     end
 end
-dRdXdPt(:,1,1,:,:,:) =  dRdXdPt(:,1,1,:,:,:)/2; %divide by 2 cosine term of first harmonic
+dRdXdP_nlt(:,1,1,:,:,:) =  dRdXdP_nlt(:,1,1,:,:,:)/2; %divide by 2 cosine term of first harmonic
 
-dRdPdOmt = zeros(n,H+1,2,m); %we assume it to be 0
-% this is true if parameter dependent terms depend on displacements 
-% (and not velocities). If D or M are parameter dependent or if non linear
-% forces are depending from speeds or acceleration this does not hold. 
+%derivative of linear part of residual
+dMdp = double(dMdp);
+dKdp = double(dKdp);
+dDdp = double(dDdp);
+
+for J = 0:H
+    
+  dRdXdP_lt(:,J+1,1,:,J+1,1,:) = - dMdp*Om^2*J^2 + dKdp;
+  dRdXdP_lt(:,J+1,1,:,J+1,2,:) = + dDdp*Om*J;
+  
+  dRdXdP_lt(:,J+1,2,:,J+1,1,:) = - dDdp*Om*J;
+  dRdXdP_lt(:,J+1,2,:,J+1,2,:) = - dMdp*Om^2*J^2 + dKdp;
+      
+end
+
+dRdXdPt = dRdXdP_nlt + dRdXdP_lt; %sum linear and nonlinear contribution to derivatives
+
+%dRdOm
+dRdPdOmt = zeros(n,H+1,2,m); 
+
+dMdp = tensor(dMdp);
+dDdp = tensor(dDdp);
+
+for J = 0:H
+    
+    dRdPdOmt(:,J+1,1,:) = -2*Om*J^2*double(ttv(dMdp,Xt(:,J+1,1),2)) +...
+                          + J*double(ttv(dDdp,Xt(:,J+1,2),2));
+                      
+    dRdPdOmt(:,J+1,2,:) = -2*Om*J^2*double(ttv(dMdp,Xt(:,J+1,2),2)) +...
+                          - J*double(ttv(dDdp,Xt(:,J+1,1),2));    
+end
+
+% %we assume that the term from nonlinear term of residual is null. 
+% this is true if nonlin parameter dependent terms depend on displacements 
+% (and not velocities). If non linear forces are depending from speeds or
+% acceleration this does not hold. 
 
 
 %% dRdP2t                                                           
