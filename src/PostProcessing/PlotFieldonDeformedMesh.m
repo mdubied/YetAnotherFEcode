@@ -92,7 +92,7 @@ if dimension == 3   % For 3D plots
     view(3); hold on;
     h = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
         'DisplayName','Deformed Mesh');
-    rotate3d on ;        
+    rotate3d on;
 
 elseif dimension == 2           % For 2D plots
     ux = disp(:,1) ;

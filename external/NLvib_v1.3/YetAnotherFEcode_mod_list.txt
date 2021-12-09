@@ -7,4 +7,7 @@ LIST OF CHANGES wrt original NLvib
 	. shooting_residual.m (nonlinear_forces function)
 
 *** Note ***
-- only "FE" case has been tested using HB and NMA (see 1D beam example)
+- "FE" case has been tested using HB and NMA (see 1D beam example "BeamNLvib")
+
+9 september 2021
+- "CUSTOM" case tested only for Frequency Response with HB (see "Beam2Drom_NLvib.m")

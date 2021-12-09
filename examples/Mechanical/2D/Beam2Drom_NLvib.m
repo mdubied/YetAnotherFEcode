@@ -26,7 +26,7 @@ Ly = .050;
 h = 2;
 nx = 20*h;
 ny = 1*h;
-[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny);
+[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny, 'QUAD8');
 
 % nominal mesh
 MeshNominal = Mesh(nodes);
@@ -256,7 +256,7 @@ drawnow
 
 
 
-%% auxiliary function (MDs)                                         
+%% auxiliary function (MDs and NLvib-tensors)                       
 
 function [MD, names] = modal_derivatives(myAssembly, Phi)
     
@@ -291,3 +291,14 @@ function [MD, names] = modal_derivatives(myAssembly, Phi)
         end
     end
 end
+
+function [Kt,fi] = tensors_KF_NLvib(Q3,Q4,Q3t,Q4t,q)
+% NB: in NLvib, the nonlinear function must contain ONLY the nonlinear
+% terms (i.e. WITHOUT the linear ones)
+fi = ttsv(Q3,q,-1)  + ttsv(Q4,q,-1);
+Kt = ttsv(Q3t, q, -2) + ttsv(Q4t,q,-2);
+end
+
+
+
+
