@@ -62,7 +62,7 @@ classdef DpromAssembly < ReducedAssembly
                 index = thisElement.iDOFs;          
                 Ve = self.V(index, :);
                 Ue = self.U(index, :);
-                Te = thisElement.(fname)(Ve, Ue, data);
+                Te = thisElement.DpROM_version(Ve, Ue, data, fname);
                 for d = 1 : Nend
                     T.Q2n{d}  = T.Q2n{d}  + Te.Q2n{d};
                     T.Q3d{d}  = T.Q3d{d}  + Te.Q3d{d};
