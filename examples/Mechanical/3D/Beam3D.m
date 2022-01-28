@@ -96,32 +96,32 @@ drawnow
 
 %% EXAMPLE 2: static test                                           
 
-% % Define external force:
-% % Body force
-% Pressure = 1e5;
-% F = Pressure * BeamAssembly.uniform_body_force();
+% Define external force:
+% Body force
+Pressure = 1e8;
+F = Pressure * BeamAssembly.uniform_body_force();
 
-% Nodal force
-F = zeros(myMesh.nDOFs,1);
-nf = find_node(l/2,w/2,t/2,nodes); % node where to put the force
-node_force_dofs = get_index(nf, myMesh.nDOFPerNode );
-F(node_force_dofs(3)) = 1e3;
+[u_lin, u] = static_equilibrium(BeamAssembly, F, 'method', 'newton', ...
+    'nsteps', 10, 'display', 'iter');
+ULIN = reshape(u_lin,3,[]).';	% Linear response
+UNL = reshape(u,3,[]).';        % Nonlinear response
 
-% u_lin = BeamAssembly.solve_system(K, F);
-% ULIN = reshape(u_lin,3,[]).';	% Linear response
-% u = static_equilibrium(BeamAssembly, F, 'display', 'iter-detailed');
-% UNL = reshape(u,3,[]).';        % Nonlinear response
-% 
-% fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
-%     '  Nonlinear:\t%.3i \n\n'],max(u_lin(:)),max(u(:)))
-% 
-% % PLOT
-% figure('units','normalized','position',[.2 .1 .6 .8])
-% scale = 10;
-% PlotMesh(nodes,elements,0);
-% PlotFieldonDeformedMesh(nodes,elements,UNL,'factor',scale,'color','w');
-% colormap jet
-% title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
+[K,f] = BeamAssembly.tangent_stiffness_and_force(u);
+
+fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
+    '  Nonlinear:\t%.3i \n\n'],max(u_lin(:)),max(u(:)))
+
+% PLOT
+figure('units','normalized','position',[.2 .1 .6 .8])
+scale = 1;
+PlotMesh(nodes,elements,0);
+PlotFieldonDeformedMesh(nodes,elements,UNL,'factor',scale,'color','w');
+PlotFieldonDeformedMesh(nodes,elements,ULIN,'factor',scale,'color','w');
+colormap jet
+title(['NONLINEAR STATIC RESPONSE (scale factor: ' num2str(scale) 'x)'])
+axis on
+xlabel('x [m]'); ylabel('y [m]'); zlabel('z [m]'); grid on
+legend('mesh','NL','LIN','location','northeast')
 
 
 %% EXAMPLE 3: compute modal derivatives                             

@@ -15,8 +15,10 @@ switch method
         
     case 'newton'
         u = u_lin/nsteps;
-        figure; xlabel('Normalized load');ylabel('$$\|\mathbf{u}\|$$')
-        h = animatedline;
+        figure; 
+        xlabel('Normalized load'); grid on
+        ylabel('$$\|\mathbf{u}\|$$','interpreter','latex')
+        h = animatedline('Marker','o');
         addpoints(h,0,0);
         for j = 1:nsteps
             Fext_j = j*Fext/nsteps;

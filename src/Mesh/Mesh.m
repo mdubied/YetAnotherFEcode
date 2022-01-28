@@ -50,6 +50,12 @@ classdef Mesh < handle
             outdofFull = (outnode-1)*self.nDOFPerNode + (1:self.nDOFPerNode);
         end
         
+        function dofs = get_DOF_from_nodeIDs(self,nodes)
+            % returns the degrees of freedom corresponding to the node IDs
+            nodes = nodes(:);
+            dofs = (nodes-1)*self.nDOFPerNode + (1:self.nDOFPerNode);
+        end
+        
         function create_elements_table(self, elementsConnectivity,elementConstructor,varargin)
             % creates element_table containing element-wise data
             % Elements(j).Nodes = list of node id for j-th element
