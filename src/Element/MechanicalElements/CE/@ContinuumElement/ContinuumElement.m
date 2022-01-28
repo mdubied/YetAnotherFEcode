@@ -184,7 +184,7 @@ classdef ContinuumElement < Element
                 % functions to integrate over volume
                 int_K1 = Bnl'*C*Bnl;
                 HSH = dH'*S*dH;
-                int_Ks = kron(eye(self.nDim), HSH);
+                int_Ks = kron(HSH, eye(self.nDim));
                 int_K = (int_K1 + int_Ks)*detJ;
                 int_F = (Bnl'*s)*detJ;
                 % integration of K and F through Gauss quadrature
@@ -209,10 +209,10 @@ classdef ContinuumElement < Element
             % might not be the best way, but still...]
             %______________________________________________________________
             if self.nDim == 2
-                F = sparse(16,1);
+                F = sparse(self.nelDOFs,1);
                 F(2:2:end) = self.area/self.nNodes; % uniformly distributed pressure on the structure
             elseif self.nDim == 3
-                F = sparse(60,1);
+                F = sparse(self.nelDOFs,1);
                 F(3:3:end) = self.vol/self.nNodes; % uniformly distributed pressure on the structure
             end
         end

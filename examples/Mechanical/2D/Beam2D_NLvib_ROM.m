@@ -1,4 +1,17 @@
 % EXAMPLE: beam meshed with 2D element
+%
+% Contents (in brief):
+% - NLvib
+% - ROM
+% - tensors
+%
+% Compute the nonlinear Frequency Response of a beam using NLvib AND a
+% Reduced Order Model (ROM). The ROM is constructed projecting the
+% equations of motion with a basis V = [VM MD] (Vibration Modes + Modal
+% Derivatives). The internal forces are evaluated using (reduced order)
+% stiffness tensors.
+% --> usage example of the "custom" mode for the FE_system using NLvib
+
 clear; 
 close all; 
 clc
