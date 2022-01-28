@@ -29,7 +29,7 @@ end
 
 % MESH_____________________________________________________________________
 Lx = 3;
-Ly = .3;
+Ly = .2;
 nx = 30;
 ny = 3;
 switch upper( whichModel )
@@ -111,7 +111,7 @@ fprintf(['\n <strong>Max displacements</strong>:\n  Linear:\t\t%.3i \n' ...
 
 % PLOT
 figure('units','normalized','position',[.2 .1 .6 .8])
-scale = 100;
+scale = 2*Ly/max(abs(UNL(:)));
 PlotMesh(nodes, elementPlot, 0);
 PlotFieldonDeformedMesh(nodes,elementPlot,UNL,'factor',scale,'color','k');
 colormap jet
