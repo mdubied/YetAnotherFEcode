@@ -1,4 +1,17 @@
 % EXAMPLE: beam meshed with 2D element
+%
+% Contents (in brief):
+% - NLvib
+% - ROM
+% - tensors
+%
+% Compute the nonlinear Frequency Response of a beam using NLvib AND a
+% Reduced Order Model (ROM). The ROM is constructed projecting the
+% equations of motion with a basis V = [VM MD] (Vibration Modes + Modal
+% Derivatives). The internal forces are evaluated using (reduced order)
+% stiffness tensors.
+% --> usage example of the "custom" mode for the FE_system using NLvib
+
 clear; 
 close all; 
 clc
@@ -26,7 +39,7 @@ Ly = .050;
 h = 2;
 nx = 20*h;
 ny = 1*h;
-[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny);
+[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny, 'QUAD8');
 
 % nominal mesh
 MeshNominal = Mesh(nodes);
@@ -256,7 +269,7 @@ drawnow
 
 
 
-%% auxiliary function (MDs)                                         
+%% auxiliary function (MDs and NLvib-tensors)                       
 
 function [MD, names] = modal_derivatives(myAssembly, Phi)
     
@@ -291,3 +304,14 @@ function [MD, names] = modal_derivatives(myAssembly, Phi)
         end
     end
 end
+
+function [Kt,fi] = tensors_KF_NLvib(Q3,Q4,Q3t,Q4t,q)
+% NB: in NLvib, the nonlinear function must contain ONLY the nonlinear
+% terms (i.e. WITHOUT the linear ones)
+fi = ttsv(Q3,q,-1)  + ttsv(Q4,q,-1);
+Kt = ttsv(Q3t, q, -2) + ttsv(Q4t,q,-2);
+end
+
+
+
+
