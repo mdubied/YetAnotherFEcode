@@ -32,10 +32,14 @@
 %      	.Q4dd           n*n*d*d     reduced stiffness tensor
 %      	.Q5dd           n*n*n*d*d   reduced stiffness tensor
 %     	.Q6dd           n*n*n*n*d*d reduced stiffness tensor
+%       .M              n*n         reduced mass tensors**
 %      	.time           computational time
 %      	.formulation    adopted formulation
 %      	.volume         1/0
 %   *being n=size(V,2) and d=size(U,2)
+%   ** parametrized mass matrix, computed using an approximated integration
+%      over the defected volume. The defected mass matrix can be obtained 
+%      as: Md = M{1} + M{2}*xi(1) + M{3}*xi(2) + ... M{d+1}*xi(d)
 %
 % Additional notes:
 %   - ALL the elements are assumed to have the same properties in terms
@@ -46,15 +50,15 @@
 %   - as such, this function supports ONLY models meshed with the elements
 %     supported by both YetAnotherFEcode AND the DpROM.jl
 %   - List of currently supported elements: 
-%     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
-%     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
+%     Q4, Q8, TET4, TET10, HEX8, HEX20, WED15     (in YetAnotherFEcode)
+%     Q4, Q8,       TET10, HEX8, HEX20, WED15     (in DpROM.jl)
 %
 % Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
 % order parametric nonlinear reduced order model for imperfect structures 
 % using Neumann expansion", Nonlinear Dynamics, 2021.
 %
 % Created: 14 May 2021
-% Last modified: 11 September 2021
+% Last modified: 31 January 2022
 % Author: Jacopo Marconi, Politecnico di Milano
 
 function tensors = reduced_tensors_DpROM(myAssembly, elements, V, U, ...
@@ -79,6 +83,11 @@ nodes    = myAssembly.Mesh.nodes;                   % nodes table
 nel      = myAssembly.Mesh.nElements;           	% number of elements
 nnodes   = myAssembly.Mesh.nNodes;               	% number of nodes
 freedofs = myAssembly.Mesh.EBC.unconstrainedDOFs;   % free DOFs
+
+% compute parametric mass matrix (always in matlab)
+myMesh = myAssembly.Mesh;
+DpROM = DpromAssembly(myMesh, U, V);
+tensors.M = DpROM.ParametricMass;
 
 if USEJULIA== 1
     % Element data (assuming ALL the elements have the same properties in 
@@ -147,15 +156,32 @@ if USEJULIA== 1
         elements, nodes, conn, C, V, U, XGauss, WGauss);
 
     % unpack results ______________________________________________________
-    Q2n= getfield(a,'1'); %#ok<*GFLD>
-    a2 = getfield(a,'2');
-    a3 = getfield(a,'3');
-    a4 = getfield(a,'4');
-    a5 = getfield(a,'5');
-    a6 = getfield(a,'6');
-    a7 = getfield(a,'7');
-    a8 = getfield(a,'8');
-    a9 = getfield(a,'9');
+    % depending on JULIA and juliamex versions the output may be different
+    if iscell(a)
+        Q2n= a{1}; %#ok<*GFLD>
+        a2 = a{2};
+        a3 = a{3};
+        a4 = a{4};
+        a5 = a{5};
+        a6 = a{6};
+        a7 = a{7};
+        a8 = a{8};
+        a9 = a{9};
+        time = double(a{10})/1000;
+    elseif isstruct(a)
+        Q2n= getfield(a,'1'); %#ok<*GFLD>
+        a2 = getfield(a,'2');
+        a3 = getfield(a,'3');
+        a4 = getfield(a,'4');
+        a5 = getfield(a,'5');
+        a6 = getfield(a,'6');
+        a7 = getfield(a,'7');
+        a8 = getfield(a,'8');
+        a9 = getfield(a,'9');
+        time = double(getfield(a,'10'))/1000;
+    else
+        error(' Output not recognized. Check Julia and juliamex versions')
+    end
     if volume == 1
         ind = nd+1;
     else
@@ -178,7 +204,6 @@ if USEJULIA== 1
         Q5d{ii}  = squeeze(permute(tensor(a8{ii}), [1 2 3 5 4]));
         Q6dd{ii} = squeeze(permute(tensor(a9{ii}), [1 2 4 6 3 5]));
     end
-    time = double(getfield(a,'10'))/1000;
         
     tensors.Q2n  = Q2n;
     tensors.Q3n  = Q3n;
@@ -194,10 +219,7 @@ if USEJULIA== 1
 else
     disp([' REDUCED TENSORS (' FORMULATION ' ~ using Matlab):'])
     fprintf(' Assembling %d elements ...', nel)
-    myMesh = myAssembly.Mesh;
-    DpROM = DpromAssembly(myMesh, U, V);
     tensors = DpROM.Qtensors(FORMULATION, volume);
-    tensors.M = DpROM.ParametricMass;
     time = toc(t0);
     sftw = 'matlab';
 end

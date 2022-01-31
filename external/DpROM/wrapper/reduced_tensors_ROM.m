@@ -16,6 +16,9 @@
 %    	.Q3             n*n*n       reduced stiffness tensor
 %   	.Q4             n*n*n*n     reduced stiffness tensor
 %      	.time           computational time
+%      	.software       'matlab' or 'julia'
+%    	.Q3t            n*n*n       tangent reduced stiffness tensor
+%   	.Q4t            n*n*n*n     tangent reduced stiffness tensor
 %   *being n=size(V,2)
 %
 % Additional notes:
@@ -27,14 +30,15 @@
 %   - as such, this function supports ONLY models meshed with the elements
 %     supported by both YetAnotherFEcode AND the DpROM.jl
 %   - List of currently supported elements: 
-%     Q8, TET10, HEX20, WED15               (in YetAnotherFEcode)
-%     Q8, TET10, HEX20, WED15, Q4, HEX8     (in DpROM.jl)
+%     Q4, Q8, TET4, TET10, HEX8, HEX20, WED15     (in YetAnotherFEcode)
+%     Q4, Q8,       TET10, HEX8, HEX20, WED15     (in DpROM.jl)
 %
 % Reference: J. Marconi, P. Tiso, D.E. Quadrelli & F. Braghin, "A higher 
 % order parametric nonlinear reduced order model for imperfect structures 
 % using Neumann expansion", Nonlinear Dynamics, 2021.
 %
 % Created: 14 May 2021
+% Last Modified: 31 Jan 2022
 % Author: Jacopo Marconi, Politecnico di Milano
 
 function tensors = reduced_tensors_ROM(myAssembly, elements, V, USEJULIA)
@@ -107,10 +111,20 @@ if USEJULIA == 1
         nodes, conn, C, V, XGauss, WGauss);
 
     % unpack results ______________________________________________________
-    Q2 = getfield(a,'1'); %#ok<*GFLD>
-    Q3 = tensor(getfield(a,'2'));
-    Q4 = tensor(getfield(a,'3'));
-    time = double(getfield(a,'4'))/1000;
+    % depending on JULIA and juliamex versions the output may be different
+    if iscell(a)
+        Q2 = a{1};
+        Q3 = tensor(a{2});
+        Q4 = tensor(a{3});
+        time = a{4}/1000;
+    elseif isstruct(a)
+        Q2 = getfield(a,'1'); %#ok<*GFLD>
+        Q3 = tensor(getfield(a,'2'));
+        Q4 = tensor(getfield(a,'3'));
+        time = double(getfield(a,'4'))/1000;
+    else
+        error(' Output not recognized. Check Julia and juliamex versions')
+    end
     sftw = 'julia';
 else
     myMesh = myAssembly.Mesh;

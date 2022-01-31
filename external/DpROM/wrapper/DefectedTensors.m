@@ -1,7 +1,7 @@
 % DefectedTensors
 %
 % Synthax:
-% [Q2, Q3, Q4, Q3t, Q4t] = DefectedTensors(tensors, xi)
+% [Q2, Q3, Q4, Q3t, Q4t, M] = DefectedTensors(tensors, xi)
 %
 % Description: this function returns the second, third and fourth order
 % reduced stiffness tensors evaluated at xi (see Eqs. (28) and (33) in the
