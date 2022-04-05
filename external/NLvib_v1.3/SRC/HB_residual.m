@@ -266,6 +266,12 @@ for nl=1:length(nonlinear_elements)
                             dfnl(ij-1,:);
                     end
                 end
+            case 'polynomialspring'
+                k_p = nonlinear_elements{nl}.stiffness;
+                exp_p = nonlinear_elements{nl}.exponent;
+                fnl = k_p*qnl.^exp_p;
+                dfnl = k_p*exp_p*... %derivative of fnl with respect to qnl
+                repmat(qnl.^(exp_p-1),1,size(dqnl,2)).*dqnl;
             otherwise
                 error(['Unknown nonlinear element ' ...
                     nonlinear_elements{nl}.type '.']);

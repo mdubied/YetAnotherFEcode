@@ -75,8 +75,8 @@ function SENS = HB_sensitivity(X, systemNom, derFunHandle, m, method, ...
 if nargin < 8
     W = eye(length(X));
     W(end,end) = 0;
-elseif isdouble(varargin{1}) %check input
-    if dim(varargin{1}) == 1
+elseif isnumeric(varargin{1}) %check input
+    if size(varargin{1}) == 1
         scalingOmega = varargin{1};
         W = eye(length(X));
         W(end,end) = scalingOmega;
