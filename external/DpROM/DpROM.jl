@@ -348,8 +348,12 @@ function stiffness_matrix_sensitivity(elements, nodes, connectivity, C, U, XGaus
         Ad = A2 # for N1 and N1T
     end
 
-    # initialize tensors
-    dKdξ = zeros(ndofs, ndofs)
+    # create indexes for sparse assembly
+    I = reshape(kron(connectivity,ones(nel_dofs,1))',nel_dofs^2*nel,1)
+    J = reshape(kron(connectivity,ones(1,nel_dofs))',nel_dofs^2*nel,1)
+    I = I[:]
+    J = J[:]
+    dKdξ_collection = zeros(nel_dofs^2, nel)
 
     # cycle over all the elements
     for e in 1:nel
@@ -368,9 +372,13 @@ function stiffness_matrix_sensitivity(elements, nodes, connectivity, C, U, XGaus
             thd = G*Ue
             dKdξ_E = G'*(H'*CwJ*Ad(thd) + Ad(thd)'*CwJ*H)*G
             # assembly the element contributions in the global matrix
-            dKdξ[el_dofs, el_dofs] .+= dKdξ_E
+            dKdξ_collection[:,e] .+= dKdξ_E[:]
         end
     end
+    # sparse assembly
+    dKdξ_vectorized = reshape(dKdξ_collection, nel_dofs^2*nel, 1)
+    dKdξ_vectorized = dKdξ_vectorized[:]
+    dKdξ = sparse(I, J, dKdξ_vectorized, ndofs, ndofs, +)
     # return all the tensors
     dKdξ
 end

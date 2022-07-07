@@ -87,11 +87,22 @@ if USEJULIA == 1
 
     % JULIA _______________________________________________________________
     % add current path in Julia
-    a = jl.eval('LOAD_PATH');
-    if a{end}~='.'
-        jleval push!(LOAD_PATH, pwd() * "\\external\\DpROM");
-        jleval push!(LOAD_PATH, pwd() * "\\DpROM");
-        jleval push!(LOAD_PATH, ".")
+    filename = 'wrapper\reduced_tensors_ROM';  % this function name (up to folder "DpROM")
+    filepath = mfilename('fullpath');                   % full path to this file
+    folderpath = filepath(1:end-length(filename)-1);    % path to folder where "DpROM.jl" is
+    a = jl.eval('LOAD_PATH');                           % lists of paths already in Julia
+    % check if path is already present
+    path_already_present = 0;
+    for ii = 1 : length(a)
+        if strcmpi(a{ii}, folderpath)==1
+            path_already_present = 1;
+            break
+        end
+    end
+    % if not, add it
+    if path_already_present==0
+        fp = strrep(folderpath,'\','\\'); % change separator
+        jl.eval(['push!(LOAD_PATH, "' fp '")']);
         fprintf(' Path added\n\n')
     end
     % load packages
