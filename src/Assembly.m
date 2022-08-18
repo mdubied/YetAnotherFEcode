@@ -145,9 +145,9 @@ classdef Assembly < handle
             
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);
-            
+
             % Computing element level contributions
-            parfor j = elementSet
+            for j = elementSet
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;

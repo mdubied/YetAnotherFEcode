@@ -36,7 +36,7 @@ end
 Lx = 3;
 Ly = .2;
 nx = 5;
-ny = 3;
+ny = 4;
 switch upper( whichModel )
     case 'CUSTOM'
         [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
@@ -78,9 +78,7 @@ PlotMesh(nodes, elementPlot, 1);
 %% GET OUTER SURFACE
 [skin,allfaces,skinElements] = getSkin2D(elements);
 
-%% FIND ELEMENTS WHICH ARE PART OF SKIN
-
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-f = BeamAssembly.vector('vertical_force_on_skin_elements', u, ud);
+f = BeamAssembly.vector('vertical_force_on_skin_elements', 'weights',skinElements)
