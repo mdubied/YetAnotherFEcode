@@ -68,6 +68,37 @@ classdef Assembly < handle
             F = sparse(index, ones(length(index),1), F, self.Mesh.nDOFs, 1);
         end
 
+        function [F] = skin_force(self,elementMethodName,varargin)
+            % This function is similar to `vector' but itallows to pass
+            % only part of the input to the element method
+
+            n_e = self.Mesh.nElements;            
+            index = cell(n_e,1); % indices
+            F = cell(n_e,1); % values
+            Elements = self.Mesh.Elements; % Elements array
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            disp(inputs)
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+
+            % Computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                
+                index{j} = thisElement.iDOFs;
+                F{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:));
+            end
+            
+            % Assembling
+            index = vertcat(index{:});
+            F = vertcat(F{:});
+            F = sparse(index, ones(length(index),1), F, self.Mesh.nDOFs, 1);
+
+        end
+
         function M = mass_matrix(self, varargin)
             M = self.matrix('mass_matrix',varargin{:});
         end
@@ -142,6 +173,7 @@ classdef Assembly < handle
             
             % parsing element weights
             [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            disp(inputs{1,:})
             
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);

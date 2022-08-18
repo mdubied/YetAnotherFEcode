@@ -57,9 +57,26 @@ classdef Quad4Element < ContinuumElement
             G(3:4,2:2:end) = dH;
         end
 
-        function F = vertical_force_on_skin_elements(self)
+        function F = force_on_skin_elements(self,specificFace)
             F = sparse(self.nelDOFs,1);
-            F(1:2:end) = 1; % uniformly distributed pressure on the structure
+            disp(specificFace)
+            disp('------')
+            F(specificFace(1)*2-1) = 1;
+            F(specificFace(1)*2) = 1;
+            if specificFace(2) ~= 0
+                F(specificFace(2)*2-1) = 1;
+                F(specificFace(2)*2) = 1;
+            end
+
+%             if specificFace(1) ~= 4
+%                 startDOF = specificFace(1);
+%                 endDOF = specificFace(1)*2+1;
+%                 F(startDOF:1:endDOF) = 1;
+%             else
+%                 F(specificFace(1)) = 1;
+%                 F(1) = 1;
+%             end
+            %F(1:1:end) = 1; % uniformly distributed pressure on the structure
         end 
         
     end

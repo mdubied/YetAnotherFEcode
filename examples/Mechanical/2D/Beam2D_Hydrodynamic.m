@@ -36,7 +36,7 @@ end
 Lx = 3;
 Ly = .2;
 nx = 5;
-ny = 4;
+ny = 6;
 switch upper( whichModel )
     case 'CUSTOM'
         [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
@@ -81,7 +81,7 @@ PlotMesh(nodes, elementPlot, 1);
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-f = BeamAssembly.vector('vertical_force_on_skin_elements', 'weights', skinElements);
+f = BeamAssembly.skin_force('force_on_skin_elements', 'weights', skinElements, skinElementFaces);
 
 
 %% PLOT FORCES ON MESH
