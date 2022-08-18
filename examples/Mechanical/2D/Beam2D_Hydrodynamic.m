@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
 % Modification of Beam2D to include velocity dependent forces
 % 
-% Last modified: 18/08/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 18/08/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -81,4 +81,14 @@ PlotMesh(nodes, elementPlot, 1);
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-f = BeamAssembly.vector('vertical_force_on_skin_elements', 'weights',skinElements)
+f = BeamAssembly.vector('vertical_force_on_skin_elements', 'weights', skinElements)
+f(1)
+f(2)
+f(3)
+f(4)
+f(26)
+
+%% PLOT FORCES ON MESH
+PlotMeshandForce(nodes, elementPlot, 1,f);
+
+
