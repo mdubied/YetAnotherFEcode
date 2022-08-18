@@ -6,12 +6,14 @@
 %   skin: table of nodes labels of external faces. Each column contains the
 %         nodes of one face.
 %   allfaces: as skin, but with all the faces.
+%   skinElements: logical vector of size (nElements X 1), 1 meaning the element
+%                 has a face which is part of the skin.  
 %
 % Supported elements: QUAD4
 % Note: a large portion of the code is taken from getSkin3D
 % Last modified: 18/08/2022, Mathieu Dubied, ETH Zürich
 % -------------------------------------------------------------------------
-function [skin,allfaces] = getSkin2D(elements)
+function [skin,allfaces,skinElements] = getSkin2D(elements)
 
 nnel  = size(elements,2); % number of nodes per element
 
@@ -48,5 +50,19 @@ icc = icc == 1;                 % take only terms occurring ONCE
 % remove all the repeated faces (internal), so to plot only external ones
 skin = FACES(:,icc);
 allfaces = FACES;
+
+% find elements with faces being part of the skin
+skinElements = zeros(N,1);
+indexSkinElements = 1;
+skinMembers = ismember(allfaces.',skin','rows');
+for ii = 1:size(skinMembers,1)
+    if skinMembers(ii) == 1
+        skinElements(indexSkinElements) = 1;
+    end 
+
+    if mod(ii,size(faces,1)) == 0
+        indexSkinElements = indexSkinElements + 1;
+    end
+end 
 
 

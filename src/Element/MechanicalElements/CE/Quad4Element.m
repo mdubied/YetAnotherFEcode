@@ -56,6 +56,11 @@ classdef Quad4Element < ContinuumElement
             G(1:2,1:2:end) = dH;
             G(3:4,2:2:end) = dH;
         end
+
+        function F = vertical_force_on_skin_elements(self)
+            F = sparse(self.ne,1);
+            F(2:2:end) = self.area/self.nNodes; % uniformly distributed pressure on the structure
+        end 
         
     end
     

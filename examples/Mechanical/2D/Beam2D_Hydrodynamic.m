@@ -76,4 +76,11 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMesh(nodes, elementPlot, 1);
 
 %% GET OUTER SURFACE
-[skin,allfaces] = getSkin2D(elements);
+[skin,allfaces,skinElements] = getSkin2D(elements);
+
+%% FIND ELEMENTS WHICH ARE PART OF SKIN
+
+
+%% APPLY FORCE TO SKIN ELEMENTS
+%f = BeamAssembly.vector('drag_force', u, ud);
+f = BeamAssembly.vector('vertical_force_on_skin_elements', u, ud);
