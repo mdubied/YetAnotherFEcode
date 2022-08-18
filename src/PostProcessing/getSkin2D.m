@@ -8,12 +8,16 @@
 %   allfaces: as skin, but with all the faces.
 %   skinElements: logical vector of size (nElements X 1), 1 meaning the element
 %                 has a face which is part of the skin.  
+%   skinElementFaces: describes which face(s) of the element is part of the
+%                     skin. The faces of a given element are numerated the
+%                     same way they are ordered. A single element can have
+%                     up to 2 skin faces.
 %
 % Supported elements: QUAD4
 % Note: a large portion of the code is taken from getSkin3D
-% Last modified: 18/08/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 18/08/2022, Mathieu Dubied, ETH Zurich
 % -------------------------------------------------------------------------
-function [skin,allfaces,skinElements] = getSkin2D(elements)
+function [skin,allfaces,skinElements,skinElementFaces] = getSkin2D(elements)
 
 nnel  = size(elements,2); % number of nodes per element
 
@@ -53,16 +57,51 @@ allfaces = FACES;
 
 % find elements with faces being part of the skin
 skinElements = zeros(N,1);
+skinElementFaces = zeros(N,2);
 indexSkinElements = 1;
 skinMembers = ismember(allfaces.',skin','rows');
+
 for ii = 1:size(skinMembers,1)
     if skinMembers(ii) == 1
         skinElements(indexSkinElements) = 1;
+        fN = faceNumber(elements(indexSkinElements,:), allfaces(:,ii));
+        if skinElementFaces(indexSkinElements,1) == 0
+            skinElementFaces(indexSkinElements,1) = fN;
+        else
+            skinElementFaces(indexSkinElements,2) = fN;
+        end
     end 
 
     if mod(ii,size(faces,1)) == 0
         indexSkinElements = indexSkinElements + 1;
     end
+end 
+
+% nested function faceNumber
+% INPUTS: -element, vector containing the nodes' numbers of `element'
+%         -nodes, vector containing the nodes in which we are interested
+% OUTPUT: the face's number of `element' that corresponds to `nodes'
+    function fN = faceNumber(element,nodes)
+        fN = 0;
+        for i=1:size(element,2)
+            if i == size(element,2)
+                next=1;
+            else
+                next = i+1;
+            end
+
+            disp(i)
+            disp([element(i);element(next)])
+            disp(nodes)
+
+            if isequal([element(i);element(next)],nodes) || isequal([element(next);element(i)],nodes)
+                fN = i;
+            end           
+        end
+    end
+
+
+
 end 
 
 

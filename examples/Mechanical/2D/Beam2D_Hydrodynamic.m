@@ -76,17 +76,13 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMesh(nodes, elementPlot, 1);
 
 %% GET OUTER SURFACE
-[skin,allfaces,skinElements] = getSkin2D(elements);
+[skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
 
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-f = BeamAssembly.vector('vertical_force_on_skin_elements', 'weights', skinElements)
-f(1)
-f(2)
-f(3)
-f(4)
-f(26)
+f = BeamAssembly.vector('vertical_force_on_skin_elements', 'weights', skinElements);
+
 
 %% PLOT FORCES ON MESH
 PlotMeshandForce(nodes, elementPlot, 1,f);
