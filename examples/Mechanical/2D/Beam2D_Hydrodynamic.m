@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
 % Modification of Beam2D to include velocity dependent forces
 % 
-% Last modified: 18/08/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 19/08/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -10,7 +10,7 @@ clc
 
 whichModel = 'CUSTOM'; % or "ABAQUS"
 elementType = 'QUAD4';
-% elementType = 'QUAD8';
+% elementType = 'QUAD8'; % only QUAD4 is implemented for now
 
 %% PREPARE MODEL                                                    
 
@@ -81,7 +81,7 @@ PlotMesh(nodes, elementPlot, 1);
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-f = BeamAssembly.skin_force('force_length_prop_on_skin', 'weights', skinElements, skinElementFaces);
+f = BeamAssembly.skin_force('force_length_prop_skin_normal', 'weights', skinElements, skinElementFaces);
 
 
 %% PLOT FORCES ON MESH

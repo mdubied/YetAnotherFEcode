@@ -18,7 +18,7 @@ function p = PlotMeshandForce(Nodes,Elements,show,F)
 %
 % Note: a large part of this code is taken from PlotMesh
 %       ONLY TESTED ON 2D MODELS
-% Last modified: 18/08/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 19/08/2022, Mathieu Dubied, ETH Zurich
 %--------------------------------------------------------------------------
 
 if nargin == 2
@@ -70,16 +70,16 @@ end
 if size(Nodes,2)==2
     for i = 1:nnode
         drawArrow = @(x,y) quiver( x(1),y(1),x(2)-x(1),y(2)-y(1),0,'MaxHeadSize',0.3,'Color','r','LineWidth',1) ;
-            x = [Nodes(i,1) Nodes(i,1)+F(i*2-1)/8];
-            y = [Nodes(i,2) Nodes(i,2)+F(i*2)/8];
+            x = [Nodes(i,1) Nodes(i,1)+F(i*2-1)/2];
+            y = [Nodes(i,2) Nodes(i,2)+F(i*2)/2];
             drawArrow(x,y);
     end
 elseif size(Nodes,2)==3
     for i = 1:nnode
         drawArrow = @(x,y,z) quiver3( x(1),y(1),z(1),x(2)-x(1),y(2)-y(1),z(2)-z(1),0,'MaxHeadSize',0.3,'Color','r','LineWidth',1) ;
-            x = [Nodes(i,1) Nodes(i,1)+F(i*3-2)/8];
-            y = [Nodes(i,2) Nodes(i,2)+F(i*3-1)/8];
-            z = [Nodes(i,3) Nodes(i,3)+F(i*3)/8];
+            x = [Nodes(i,1) Nodes(i,1)+F(i*3-2)/2];
+            y = [Nodes(i,2) Nodes(i,2)+F(i*3-1)/2];
+            z = [Nodes(i,3) Nodes(i,3)+F(i*3)/2];
             drawArrow(x,y,z);
     end
 end
