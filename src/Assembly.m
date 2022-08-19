@@ -79,7 +79,6 @@ classdef Assembly < handle
             
             % parsing element weights
             [elementWeights,inputs] = self.parse_inputs(varargin{:});
-            disp(inputs)
             
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);

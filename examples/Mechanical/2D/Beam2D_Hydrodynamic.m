@@ -81,7 +81,7 @@ PlotMesh(nodes, elementPlot, 1);
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-f = BeamAssembly.skin_force('force_on_skin_elements', 'weights', skinElements, skinElementFaces);
+f = BeamAssembly.skin_force('force_length_prop_on_skin', 'weights', skinElements, skinElementFaces);
 
 
 %% PLOT FORCES ON MESH

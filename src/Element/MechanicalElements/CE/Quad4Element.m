@@ -57,26 +57,42 @@ classdef Quad4Element < ContinuumElement
             G(3:4,2:2:end) = dH;
         end
 
-        function F = force_on_skin_elements(self,specificFace)
+        function F = force_length_prop_on_skin(self,specificFace)
+            % Apply a force proportional to the the length of a skin
+            % element on the 2 corresponding nodes. Robust to elements
+            % having up to 2 skin surfaces.
             F = sparse(self.nelDOFs,1);
-            disp(specificFace)
-            disp('------')
-            F(specificFace(1)*2-1) = 1;
-            F(specificFace(1)*2) = 1;
-            if specificFace(2) ~= 0
-                F(specificFace(2)*2-1) = 1;
-                F(specificFace(2)*2) = 1;
+
+            if specificFace(1) ~= 4
+                startNode = specificFace(1);
+                endNode = specificFace(1) + 1;
+            else
+                startNode = specificFace(1);
+                endNode = 1;
             end
 
-%             if specificFace(1) ~= 4
-%                 startDOF = specificFace(1);
-%                 endDOF = specificFace(1)*2+1;
-%                 F(startDOF:1:endDOF) = 1;
-%             else
-%                 F(specificFace(1)) = 1;
-%                 F(1) = 1;
-%             end
-            %F(1:1:end) = 1; % uniformly distributed pressure on the structure
+            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+            F(startNode*2-1) = length;
+            F(startNode*2) = length;
+            F(endNode*2-1) = length;
+            F(endNode*2) = length;
+        
+            if specificFace(2) ~= 0
+          
+                if specificFace(2) ~= 4
+                    startNode = specificFace(2);
+                    endNode = specificFace(2) + 1;
+                else
+                    startNode = specificFace(2);
+                    endNode = 1;
+                end
+
+                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+                F(startNode*2-1) = F(startNode*2-1) + length;
+                F(startNode*2) = F(startNode*2) + length;
+                F(endNode*2-1) = F(endNode*2-1) + length;
+                F(endNode*2) = F(endNode*2) + length;
+            end
         end 
         
     end
