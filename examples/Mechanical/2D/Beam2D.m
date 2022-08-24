@@ -57,7 +57,8 @@ BeamAssembly = Assembly(myMesh);
 M = BeamAssembly.mass_matrix();
 nNodes = size(nodes,1);
 u0 = zeros( myMesh.nDOFs, 1);
-[K,~] = BeamAssembly.tangent_stiffness_and_force(u0);
+[K,test] = BeamAssembly.tangent_stiffness_and_force(u0);
+disp(test)
 
 % store matrices
 BeamAssembly.DATA.K = K;

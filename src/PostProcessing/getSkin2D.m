@@ -21,10 +21,11 @@ function [skin,allfaces,skinElements,skinElementFaces] = getSkin2D(elements)
 
 nnel  = size(elements,2); % number of nodes per element
 
-% select faces order
+% select faces (or rather edges in 2D) order
 switch nnel
     case 4 % QUAD4
         faces = [1 2; 2 3; 3 4; 4 1];
+    case 3 % TET3
 end
 
 % build face matrix
