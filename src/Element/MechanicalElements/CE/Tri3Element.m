@@ -55,7 +55,7 @@ classdef Tri3Element < ContinuumElement
             G(1:2,1:2:end) = dH;
             G(3:4,2:2:end) = dH;
         end
-
+    end 
         
     
     methods (Static)

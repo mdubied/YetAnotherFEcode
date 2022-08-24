@@ -27,7 +27,7 @@ switch elementType
     case 'QUAD8'
         myElementConstructor = @()Quad8Element(thickness, myMaterial);
     case 'TRI'
-        myElementConstructor = @()TRI3Element(thickness, myMaterial);
+        myElementConstructor = @()Tri3Element(thickness, myMaterial);
 end
 
 % MESH_____________________________________________________________________
@@ -48,5 +48,5 @@ end
 myMesh = Mesh(nodes);
 myMesh.create_elements_table(elements,myElementConstructor);
 
-elementPlot = elements(:,1:3); % for Quad elements
+elementPlot = elements(:,1:3); % for TRI elements
 PlotMesh(nodes, elementPlot, 0);

@@ -8,8 +8,10 @@ clear;
 close all; 
 clc
 
-whichModel = 'CUSTOM'; % or "ABAQUS"
+%whichModel = 'CUSTOM'; % or "ABAQUS"
+whichModel = 'ABAQUS';
 elementType = 'QUAD4';
+elementType = 'TRI3';
 % elementType = 'QUAD8'; % only QUAD4 is implemented for now
 
 %% PREPARE MODEL                                                    
@@ -30,6 +32,8 @@ switch elementType
         myElementConstructor = @()Quad4Element(thickness, myMaterial);
     case 'QUAD8'
         myElementConstructor = @()Quad8Element(thickness, myMaterial);
+    case 'TRI3'
+        myElementConstructor = @()TRI3Element(thickness, myMaterial);
 end
 
 % MESH_____________________________________________________________________
@@ -42,7 +46,7 @@ switch upper( whichModel )
         [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
     case 'ABAQUS'
         % Alternatively, one can write an input file in ABAQUS and read it as:
-        filename = 'Job-BeamQuad';
+        filename = 'naca0012TRI';
         [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 end
 
@@ -50,12 +54,12 @@ myMesh = Mesh(nodes);
 myMesh.create_elements_table(elements,myElementConstructor);
 
 % MESH > BOUNDARY CONDITONS
-switch upper( whichModel )
-    case 'CUSTOM'
-        myMesh.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
-    case 'ABAQUS'
-        myMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
-end
+% switch upper( whichModel )
+%     case 'CUSTOM'
+%         myMesh.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
+%     case 'ABAQUS'
+%         myMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+% end
 
 % ASSEMBLY ________________________________________________________________
 BeamAssembly = Assembly(myMesh);

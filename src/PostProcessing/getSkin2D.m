@@ -13,9 +13,9 @@
 %                     same way they are ordered. A single element can have
 %                     up to 2 skin faces.
 %
-% Supported elements: QUAD4
+% Supported elements: QUAD4, TRI3
 % Note: a large portion of the code is taken from getSkin3D
-% Last modified: 18/08/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 24/08/2022, Mathieu Dubied, ETH Zurich
 % -------------------------------------------------------------------------
 function [skin,allfaces,skinElements,skinElementFaces] = getSkin2D(elements)
 
@@ -26,6 +26,7 @@ switch nnel
     case 4 % QUAD4
         faces = [1 2; 2 3; 3 4; 4 1];
     case 3 % TET3
+        faces = [1 2; 2 3; 3 1];
 end
 
 % build face matrix

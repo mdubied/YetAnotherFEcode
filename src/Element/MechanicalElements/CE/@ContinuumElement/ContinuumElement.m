@@ -121,7 +121,7 @@ classdef ContinuumElement < Element
                     self.quadrature.Ng = Ngauss;
                     self.quadrature.X = X;	% gauss integration points
                     self.quadrature.W = W;	% gauss integration weights
-                case {'TET'}
+                case {'TET','TRI'}
                     [x, w] = inttet(Ngauss);
                     self.quadrature.Ng = Ngauss;
                     self.quadrature.X = x;	% gauss integration points
