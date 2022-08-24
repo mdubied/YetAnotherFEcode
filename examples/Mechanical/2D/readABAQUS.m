@@ -4,7 +4,7 @@ close all;
 clc
 
 whichModel = 'ABAQUS'; 
-elementType = 'TRI';
+elementType = 'TRI3';
 %elementType = 'QUAD4';
 
 
@@ -26,7 +26,7 @@ switch elementType
         myElementConstructor = @()Quad4Element(thickness, myMaterial);
     case 'QUAD8'
         myElementConstructor = @()Quad8Element(thickness, myMaterial);
-    case 'TRI'
+    case 'TRI3'
         myElementConstructor = @()Tri3Element(thickness, myMaterial);
 end
 

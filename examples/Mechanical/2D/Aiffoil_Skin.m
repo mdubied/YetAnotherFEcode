@@ -1,17 +1,17 @@
 % ------------------------------------------------------------------------ 
-% Modification of Beam2D to include velocity dependent forces
+% Normal forces proportional to the are of the skin, applied on skin nodes
 % 
-% Last modified: 19/08/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 24/08/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
 close all; 
 clc
 
-whichModel = 'CUSTOM'; % or "ABAQUS"
-% whichModel = 'ABAQUS';
-elementType = 'QUAD4';
-% elementType = 'TRI3';
+%whichModel = 'CUSTOM'; % or "ABAQUS"
+whichModel = 'ABAQUS';
+%elementType = 'QUAD4';
+elementType = 'TRI3';
 % elementType = 'QUAD8'; % only QUAD4 is implemented for now
 
 %% PREPARE MODEL                                                    
@@ -75,7 +75,7 @@ BeamAssembly.DATA.M = M;
 
 
 %% PLOT MESH WITH NODES AND ELEMENTS
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
 figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMesh(nodes, elementPlot, 1);
 

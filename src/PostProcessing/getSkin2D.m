@@ -92,9 +92,9 @@ end
                 next = i+1;
             end
 
-            disp(i)
-            disp([element(i);element(next)])
-            disp(nodes)
+%             disp(i)
+%             disp([element(i);element(next)])
+%             disp(nodes)
 
             if isequal([element(i);element(next)],nodes) || isequal([element(next);element(i)],nodes)
                 fN = i;
