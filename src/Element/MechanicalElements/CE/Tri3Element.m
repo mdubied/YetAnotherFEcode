@@ -60,61 +60,27 @@ classdef Tri3Element < ContinuumElement
 
         function F = force_length_prop_skin_normal(self,specificFace)
             % _____________________________________________________________
-            % Apply a force proportional to the the length of a skin
+            % Applies a force proportional to the the length of a skin
             % element on the 2 corresponding nodes, in the direction normal
             % to the face considered. Robust to elements having up to 2 
             % skin faces.
             % _____________________________________________________________
             F = sparse(self.nelDOFs,1);
-            [startNode, endNode, nextNode] = getNodesFromFace(specificFace(1));
-            n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+            [startNode, endNode, nextNode] = get_node_from_face(self, specificFace(1));
+            n = normal_vector(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            F(startNode*2-1) = length/2 * n(1);  % x-coordinate
-            F(startNode*2) = length/2 * n(2);    % y-coordinate
-            F(endNode*2-1) = length/2 * n(1);    % x-coordinate
-            F(endNode*2) = length/2 * n(2);      % y-coordinate
+            Force = length*n;
+            F = apply_force(self, F, Force, startNode, endNode);
         
             if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = getNodesFromFace(specificFace(2));
-                n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-
+                [startNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
+                n = normal_vector(self,self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                
                 length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                F(startNode*2-1) = F(startNode*2-1) + length/2 * n(1);    % x-coordinate
-                F(startNode*2) = F(startNode*2) + length/2 * n(2);        % y-coordinate
-                F(endNode*2-1) = F(endNode*2-1) + length/2 * n(1);        % x-coordinate
-                F(endNode*2) = F(endNode*2) + length/2 * n(2);            % y-coordinate
+                Force = length*n;
+                F = apply_force(self, F, Force, startNode, endNode);
             end
-
-            function n = normalVector(startNodePos, endNodePos, nextNodePos)
-                % Returns a vector of unit length normal to the surface
-                % defined by `startNodePos' and enNodePos', pointing
-                % outward the considered element
-                n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
-                n = n/norm(n); % normalizing n
-                dotProd = dot(n,[nextNodePos(1)-endNodePos(1); nextNodePos(2)-endNodePos(2)]);
-                if dotProd >= 0
-                    n = -n; % inverting the direction of n if it points toward the element
-                end
-            end
-
-            function [startNode, endNode, nextNode] = getNodesFromFace(face)
-                % Returns the nodes' indexes from a give face. The
-                % ordering is done counterclokewise. `nextNode is the index
-                % of the node on the next surface.
-                if face ~= 3
-                    startNode = face;
-                    endNode = face + 1;
-                else
-                    startNode = face;
-                    endNode = 1;
-                end
-                if face ~= 2
-                    nextNode = endNode +1;
-                else
-                    nextNode = 1;
-                end
-            end 
         end 
 
         function F = drag_force(self, specificFace, vwater, rho)
@@ -124,31 +90,28 @@ classdef Tri3Element < ContinuumElement
             % applied to the nodes at of the considered face.
             % _____________________________________________________________
             F = sparse(self.nelDOFs,1);
-            [startNode, endNode, nextNode] = getNodesFromFace(specificFace(1));
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
 
-            % Terms needed for the drag force - REPLACE VREL (to do) !!
-            n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            A = length; % in 2D, area proportional force is length proportional
-            ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
-            vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
-            d = vrel/norm(vrel);
-            Cd = 2*(n.'*d)^2;
-            
-            % Drag force
-            Fdrag = 1/2*rho*Cd*norm(vrel)^2*d;
-
+            % Compute drag force
+            Fdrag = compute_drag_force(startNode, endNode, nextNode);
             % Apply drag force on nodes
-            F(startNode*2-1) = F(startNode*2-1) + Fdrag(1)/2;    % x-coordinate
-            F(startNode*2) = F(startNode*2) + Fdrag(2)/2;        % y-coordinate
-            F(endNode*2-1) = F(endNode*2-1) + Fdrag(1)/2;        % x-coordinate
-            F(endNode*2) = F(endNode*2) + Fdrag(2)/2;            % y-coordinate
+            F = apply_force(self, F, Fdrag, startNode, endNode);
 
             if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = getNodesFromFace(specificFace(2));
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
 
+                % Compute drag force
+                Fdrag = compute_drag_force(startNode, endNode, nextNode);
+                % Apply drag force on nodes
+                F = apply_force(self, F, Fdrag, startNode, endNode);
+            end
+
+            function Fdrag = compute_drag_force(startNode, endNode, nextNode)
+                % _________________________________________________________
+                % Computes the drag force vector for a specific surface
+                %__________________________________________________________
                 % Terms needed for the drag force - REPLACE VREL (to do) !!
-                n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
+                n = normal_vector(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
                 length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
                 A = length; % in 2D, area proportional force is length proportional
                 ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
@@ -158,46 +121,10 @@ classdef Tri3Element < ContinuumElement
                 
                 % Drag force
                 Fdrag = 1/2*rho*Cd*norm(vrel)^2*d;
-    
-                % Apply drag force on nodes
-                F(startNode*2-1) = F(startNode*2-1) + Fdrag(1)/2;    % x-coordinate
-                F(startNode*2) = F(startNode*2) + Fdrag(2)/2;        % y-coordinate
-                F(endNode*2-1) = F(endNode*2-1) + Fdrag(1)/2;        % x-coordinate
-                F(endNode*2) = F(endNode*2) + Fdrag(2)/2;            % y-coordinate
-            end
-            
-            function n = normalVector(startNodePos, endNodePos, nextNodePos)
-                % Returns a vector of unit length normal to the surface
-                % defined by `startNodePos' and enNodePos', pointing
-                % outward the considered element
-                n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
-                n = n/norm(n); % normalizing n
-                dotProd = dot(n,[nextNodePos(1)-endNodePos(1); nextNodePos(2)-endNodePos(2)]);
-                if dotProd >= 0
-                    n = -n; % inverting the direction of n if it points toward the element
-                end
-            end
-
-            function [startNode, endNode, nextNode] = getNodesFromFace(face)
-                % Returns the nodes' indexes from a give face. The
-                % ordering is done counterclokewise. `nextNode is the index
-                % of the node on the next surface.
-                if face ~= 3
-                    startNode = face;
-                    endNode = face + 1;
-                else
-                    startNode = face;
-                    endNode = 1;
-                end
-                if face ~= 2
-                    nextNode = endNode +1;
-                else
-                    nextNode = 1;
-                end
             end 
-
-        
+            
         end
+
 
 
         function F = thrust_force(self, specificFace, vwater, rho)
@@ -207,81 +134,87 @@ classdef Tri3Element < ContinuumElement
             % applied to the nodes at of the considered face.
             % _____________________________________________________________
             F = sparse(self.nelDOFs,1);
-            [startNode, endNode, nextNode] = getNodesFromFace(specificFace(1));
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
 
-            % Terms needed for the thrust force - REPLACE VREL (to do) !!
-            n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            A = length; % in 2D, area proportional force is length proportional
-            ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
-            vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
-            d = vrel/norm(vrel);
-            Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
-            
-            % Thrust force
-            Fthrust = 1/2*rho*Ct*norm(vrel)^2*d;
-
-            % Apply thrust force on nodes
-            F(startNode*2-1) = F(startNode*2-1) + Fthrust(1)/2;    % x-coordinate
-            F(startNode*2) = F(startNode*2) + Fthrust(2)/2;        % y-coordinate
-            F(endNode*2-1) = F(endNode*2-1) + Fthrust(1)/2;        % x-coordinate
-            F(endNode*2) = F(endNode*2) + Fthrust(2)/2;            % y-coordinate
+            % Computes thrust force
+            Fthrust = compute_thrust_force(startNode, endNode, nextNode);
+            % Applies thrust force on nodes
+            F = apply_force(self, F, Fthrust, startNode, endNode);
 
             if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = getNodesFromFace(specificFace(2));
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
 
+                % Computes thrust force
+                Fthrust = compute_thrust_force(startNode, endNode, nextNode);
+                % Apply thrust force on nodes
+                F = apply_force(self, F, Fthrust, startNode, endNode);
+
+            end
+
+            function Fthrust = compute_thrust_force(startNode, endNode, nextNode)
+                % _________________________________________________________
+                % Computes the thrust force vector for a specific surface
+                %__________________________________________________________
                 % Terms needed for the thrust force - REPLACE VREL (to do) !!
-                n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
+                n = normal_vector(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
                 A = length; % in 2D, area proportional force is length proportional
                 ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
                 vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
                 d = vrel/norm(vrel);
-                Ct = 2*(n.'*d)^2;
+                Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
                 
                 % Thrust force
-                Fthrust = 1/2*rho*Ct*norm(vrel)^2*d;
-    
-                % Apply thrust force on nodes
-                F(startNode*2-1) = F(startNode*2-1) + Fthrust(1)/2;    % x-coordinate
-                F(startNode*2) = F(startNode*2) + Fthrust(2)/2;        % y-coordinate
-                F(endNode*2-1) = F(endNode*2-1) + Fthrust(1)/2;        % x-coordinate
-                F(endNode*2) = F(endNode*2) + Fthrust(2)/2;            % y-coordinate
-            end
-            
-            function n = normalVector(startNodePos, endNodePos, nextNodePos)
-                % Returns a vector of unit length normal to the surface
-                % defined by `startNodePos' and enNodePos', pointing
-                % outward the considered element
-                n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
-                n = n/norm(n); % normalizing n
-                dotProd = dot(n,[nextNodePos(1)-endNodePos(1); nextNodePos(2)-endNodePos(2)]);
-                if dotProd >= 0
-                    n = -n; % inverting the direction of n if it points toward the element
-                end
-            end
-
-            function [startNode, endNode, nextNode] = getNodesFromFace(face)
-                % Returns the nodes' indexes from a give face. The
-                % ordering is done counterclokewise. `nextNode is the index
-                % of the node on the next surface.
-                if face ~= 3
-                    startNode = face;
-                    endNode = face + 1;
-                else
-                    startNode = face;
-                    endNode = 1;
-                end
-                if face ~= 2
-                    nextNode = endNode +1;
-                else
-                    nextNode = 1;
-                end
+                Fthrust = -1/2*rho*Ct*norm(vrel)^2*n;
             end 
-
-        
+                  
         end
 
+        function n = normal_vector(~, startNodePos, endNodePos, nextNodePos)
+            % _____________________________________________________________
+            % Returns a vector of unit length normal to the surface
+            % defined by `startNodePos' and enNodePos', pointing
+            % outward the considered element
+            % _____________________________________________________________
+            n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
+            n = n/norm(n); % normalizing n
+            dotProd = dot(n,[nextNodePos(1)-endNodePos(1); nextNodePos(2)-endNodePos(2)]);
+            if dotProd >= 0
+                n = -n; % inverting the direction of n if it points toward the element
+            end
+        end
+
+        function [startNode, endNode, nextNode] = get_node_from_face(~, face)
+            % _____________________________________________________________
+            % Returns the nodes' indexes from a give face. The
+            % ordering is done counterclokewise. `nextNode is the index
+            % of the node on the next surface.
+            % _____________________________________________________________
+            if face ~= 3
+                startNode = face;
+                endNode = face + 1;
+            else
+                startNode = face;
+                endNode = 1;
+            end
+            if face ~= 2
+                nextNode = endNode +1;
+            else
+                nextNode = 1;
+            end
+        end 
+
+        function F = apply_force(~, Fbase, FtoApply, startNode, endNode)
+            % _____________________________________________________________
+            % Returns the addition of the force to apply FtoApply and the
+            % base force Fbase.
+            % _____________________________________________________________
+            F = Fbase;
+            F(startNode*2-1) = Fbase(startNode*2-1) + FtoApply(1)/2;    % x-coordinate
+            F(startNode*2) = Fbase(startNode*2) + FtoApply(2)/2;        % y-coordinate
+            F(endNode*2-1) = Fbase(endNode*2-1) + FtoApply(1)/2;        % x-coordinate
+            F(endNode*2) = Fbase(endNode*2) + FtoApply(2)/2;            % y-coordinate
+        end 
 
 
     end 
