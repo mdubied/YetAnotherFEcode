@@ -200,6 +200,90 @@ classdef Tri3Element < ContinuumElement
         end
 
 
+        function F = thrust_force(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the thrust force F_drag acting the face
+            % ``specificFace'' of an element. The force is divided by 2 and
+            % applied to the nodes at of the considered face.
+            % _____________________________________________________________
+            F = sparse(self.nelDOFs,1);
+            [startNode, endNode, nextNode] = getNodesFromFace(specificFace(1));
+
+            % Terms needed for the thrust force - REPLACE VREL (to do) !!
+            n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
+            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+            A = length; % in 2D, area proportional force is length proportional
+            ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
+            vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
+            d = vrel/norm(vrel);
+            Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
+            
+            % Thrust force
+            Fthrust = 1/2*rho*Ct*norm(vrel)^2*d;
+
+            % Apply thrust force on nodes
+            F(startNode*2-1) = F(startNode*2-1) + Fthrust(1)/2;    % x-coordinate
+            F(startNode*2) = F(startNode*2) + Fthrust(2)/2;        % y-coordinate
+            F(endNode*2-1) = F(endNode*2-1) + Fthrust(1)/2;        % x-coordinate
+            F(endNode*2) = F(endNode*2) + Fthrust(2)/2;            % y-coordinate
+
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = getNodesFromFace(specificFace(2));
+
+                % Terms needed for the thrust force - REPLACE VREL (to do) !!
+                n = normalVector(self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
+                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+                A = length; % in 2D, area proportional force is length proportional
+                ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
+                vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
+                d = vrel/norm(vrel);
+                Ct = 2*(n.'*d)^2;
+                
+                % Thrust force
+                Fthrust = 1/2*rho*Ct*norm(vrel)^2*d;
+    
+                % Apply thrust force on nodes
+                F(startNode*2-1) = F(startNode*2-1) + Fthrust(1)/2;    % x-coordinate
+                F(startNode*2) = F(startNode*2) + Fthrust(2)/2;        % y-coordinate
+                F(endNode*2-1) = F(endNode*2-1) + Fthrust(1)/2;        % x-coordinate
+                F(endNode*2) = F(endNode*2) + Fthrust(2)/2;            % y-coordinate
+            end
+            
+            function n = normalVector(startNodePos, endNodePos, nextNodePos)
+                % Returns a vector of unit length normal to the surface
+                % defined by `startNodePos' and enNodePos', pointing
+                % outward the considered element
+                n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
+                n = n/norm(n); % normalizing n
+                dotProd = dot(n,[nextNodePos(1)-endNodePos(1); nextNodePos(2)-endNodePos(2)]);
+                if dotProd >= 0
+                    n = -n; % inverting the direction of n if it points toward the element
+                end
+            end
+
+            function [startNode, endNode, nextNode] = getNodesFromFace(face)
+                % Returns the nodes' indexes from a give face. The
+                % ordering is done counterclokewise. `nextNode is the index
+                % of the node on the next surface.
+                if face ~= 3
+                    startNode = face;
+                    endNode = face + 1;
+                else
+                    startNode = face;
+                    endNode = 1;
+                end
+                if face ~= 2
+                    nextNode = endNode +1;
+                else
+                    nextNode = 1;
+                end
+            end 
+
+        
+        end
+
+
+
     end 
         
     

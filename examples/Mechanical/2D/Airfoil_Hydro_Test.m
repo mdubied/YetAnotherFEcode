@@ -86,9 +86,9 @@ PlotMesh(nodes, elementPlot, 1);
 
 %% APPLY FORCE TO SKIN ELEMENTS
 %f = BeamAssembly.vector('drag_force', u, ud);
-vwater = [1;0];
+vwater = [0.5;0.5];
 rho = 1;
-f = AirfoilAssembly.skin_force('drag_force', 'weights', skinElements, skinElementFaces, vwater, rho);
+f = AirfoilAssembly.skin_force('thrust_force', 'weights', skinElements, skinElementFaces, vwater, rho);
 
 
 %% PLOT FORCES ON MESH
