@@ -136,6 +136,18 @@ if m==1
 
         dfdqdp = dfdpdq; %puoi togliere se modifichi codice
     end
+
+    if isIsochoric ~= 1
+        
+        n = size(M{1},1);
+        dMdp = zeros(n,n,m);
+        
+        for J = 1:m
+            dMdp(:,:,J) = M{J+1};
+        end
+        
+    end 
+
 else 
     dfdq =  ttv(Q3n,q,3) + ttv(Q3n,q,2) + ttv(Q4n,{q,q},[3,4]) +...
         ttv(Q4n,{q,q},[2,3]) + ttv(Q4n,{q,q},[2,4]); % without linear part

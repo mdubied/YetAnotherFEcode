@@ -69,7 +69,7 @@ classdef Assembly < handle
         end
 
         function [F] = skin_force(self,elementMethodName,varargin)
-            % This function is similar to `vector' but itallows to pass
+            % This function is similar to `vector' but it allows to pass
             % only part of the input to the element method
 
             n_e = self.Mesh.nElements;            
@@ -88,7 +88,7 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;
-                F{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:));
+                F{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
             end
             
             % Assembling

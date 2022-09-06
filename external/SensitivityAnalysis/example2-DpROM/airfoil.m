@@ -1,4 +1,10 @@
-% DESCRIPTION:                                                      
+% DESCRIPTION:              
+% This script is an adaptation of the code ``main_beam'', by Alexander
+% Saccani. The goal is to apply the same procedure to a 2D airfoil. This
+% airfoil shows the following features:
+% - linear triangle mesh element
+% - external force on the skin of the mesh
+% From ``main_beam'':
 % With this script we study first and second order approximations of HB
 % coefficients of a parametric fe model of a nonlinear defected beam 
 % presented in [1].
@@ -25,10 +31,8 @@
 % [1] Marconi,Tiso,Quadrelli,Braghin, 'A higher-order parametric nonlinear
 % reduced-order model for imperfect structures using Neumann expansion',
 % Nonlinear Dynamics 104(4), http://doi.org/10.1007/s11071-021-06496-y
-%
-% Author: Alexander Saccani, Msc in mechanical engineering
-% University: Politecnico di Milano
-% Created:  09/2021
+% ------
+% Last modified: 25/08/2022, Mathieu Dubied, ETH Zurich
 
 % Initialize Matlab
 clear
@@ -45,8 +49,8 @@ format shortg
 USEJULIA = 0;
 
 % Sensitivity Analysis settings ___________________________________________
-SENS = 0;	% perform sensitivity analysis (1) or used stored results (0).
-filename_sens = 'sens_2VM_H3';	% file with sens analysis results stored
+SENS = 1;	% perform sensitivity analysis (1) or used stored results (0).
+%filename_sens = 'sens_airfoil';	% file with sens analysis results stored
 method_sens = 'normal';         % available options are 'normal'/'omegaconst'
 
 % number of vibration modes used in modal reduction (MAKE SURE it's the
@@ -54,8 +58,8 @@ method_sens = 'normal';         % available options are 'normal'/'omegaconst'
 n_VMs = 2;
 
 % do you want to save sensitivity analysis results?
-save_sens = 0;
-save_as = 'sens_2VM_H3.mat';	% name of the file you save results
+save_sens = 1;
+save_as = 'sens_airfoil.mat';	% name of the file you save results
 
 % DpROM settings __________________________________________________________
 % parametric formulation for defects
@@ -63,10 +67,11 @@ FORMULATION = 'N1'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
 % defect amplitudes
-xi1 = 0.3;    % defect amplitude - arch
-xi2 = 0.1;	  % defect amplitude - shifted arch
-xi3 = 0.1;    % defect amplitude - wall angle
-xi4 = 0.1;    % defect amplitude - thinning beam
+% xi1 = 0.3;    % defect amplitude - arch
+% xi2 = 0.1;	  % defect amplitude - shifted arch
+% xi3 = 0.1;    % defect amplitude - wall angle
+% xi4 = 0.1;    % defect amplitude - thinning beam
+xiA = 0.2;    % defect amplitude - thinning airfoil
 
 % Common settings for HB __________________________________________________
 imod = 1;           % eigenfreq to study
@@ -90,52 +95,65 @@ myMaterial = KirchoffMaterial();
 set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
 myMaterial.PLANE_STRESS = false;	% set "true" for plane_stress
 % Element
-myElementConstructor = @()Quad8Element(thickness, myMaterial);
+myElementConstructor = @()Tri3Element(thickness, myMaterial);
 
 % MESH_____________________________________________________________________
-Lx = 2;
-Ly = .050;
-nx = 40;
-ny = 2;
-[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny, 'QUAD8');
+filename = 'naca0012TRI';
+[nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 
 % nominal mesh
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
-MeshNominal.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+PlotMesh(nodes, elementPlot, 1);
+
+% boundary conditions of nominal mesh: front and back nodes fixed
+frontNode = find_node_2D(0,0,nodes);
+Lx = 0.15;
+backNode = find_node_2D(Lx,0,nodes);
+nset = {frontNode,backNode};
+MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 
 
 % DEFECT SHAPES ***********************************************************
-% (1) arch defect
-vd1 = Ly * sin(pi/Lx * nodes(:,1));	% y-displacement 
-arc_defect = zeros(numel(nodes),1);
-arc_defect(2:2:end) = vd1;        	% vectorized defect-field
+% % (1) arch defect
+% vd1 = Ly * sin(pi/Lx * nodes(:,1));	% y-displacement 
+% arc_defect = zeros(numel(nodes),1);
+% arc_defect(2:2:end) = vd1;        	% vectorized defect-field
+% 
+% % (2) shifted arch defect
+% vd2 = Ly * sin(pi/Lx * nodes(:,1) - pi/2);	% y-displacement 
+% sh_arc_defect = zeros(numel(nodes),1);         
+% sh_arc_defect(2:2:end) = vd2;             	% vectorized defect-field
+% 
+% % (3) wall angle
+% th = 5; % wall angle of 5°
+% ud = nodes(:,2) * tan(th*pi/180);
+% wallangle = zeros(numel(nodes),1);
+% wallangle(1:2:end) = ud;
+% 
+% % (4) thinning beam
+% nodes_translated = [nodes(:,1), nodes(:,2) - Ly/2];
+% shape_fun  = (2/Lx)^2 * (nodes_translated(:,1) - Lx/2).^2;
+% nodes_def_thin = [nodes_translated(:,1), ...
+%     nodes_translated(:,2).*shape_fun + Ly/2 ];
+% vd3 = nodes_def_thin(:,2) - nodes(:,2);
+% thinbeam = zeros(numel(nodes),1);
+% thinbeam(2:2:end) = vd3;
 
-% (2) shifted arch defect
-vd2 = Ly * sin(pi/Lx * nodes(:,1) - pi/2);	% y-displacement 
-sh_arc_defect = zeros(numel(nodes),1);         
-sh_arc_defect(2:2:end) = vd2;             	% vectorized defect-field
+% (A) thinning airfoil 
+Lx=0.15;
+nodes_translated = [nodes(:,1), nodes(:,2)*0.8];
+vdA = nodes_translated(:,2) - nodes(:,2);
+thinAirfoil = zeros(numel(nodes),1);
+thinAirfoil(2:2:end) = vdA;
 
-% (3) wall angle
-th = 5; % wall angle of 5°
-ud = nodes(:,2) * tan(th*pi/180);
-wallangle = zeros(numel(nodes),1);
-wallangle(1:2:end) = ud;
-
-% (4) thinning beam
-nodes_translated = [nodes(:,1), nodes(:,2) - Ly/2];
-shape_fun  = (2/Lx)^2 * (nodes_translated(:,1) - Lx/2).^2;
-nodes_def_thin = [nodes_translated(:,1), ...
-    nodes_translated(:,2).*shape_fun + Ly/2 ];
-vd3 = nodes_def_thin(:,2) - nodes(:,2);
-thinbeam = zeros(numel(nodes),1);
-thinbeam(2:2:end) = vd3;
 % *************************************************************************
 
 
 % defected mesh
- U = [arc_defect, sh_arc_defect, wallangle, thinbeam]; % defect basis
-xi = [xi1 xi2 xi3 xi4]'; % parameter vector
+ U = thinAirfoil; % defect basis
+xi = xiA; % parameter vector
 m = length(xi); % number of parameters
 
 % update defected mesh nodes
@@ -144,22 +162,22 @@ dd = [d(1:2:end) d(2:2:end)];
 nodes_defected = nodes + dd; % nominal + d ---> defected 
 MeshDefected = Mesh(nodes_defected);
 MeshDefected.create_elements_table(elements,myElementConstructor);
-MeshDefected.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
-    fprintf(' Arc defect:         %.1f * beam thickness \n', xi1)
-    fprintf(' Shifted Arc defect: %.1f * beam thickness \n', xi2)
-    fprintf(' Wall angle:         %.1f° (xi = %.1f) \n', th*xi3, xi3)
-    fprintf(' Thinning beam defect: %.1f * beam thickness \n\n\n', xi4)
+MeshDefected.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+%     fprintf(' Arc defect:         %.1f * beam thickness \n', xi1)
+%     fprintf(' Shifted Arc defect: %.1f * beam thickness \n', xi2)
+%     fprintf(' Wall angle:         %.1f° (xi = %.1f) \n', th*xi3, xi3)
+%     fprintf(' Thinning beam defect: %.1f * beam thickness \n\n\n', xi4)
 
 figure('units','normalized','position',[.2 .3 .6 .4])
-elementPlot = elements(:,1:4); hold on % plot only corners (otherwise it's a mess)
+elementPlot = elements(:,1:3); hold on % plot only corners (otherwise it's a mess)
 PlotMesh(nodes_defected, elementPlot, 0); 
 PlotMesh(nodes,elementPlot,0);
 v1 = reshape(U*xi, 2, []).';
 S = 1;%2 * Ly / max(abs(v1(:)));
 hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
 title(sprintf('Defect, \\xi=[%.1f, %.1f, %.1f, %.1f], S=%.1f\\times',...
-    xi1, xi2, xi3, xi4, S))
-axis normal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
+    xiA, S))
+axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 
 % ASSEMBLY ________________________________________________________________
 % nominal
@@ -182,7 +200,7 @@ Md = DefectedAssembly.mass_matrix();
 
 % External force __________________________________________________________
 % forced dof is the vertical in midspan of beam
-node_dofs = MeshNominal.get_DOF_from_location([Lx/2, Ly/2]);
+node_dofs = MeshNominal.get_DOF_from_location([Lx/2, 0]);
 forced_dof = node_dofs(2);
 Fext = zeros(nNodes*2, 1);
 Fext( forced_dof ) = 1;
@@ -196,8 +214,8 @@ forced_dof_c = NominalAssembly.free2constrained_index( forced_dof );
 
 % Eigenvalue problem_______________________________________________________
 % Vibration Modes (VM): nominal
-Knc = DefectedAssembly.constrain_matrix(Kn);
-Mnc = DefectedAssembly.constrain_matrix(Mn);
+Knc = NominalAssembly.constrain_matrix(Kn);
+Mnc = NominalAssembly.constrain_matrix(Mn);
 [VMn,om] = eigs(Knc, Mnc, n_VMs, 'SM');
 [f0n,ind] = sort(sqrt(diag(om))/2/pi);
 VMn = VMn(:,ind);
@@ -205,6 +223,15 @@ for ii = 1:n_VMs
     VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
 end
 VMn = NominalAssembly.unconstrain_vector(VMn);
+
+% PLOT
+mod = 2;
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMesh(nodes, elementPlot, 0);
+v1 = reshape(VMn(:,mod), 2, []).';
+PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0n(mod),3) ' Hz'])
 
 % Vibration Modes (VM): defected
 Kdc = DefectedAssembly.constrain_matrix(Kd);
@@ -216,6 +243,18 @@ for ii = 1:n_VMs
     VMd(:,ii) = VMd(:,ii)/max(sqrt(sum(VMd(:,ii).^2,2)));
 end
 VMd = DefectedAssembly.unconstrain_vector(VMd);
+
+% PLOT
+mod = 2;
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMesh(nodes, elementPlot, 0);
+v1 = reshape(VMd(:,mod), 2, []).';
+PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0d(mod),3) ' Hz'])
+
+
+
 
 % Damping _________________________________________________________________
 alfa = 3.1;
@@ -348,7 +387,6 @@ if SENS == 1
     
     % Interpret solver output
     results.red.nominal = nlvib_decode(Xn, Solinfo, Sol, 'FRF', 'HB',...
-        $
         n_DpROM, H); %(reduced space, nominal solution)
     
     Sens = [Sol.Sens];
@@ -373,7 +411,7 @@ end
 X12 = update_response(Xn, Sens, xi); % Xnominal + Sens + delta par. --> X12
 
 % interpret solver output
-% reduced space - lin. approx.
+% reduced space - lin. approx.,
 results.red.lin = nlvib_decode(X12.lin, 0, 0, 'FRF', ...
                         'HB', n_DpROM, H);
 
@@ -549,7 +587,7 @@ hv = 1;
 dof2plot = zeros(2,1);
 x = [Lx/4 Lx/2];
 for ii = 1:length(x)
-    node_dofsii = MeshNominal.get_DOF_from_location([x(ii), Ly/2]);
+    node_dofsii = MeshNominal.get_DOF_from_location([x(ii), 0]);
     dof2plot(ii) = node_dofsii(1 + hv);
 end
 

@@ -1,4 +1,10 @@
-% DESCRIPTION:                                                      
+% DESCRIPTION:              
+% This script is an adaptation of the code ``main_beam'', by Alexander
+% Saccani. The goal is to apply the same procedure to a 2D airfoil. This
+% airfoil shows the following features:
+% - linear triangle mesh element
+% - external force on the skin of the mesh
+% From ``main_beam'':
 % With this script we study first and second order approximations of HB
 % coefficients of a parametric fe model of a nonlinear defected beam 
 % presented in [1].
@@ -25,10 +31,8 @@
 % [1] Marconi,Tiso,Quadrelli,Braghin, 'A higher-order parametric nonlinear
 % reduced-order model for imperfect structures using Neumann expansion',
 % Nonlinear Dynamics 104(4), http://doi.org/10.1007/s11071-021-06496-y
-%
-% Author: Alexander Saccani, Msc in mechanical engineering
-% University: Politecnico di Milano
-% Created:  09/2021
+% ------
+% Last modified: 24/08/2022, Mathieu Dubied, ETH Zurich
 
 % Initialize Matlab
 clear
@@ -45,8 +49,8 @@ format shortg
 USEJULIA = 0;
 
 % Sensitivity Analysis settings ___________________________________________
-SENS = 0;	% perform sensitivity analysis (1) or used stored results (0).
-filename_sens = 'sens_2VM_H3';	% file with sens analysis results stored
+SENS = 1;	% perform sensitivity analysis (1) or used stored results (0).
+%filename_sens = 'sens_airfoil';	% file with sens analysis results stored
 method_sens = 'normal';         % available options are 'normal'/'omegaconst'
 
 % number of vibration modes used in modal reduction (MAKE SURE it's the
@@ -54,8 +58,8 @@ method_sens = 'normal';         % available options are 'normal'/'omegaconst'
 n_VMs = 2;
 
 % do you want to save sensitivity analysis results?
-save_sens = 0;
-save_as = 'sens_2VM_H3.mat';	% name of the file you save results
+save_sens = 1;
+save_as = 'sens_airfoil.mat';	% name of the file you save results
 
 % DpROM settings __________________________________________________________
 % parametric formulation for defects
@@ -90,14 +94,11 @@ myMaterial = KirchoffMaterial();
 set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
 myMaterial.PLANE_STRESS = false;	% set "true" for plane_stress
 % Element
-myElementConstructor = @()Quad8Element(thickness, myMaterial);
+myElementConstructor = @()Tri3Element(thickness, myMaterial);
 
 % MESH_____________________________________________________________________
-Lx = 2;
-Ly = .050;
-nx = 40;
-ny = 2;
-[nodes, elements, nset] = mesh_2Drectangle(Lx, Ly, nx, ny, 'QUAD8');
+filename = 'naca0012TRI';
+[nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 
 % nominal mesh
 MeshNominal = Mesh(nodes);
@@ -348,7 +349,6 @@ if SENS == 1
     
     % Interpret solver output
     results.red.nominal = nlvib_decode(Xn, Solinfo, Sol, 'FRF', 'HB',...
-        $
         n_DpROM, H); %(reduced space, nominal solution)
     
     Sens = [Sol.Sens];
