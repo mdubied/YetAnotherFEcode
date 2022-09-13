@@ -1,0 +1,100 @@
+% ------------------------------------------------------------------------ 
+% Script to test the implementation of hydrodynamic forces on 2D structures
+% with TRI3 elements
+% 
+% Last modified: 23/09/2022, Mathieu Dubied, ETH Zurich
+%
+% ------------------------------------------------------------------------
+clear; 
+close all; 
+clc
+
+%whichModel = 'CUSTOM'; % or "ABAQUS"
+whichModel = 'ABAQUS';
+%elementType = 'QUAD4';
+elementType = 'TRI3';
+% elementType = 'QUAD8'; % only QUAD4 is implemented for now
+
+%% PREPARE MODEL                                                    
+
+% DATA ____________________________________________________________________
+E       = 70e9;     % Young's modulus [Pa]
+rho     = 2700;     % density [kg/m^3]
+nu      = 0.33;     % Poisson's ratio 
+thickness = .1;     % [m] beam's out-of-plane thickness
+
+% Material
+myMaterial = KirchoffMaterial();
+set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
+myMaterial.PLANE_STRESS = true;	% set "false" for plane_strain
+% Element
+switch elementType
+    case 'QUAD4'
+        myElementConstructor = @()Quad4Element(thickness, myMaterial);
+    case 'QUAD8'
+        myElementConstructor = @()Quad8Element(thickness, myMaterial);
+    case 'TRI3'
+        myElementConstructor = @()Tri3Element(thickness, myMaterial);
+end
+
+% MESH_____________________________________________________________________
+Lx = 3;
+Ly = .2;
+nx = 5;
+ny = 6;
+switch upper( whichModel )
+    case 'CUSTOM'
+        [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
+    case 'ABAQUS'
+        % Alternatively, one can write an input file in ABAQUS and read it as:
+        filename = 'naca0012TRI';
+        [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
+end
+
+myMesh = Mesh(nodes);
+myMesh.create_elements_table(elements,myElementConstructor);
+
+% MESH > BOUNDARY CONDITONS
+% switch upper( whichModel )
+%     case 'CUSTOM'
+%         myMesh.set_essential_boundary_condition([nset{1} nset{3}],1:2,0)
+%     case 'ABAQUS'
+%         myMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+% end
+
+% ASSEMBLY ________________________________________________________________
+AirfoilAssembly = Assembly(myMesh);
+M = AirfoilAssembly.mass_matrix();
+nNodes = size(nodes,1);
+u0 = zeros( myMesh.nDOFs, 1);
+[K,~] = AirfoilAssembly.tangent_stiffness_and_force(u0);
+
+% store matrices
+AirfoilAssembly.DATA.K = K;
+AirfoilAssembly.DATA.M = M;
+%f = QuadAssembly.vector('drag_force', u, ud);
+
+
+%% PLOT MESH WITH NODES AND ELEMENTS
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMesh(nodes, elementPlot, 1);
+
+%% GET OUTER SURFACE
+[skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
+
+
+%% APPLY FORCE TO SKIN ELEMENTS
+%f = BeamAssembly.vector('drag_force', u, ud);
+vwater = [1;0];
+rho = 1;
+%f = AirfoilAssembly.skin_force('force_length_prop_skin_normal', 'weights',
+%skinElements, skinElementFaces); % change in assembly -> skin_force needed
+%for this function
+f = AirfoilAssembly.skin_force('drag_force', 'weights', skinElements, skinElementFaces, vwater, rho);
+
+
+%% PLOT FORCES ON MESH
+PlotMeshandForce(nodes, elementPlot, 1,30*f);
+
+

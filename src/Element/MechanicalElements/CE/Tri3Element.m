@@ -83,7 +83,85 @@ classdef Tri3Element < ContinuumElement
             end
         end 
 
+
         function F = drag_force(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the drag force F_drag acting the face
+            % ``specificFace'' of an element. The force is divided by 2 and
+            % applied to the nodes at of the considered face. Use of 1st
+            % order tensors.
+            % _____________________________________________________________
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
+            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+            udot = [1 0 1 0 1 0].';
+           
+            if specificFace(1) == 1
+                F = Te_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).' ...
+                    + Tudote_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0)*udot;
+            elseif specificFace(1) == 2
+                F = Te_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    + Tudote_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0)*udot;
+            else
+                F = Te_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    + Tudote_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0)*udot;
+            end
+             %disp(F)
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
+                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                if specificFace(2) == 1
+                    F = F + Te_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        + Tudote_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0)*udot;
+                elseif specificFace(2) == 2
+                    F = F + Te_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        + Tudote_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0)*udot;
+                else
+                    F = F + Te_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        + Tudote_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0)*udot;
+                end
+            end
+            
+            
+        end
+
+        function F = thrust_force(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the thrust force F_drag acting the face
+            % ``specificFace'' of an element. The force is divided by 2 and
+            % applied to the nodes at of the considered face. Use of 1st
+            % order tensors.
+            % _____________________________________________________________
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
+            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+           
+            if specificFace(1) == 1
+                F = Te_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            elseif specificFace(1) == 2
+                F = Te_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            else
+                F = Te_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            end
+             %disp(F)
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
+                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                if specificFace(2) == 1
+                    F = F + Te_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                elseif specificFace(2) == 2
+                    F = F + Te_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                else
+                    F = F + Te_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                end
+            end
+            
+            
+        end
+
+        function F = drag_force_full(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns the drag force F_drag acting the face
             % ``specificFace'' of an element. The force is divided by 2 and
@@ -120,14 +198,14 @@ classdef Tri3Element < ContinuumElement
                 Cd = 2*(n.'*d)^2;
                 
                 % Drag force
-                Fdrag = 1/2*rho*Cd*norm(vrel)^2*d;
+                Fdrag = 1/2*rho*A*Cd*norm(vrel)^2*d;
             end 
             
         end
 
 
 
-        function F = thrust_force(self, specificFace, vwater, rho)
+        function F = thrust_force_full(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns the thrust force F_drag acting the face
             % ``specificFace'' of an element. The force is divided by 2 and
@@ -165,10 +243,27 @@ classdef Tri3Element < ContinuumElement
                 Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
                 
                 % Thrust force
-                Fthrust = -1/2*rho*Ct*norm(vrel)^2*n;
+                Fthrust = -1/2*A*rho*Ct*norm(vrel)^2*n;
             end 
                   
         end
+
+        function [r11, r12, r21, r22] = normal_vec_rot_matrix(~, startNodePos, endNodePos, nextNodePos)
+            n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
+            n = n/norm(n); % normalizing n
+            dotProd = dot(n,[nextNodePos(1)-endNodePos(1); nextNodePos(2)-endNodePos(2)]);
+            if dotProd >= 0
+                r11 = 0; 
+                r12 = -1;
+                r21 = 1;
+                r22 = 0;
+            else
+                r11 = 0;
+                r12 = 1;
+                r21 = -1;
+                r22 = 0;
+            end
+        end 
 
         function n = normal_vector(~, startNodePos, endNodePos, nextNodePos)
             % _____________________________________________________________
