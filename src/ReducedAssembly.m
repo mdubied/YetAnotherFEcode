@@ -76,6 +76,40 @@ classdef ReducedAssembly < Assembly
             end
         end
 
+        function [K] = matrix_skin(self,elementMethodName,varargin)
+            % This function assembles a finite element matrix from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the skin
+            % elements/nodes of the structure.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            K = zeros(m,m);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            parfor j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                K = K + elementWeights(j) * (Ve.' * Ke * Ve);
+            end
+        end
+        
+
         function [f] = vector(self,elementMethodName,varargin)
             % This function assembles a generic finite element vector from
             % its element level counterpart.
@@ -104,6 +138,40 @@ classdef ReducedAssembly < Assembly
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
                 fe = thisElement.(elementMethodName)(inputs{:});
+                f = f + elementWeights(j) * (Ve.' * fe);
+            end
+        end
+
+        function [f] = vector_skin(self,elementMethodName,varargin)
+            % This function assembles a finite element vector from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the skin
+            % elements/nodes of the structure.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+
+            m = size(self.V,2);
+            f = zeros(m,1);
+
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            parfor j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                fe = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
                 f = f + elementWeights(j) * (Ve.' * fe);
             end
         end
@@ -180,6 +248,56 @@ classdef ReducedAssembly < Assembly
                     Vcell = cell(ndims(Te),1);
                     Vcell(:) = {Ve.'};
                     T = T + elementWeights(j) * ttm(Te, Vcell,I);
+                end
+            end
+            
+            [subs, T] = sparsify(T,[],sumDIMS);
+            T = sptensor(subs, T, SIZE);
+        end
+
+        function [T] = tensor_skin(self,elementMethodName,SIZE,sumDIMS,mode,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: in this function, we reduce all the dimensions with 
+            % the same reduction basis
+            
+            m = size(self.V,2);
+            [~,I] = find(SIZE == m);
+            T = tenzeros(SIZE);
+            disp(size(T))
+            Elements = self.Mesh.Elements;
+            V = self.V;                %#ok<*PROPLC>
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                if strcmpi(mode,'ELP') % toggle Element-Level projection
+                    Te = thisElement.(elementMethodName)(Ve,inputs{1}(j,:),inputs{2}, inputs{3});
+                    disp(size(Te))
+                    %[Te, ~] = thisElement.(elementMethodName)([Ve,inputs{1}(j,:),inputs{2}, inputs{3}]);
+                    T = T + Te;
+                else
+                      msg = 'Only the ELP mode is currently supported for hydrodynamic forces';
+                      error(msg)
+%                     [Te, ~] = thisElement.(elementMethodName)(inputs{:});
+%                     % transform tensor
+%                     Vcell = cell(ndims(Te),1);
+%                     Vcell(:) = {Ve.'};
+%                     T = T + elementWeights(j) * ttm(Te, Vcell,I);
                 end
             end
             
