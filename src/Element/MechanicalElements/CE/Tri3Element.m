@@ -122,9 +122,48 @@ classdef Tri3Element < ContinuumElement
             end
         end
 
+        function T = T2ue(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns a 2nd order tensor (i.e., a matrix) stemming from 
+            % the drag and the thrust force. These forces are acting on the
+            % ``specificFace'' of an element. The forces are divided by 2 
+            % and applied to the nodes at of the considered face. 
+            % _____________________________________________________________
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
+            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+           Tue_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            if specificFace(1) == 1
+                T = Tue_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
+                    %+Tue_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            elseif specificFace(1) == 2
+                T = Tue_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    +Tue_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            else
+                T = Tue_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    +Tue_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+            end
+            
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
+                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                if specificFace(2) == 1
+                    T = T + Tue_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        +Tudote_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                elseif specificFace(2) == 2
+                    T = T + Tue_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        +Tue_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                else
+                    T = T + Tue_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        +Tue_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                end
+            end
+        end
+
         function T = T2udote(self, specificFace, vwater, rho)
             % _____________________________________________________________
-            % Returns the 1st order tensor (i.e., a vector) stemming from 
+            % Returns a 2nd order tensor (i.e., a matrix) stemming from 
             % the drag and the thrust force. These forces are acting on the
             % ``specificFace'' of an element. The forces are divided by 2 
             % and applied to the nodes at of the considered face. 
@@ -134,14 +173,14 @@ classdef Tri3Element < ContinuumElement
             [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
   
             if specificFace(1) == 1
-                T = Tudote_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
-                    %+Te_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                T = Tudote_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    +Tudote_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
             elseif specificFace(1) == 2
-                T = Tudote_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
-                    %+Te_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                T = Tudote_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    +Tudote_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
             else
-                T = Tudote_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
-                    %+Te_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                T = Tudote_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                    +Tudote_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
             end
             
             if specificFace(2) ~= 0
@@ -149,17 +188,19 @@ classdef Tri3Element < ContinuumElement
                 length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
                 [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 if specificFace(2) == 1
-                    T = T + Tudote_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
-                        %+Te_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                    T = T + Tudote_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        +Tudote_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
                 elseif specificFace(2) == 2
-                    T = T + Tudote_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
-                        %+Te_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                    T = T + Tudote_conf_2_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        +Tudote_conf_2_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
                 else
-                    T = T + Tudote_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';%...
-                        %+Te_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
+                    T = T + Tudote_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
+                        +Tudote_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
                 end
             end
         end
+
+        
 
         function F = drag_force(self, specificFace, vwater, rho)
             % _____________________________________________________________

@@ -56,7 +56,9 @@ disp(' REDUCED HYDRODYNAMIC TENSORS:')
 fprintf(' Assembling %d elements ...', nel)
 
 Tr1 = RomAssembly.vector_skin('T1e', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tr2u = RomAssembly.matrix_skin('T2ue', 'weights', skinElements, skinElementFaces, vwater, rho);
 Tr2udot = RomAssembly.matrix_skin('T2udote', 'weights', skinElements, skinElementFaces, vwater, rho);
+
 
 % Q2 = RomAssembly.matrix('tangent_stiffness_and_force', u0);
 % Q3 = tensor( RomAssembly.tensor('T2',[m m m],[2 3], mode));
@@ -70,8 +72,9 @@ fprintf(' SPEED: %.1f el/s\n',nel/time)
 fprintf(' SIZEs: %d \n\n', size(V,2))
 
 tensors.Tr1 = Tr1;           
-% tensors.Tr2u            
+tensors.Tr2u = Tr2u;            
 tensors.Tr2udot = Tr2udot;
+
 % tensors.Tr3uu
 % tensors.Tr3uudot
 % tensors.Tr3udotudot
