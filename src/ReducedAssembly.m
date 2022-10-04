@@ -269,7 +269,7 @@ classdef ReducedAssembly < Assembly
             m = size(self.V,2);
             [~,I] = find(SIZE == m);
             T = tenzeros(SIZE);
-            disp(size(T))
+            size(T)
             Elements = self.Mesh.Elements;
             V = self.V;                %#ok<*PROPLC>
             
@@ -287,7 +287,6 @@ classdef ReducedAssembly < Assembly
                 Ve = V(index,:); %#ok<*PFBNS>
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
                     Te = thisElement.(elementMethodName)(Ve,inputs{1}(j,:),inputs{2}, inputs{3});
-                    disp(size(Te))
                     %[Te, ~] = thisElement.(elementMethodName)([Ve,inputs{1}(j,:),inputs{2}, inputs{3}]);
                     T = T + Te;
                 else
