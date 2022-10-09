@@ -2,7 +2,7 @@
 % Script to test the implementation of hydrodynamic forces on 2D structures
 % with TRI3 elements, using a ROM formulation
 % 
-% Last modified: 23/09/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 04/10/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -23,9 +23,9 @@ USEJULIA = 0;
 %% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
-E       = 70e9;     % Young's modulus [Pa]
-rho     = 2700;     % density [kg/m^3]
-nu      = 0.33;     % Poisson's ratio 
+E       = 263824;     % Young's modulus [Pa]
+rho     = 1070;     % density [kg/m^3]
+nu      = 0.499;     % Poisson's ratio 
 thickness = .1;     % [m] beam's out-of-plane thickness
 
 % Material
@@ -56,22 +56,22 @@ switch upper( whichModel )
         [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 end
 
-myMesh = Mesh(nodes);
-myMesh.create_elements_table(elements,myElementConstructor);
+MeshNominal = Mesh(nodes);
+MeshNominal.create_elements_table(elements,myElementConstructor);
 
 % boundary conditions of nominal mesh: front and back nodes fixed
 frontNode = find_node_2D(0,0,nodes);
 Lx = 0.15;
 backNode = find_node_2D(Lx,0,nodes);
 nset = {frontNode,backNode};
-myMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 
 
 % ASSEMBLY ________________________________________________________________
-NominalAssembly = Assembly(myMesh);
+NominalAssembly = Assembly(MeshNominal);
 Mn = NominalAssembly.mass_matrix();
 nNodes = size(nodes,1);
-u0 = zeros( myMesh.nDOFs, 1);
+u0 = zeros( MeshNominal.nDOFs, 1);
 [Kn,~] = NominalAssembly.tangent_stiffness_and_force(u0);
 
 % store matrices
@@ -154,33 +154,58 @@ tensors_ROMn = reduced_tensors_ROM(NominalAssembly, elements, Vn, USEJULIA);
 % % evaluate the defected tensors at xi
 % [Q2, ~, ~, ~, ~, Mxi] = DefectedTensors(tensors_DpROM, xi);
 
-Mnr = Vn'*Mn*Vn; 	% reduced mass matrix (ROM-n)
-%Mdr = Vd'*Md*Vd; 	% reduced mass matrix (ROM-d)
-if VOLUME == 0
-    Mr  = Vn' *Mn*Vn; 	% reduced mass matrix (DpROM)
-% elseif VOLUME == 1
-%     Mr  = V' *Md*V; 	% reduced mass matrix (DpROM)
-end
+%% Reduced Assembly
+ROMn_Assembly = ReducedAssembly(MeshNominal, Vn);
 
-% compute eigenfrequencies of reduced models
-f0_ROMn = sort(sqrt( eigs(tensors_ROMn.Q2, Mnr, n_VMs, 'SM') )/2/pi);
-% f0_ROMd = sort(sqrt( eigs(tensors_ROMd.Q2, Mdr, n_VMs, 'SM') )/2/pi); 
-% f0_DpROM = sort(sqrt( eigs(Q2, Mr, n_VMs, 'SM') )/2/pi);
-% f0_DpROM_Mxi = sort(sqrt( eigs(Q2, Mxi, n_VMs, 'SM') )/2/pi);
-% 
-% % disp eigenfrequencies in command window
-% disp(table(f0n, f0_ROMn, f0d, f0_ROMd, f0_DpROM, f0_DpROM_Mxi))
+ROMn_Assembly.DATA.M = ROMn_Assembly.mass_matrix();         % reduced mass matrix (ROM-n)
+ROMn_Assembly.DATA.C = Vn.'*Dn*Vn;      % reduced damping matrix (ROM-n), using C as needed by the residual function of Newmark integration
+ROMn_Assembly.DATA.K = Vn.'*Kn*Vn;    % reduced stiffness matrix (ROM-n)
 
 %% ROM TENSORS - HYDRODYNAMIC FORCES
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
-vwater = [1;0];
+vwater = [1;0.1];
 rho = 1;
 tensors_hydro = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
+F_ext = @(t,q,qd) (tensors_hydro.Tr1 + tensors_hydro.Tr2u*q + tensors_hydro.Tr2udot*qd); % q, qd are reduced order DOFs
 
+% time step for integration
+h = 0.05;
+
+% Initial condition: equilibrium
+q0 = zeros(size(Vn,2),1);
+qd0 = zeros(size(Vn,2),1);
+qdd0 = zeros(size(Vn,2),1);
+
+% Instantiate object for nonlinear time integration
+TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% Modal nonlinear Residual evaluation function handle
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
+
+% Nonlinear Time Integration
+tmax = 4.0; 
+TI_NL.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL.Solution.u = Vn * TI_NL.Solution.q; % get full order solution
+
+%TI_NL_sol = reshape(TI_NL.Solution.u(:,36), 2, []).';
+
+%% Visualize
+%PlotMesh(nodes, elementPlot, 0)
+%PlotFieldonDeformedMesh(nodes, elementPlot, TI_NL_sol, 'factor', 100)
+AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL.Solution.u,'factor',100,'index',1:2,'filename','result_video')
+
+
+
+%% BELOW: TESTING OF VISUAL APPEARANCE OF THE FORCES
+%
+%
+%
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% GET OUTER SURFACE
-%[skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
+[skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
 
 
 %% APPLY FORCE TO SKIN ELEMENTS
