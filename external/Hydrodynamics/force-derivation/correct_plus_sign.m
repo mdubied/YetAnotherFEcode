@@ -21,3 +21,6 @@ newFile = 'C:\Users\mathi\OneDrive\Bureau\make fishes swim\YetAnotherFEcode\exte
 fid = fopen(newFile, 'wt'); 
 fprintf(fid,[txtCell{:}]);
 fclose(fid);
+
+
+
