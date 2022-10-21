@@ -191,6 +191,44 @@ classdef Assembly < handle
             F = sparse(index, ones(length(index),1), F, self.Mesh.nDOFs, 1);
 
         end
+
+        function [v] = vector_skin(self,elementMethodName,varargin)
+            % This function assembles a finite element vector from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the skin
+            % elements/nodes of the structure.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            n_e = self.Mesh.nElements;            
+            index = cell(n_e,1); % indices
+            v = cell(n_e,1); % values
+            Elements = self.Mesh.Elements; % Elements array
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                
+                index{j} = thisElement.iDOFs;
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+            end
+            
+            % assembling
+            index = vertcat(index{:});
+            v = vertcat(v{:});
+            v = sparse(index, ones(length(index),1), v, self.Mesh.nDOFs, 1);
+        end
         
         function [S] = scalar(self,elementMethodName,varargin)
             % This function assembles a generic finite element scalar from
