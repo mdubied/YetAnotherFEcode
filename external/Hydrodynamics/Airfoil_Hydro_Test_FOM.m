@@ -65,7 +65,7 @@ MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 % ASSEMBLY ________________________________________________________________
 NominalAssembly = Assembly(MeshNominal);
 Mn = NominalAssembly.mass_matrix();
-nNodes = size(nodes,1);
+nNodes = size(nodes,1)
 u0 = zeros( MeshNominal.nDOFs, 1);
 [Kn,~] = NominalAssembly.tangent_stiffness_and_force(u0);
 
@@ -73,7 +73,13 @@ u0 = zeros( MeshNominal.nDOFs, 1);
 NominalAssembly.DATA.K = Kn;
 NominalAssembly.DATA.M = Mn;
 
-
+% DAMPING _________________________________________________________________
+alfa = 3.1;
+beta = 6.3*1e-6;
+Dn = alfa*Mn + beta*Kn; % Rayleigh damping
+NominalAssembly.DATA.D = Dn;
+Dc = NominalAssembly.constrain_matrix(Dn);
+NominalAssembly.DATA.C = Dn;
 
 %% PLOT MESH WITH NODES AND ELEMENTS
 elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
@@ -99,6 +105,35 @@ vwater = [1;0.1];
 rho = 1;
 tensorsHydroFOM = tensors_hydro_FOM(NominalAssembly, elements, skinElements, skinElementFaces, vwater, rho);
 
+size(tensorsHydroFOM.T1)
+size(tensorsHydroFOM.T2)
+size(tensorsHydroFOM.Tu3)
+%% TIME INTEGRATION
+F_ext = @(t,q,qd) (tensors_hydro.T1 + tensors_hydro.Tr2u*q + tensors_hydro.Tr2udot*qd); % q, qd are reduced order DOFs
+
+% time step for integration
+h = 0.05;
+
+% Initial condition: equilibrium % give dimension of contraint vector
+q0 = zeros(Dc,2);
+qd0 = zeros(MeshNominal.nDOFs,1);
+qdd0 = zeros(MeshNominal.nDOFs,1);
+
+% Instantiate object for nonlinear time integration
+TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% Modal nonlinear Residual evaluation function handle
+NL_red = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,NominalAssembly,F_ext);
+
+% Nonlinear Time Integration
+tmax = 4.0; 
+TI_NL.Integrate(q0,qd0,qdd0,tmax,NL_red);
+
+
+%% Visualize
+%PlotMesh(nodes, elementPlot, 0)
+%PlotFieldonDeformedMesh(nodes, elementPlot, TI_NL_sol, 'factor', 100)
+AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL.Solution.u,'factor',100,'index',1:2,'filename','result_video')
 
 
 

@@ -10,10 +10,10 @@
 NotebookFileLineBreakTest
 NotebookFileLineBreakTest
 NotebookDataPosition[       158,          7]
-NotebookDataLength[    203927,       5677]
-NotebookOptionsPosition[    195508,       5541]
-NotebookOutlinePosition[    195934,       5558]
-CellTagsIndexPosition[    195891,       5555]
+NotebookDataLength[    204273,       5664]
+NotebookOptionsPosition[    195846,       5528]
+NotebookOutlinePosition[    196280,       5545]
+CellTagsIndexPosition[    196237,       5542]
 WindowFrame->Normal*)
 
 (* Beginning of Notebook Content *)
@@ -173,24 +173,21 @@ af9595f71b21"],
 
 Cell[BoxData[{
  RowBox[{
-  RowBox[{"startNode", " ", "=", " ", "2"}], ";"}], "\[IndentingNewLine]", 
+  RowBox[{"startNode", " ", "=", " ", "1"}], ";"}], "\[IndentingNewLine]", 
  RowBox[{
-  RowBox[{"endNode", " ", "=", " ", "3"}], ";"}], "\[IndentingNewLine]", 
+  RowBox[{"endNode", " ", "=", " ", "2"}], ";"}], "\[IndentingNewLine]", 
  RowBox[{
-  RowBox[{"nextNode", " ", "=", "1"}], ";"}]}], "Input",
- CellChangeTimes->{{3.871787346854397*^9, 3.871787356156665*^9}, {
-  3.8717976169464655`*^9, 3.871797620657201*^9}, {3.871797671657651*^9, 
-  3.871797709068243*^9}, {3.8719722527620287`*^9, 3.8719722577659416`*^9}, {
-  3.8719725398914785`*^9, 3.871972545179597*^9}, {3.872054386947129*^9, 
-  3.8720543904882617`*^9}, {3.8720547085331755`*^9, 3.872054711330105*^9}, {
-  3.87205485712978*^9, 3.872054860636146*^9}, {3.8720558271391582`*^9, 
-  3.8720558299989977`*^9}, {3.8720559309818797`*^9, 3.8720559360860186`*^9}, {
-  3.8727321011028214`*^9, 3.872732106483866*^9}, {3.8727335750727153`*^9, 
-  3.8727335786813984`*^9}, {3.874809546936699*^9, 3.8748095499149094`*^9}, {
-  3.874973593925126*^9, 3.8749735980343556`*^9}, {3.874975768188655*^9, 
-  3.8749757712612133`*^9}, {3.8751733322531643`*^9, 3.875173335585246*^9}, {
-  3.87524990656409*^9, 3.8752499088322425`*^9}},
- CellLabel->"In[97]:=",ExpressionUUID->"b1339785-aef3-4540-823e-d71e0f808335"]
+  RowBox[{"nextNode", " ", "=", "3"}], ";"}]}], "Input",
+ CellChangeTimes->CompressedData["
+1:eJxTTMoPSmViYGAQBWIQbREerXXzxhvHNOZWbRBd5Cmndw9In2KfCqaruL+a
+gGge/UWWILoraUax8c03jjOaLEpA9L+2mukg2mm/6gwQ/dAvri8aSF+ffx5M
+H+OfuA1EW0x4BaY11FVOgmj/6Clg+k9xilMMkD71fT+Y7s+O9wfRqw4wBYDo
+AK/FFctuvXG8Wu1fCaLXBz8yWA6kWc6FGoLogp+xN+fce+P4wW0vmF40y/bz
+GyBdKHkQTJdxsjG/A9J3ojPA9BvJjiq/+28cw3Z9AtNsvEH3ioH07oWzwPTk
+xPSzh4H0JIedYDpJf0XAESD9bNdfMJ12cdouEB2xinU3iM6aN3vJkQdAe4Vu
+gGkArQbCKQ==
+  "],
+ CellLabel->"In[10]:=",ExpressionUUID->"b1339785-aef3-4540-823e-d71e0f808335"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -293,8 +290,7 @@ Cell[BoxData[{
    3.8717902795538435`*^9}, {3.8717945014148664`*^9, 3.871794502266653*^9}, {
    3.8718008595549655`*^9, 3.871800911424492*^9}, {3.871802237945567*^9, 
    3.8718022425202827`*^9}, {3.874812021478096*^9, 3.874812028952556*^9}},
- CellLabel->
-  "In[100]:=",ExpressionUUID->"2d7cc695-9fe5-48cf-bcb4-afb99ae9160f"]
+ CellLabel->"In[13]:=",ExpressionUUID->"2d7cc695-9fe5-48cf-bcb4-afb99ae9160f"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -331,8 +327,7 @@ Cell[BoxData[{
  CellChangeTimes->{{3.8717903084164443`*^9, 3.871790337722391*^9}, {
   3.8718013546018744`*^9, 3.871801373729911*^9}, {3.874812045918898*^9, 
   3.87481204619329*^9}},
- CellLabel->
-  "In[105]:=",ExpressionUUID->"c97ffbfa-30f9-4cec-a401-3c6a31905b42"]
+ CellLabel->"In[18]:=",ExpressionUUID->"c97ffbfa-30f9-4cec-a401-3c6a31905b42"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -365,8 +360,7 @@ Cell[BoxData[{
    3.871790558343337*^9, {3.8717908996642127`*^9, 3.87179090888561*^9}, {
    3.8718004289825554`*^9, 3.8718004923926086`*^9}, 3.8718022694082775`*^9, {
    3.8748120824862423`*^9, 3.8748120893830667`*^9}},
- CellLabel->
-  "In[107]:=",ExpressionUUID->"b6b66221-b5b7-4a93-8591-1010dc15ee58"]
+ CellLabel->"In[20]:=",ExpressionUUID->"b6b66221-b5b7-4a93-8591-1010dc15ee58"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -416,12 +410,11 @@ Cell[BoxData[{
    3.875064137096492*^9, 3.87506414585712*^9}, {3.8750644925474806`*^9, 
    3.875064493357233*^9}, {3.875064770773614*^9, 3.8750647822907405`*^9}, {
    3.8751487911089673`*^9, 3.875148791744939*^9}},
- CellLabel->
-  "In[109]:=",ExpressionUUID->"ee5bfd63-647f-400d-b773-beb32d3adbdf"],
+ CellLabel->"In[22]:=",ExpressionUUID->"ee5bfd63-647f-400d-b773-beb32d3adbdf"],
 
 Cell[BoxData[
  RowBox[{"{", 
-  RowBox[{"0", ",", "0", ",", 
+  RowBox[{
    RowBox[{
     FractionBox["1", "2"], " ", 
     RowBox[{"(", 
@@ -438,11 +431,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
@@ -451,11 +444,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
@@ -474,11 +467,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -486,9 +479,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "1"}]]}], "+", 
@@ -496,9 +489,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -509,11 +502,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -521,9 +514,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "1"}]]}], "+", 
@@ -531,9 +524,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}]}], 
@@ -543,16 +536,16 @@ Cell[BoxData[
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], "]"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], "]"}], "2"]}]], " ", 
                 RowBox[{"(", 
                  RowBox[{
@@ -564,10 +557,10 @@ Cell[BoxData[
                     TemplateBox[{"vw", "1"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"]}], ")"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"(", 
@@ -577,30 +570,30 @@ Cell[BoxData[
                     TemplateBox[{"vw", "2"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"]}], ")"}], "2"]}], ")"}]}]], "]"}], 
              "2"]}]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
            RowBox[{
-            TemplateBox[{"x", "3"},
+            TemplateBox[{"x", "1"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"1", ",", "1"}]]}], "-", 
            RowBox[{
-            TemplateBox[{"x", "5"},
+            TemplateBox[{"x", "3"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"1", ",", "1"}]]}], "+", 
            RowBox[{
             RowBox[{"(", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], ")"}], " ", 
             SubscriptBox["r", 
              RowBox[{"1", ",", "2"}]]}]}], ")"}]}], 
@@ -610,16 +603,16 @@ Cell[BoxData[
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "3"},
+              TemplateBox[{"x", "1"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "5"},
+              TemplateBox[{"x", "3"},
                "IndexedDefault"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], "]"}], "2"]}]]}]]}], "+", 
       FractionBox[
        RowBox[{"64", " ", "A", " ", "rho", " ", 
@@ -632,11 +625,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
@@ -645,11 +638,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
         RowBox[{"(", 
          RowBox[{
@@ -657,11 +650,11 @@ Cell[BoxData[
            "IndexedDefault"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "3"},
+             OverscriptBox["u", "."], "1"},
             "IndexedDefault"], "2"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "5"},
+             OverscriptBox["u", "."], "3"},
             "IndexedDefault"], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -673,11 +666,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -685,9 +678,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "1"}]]}], "+", 
@@ -695,9 +688,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -708,11 +701,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -720,9 +713,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "1"}]]}], "+", 
@@ -730,9 +723,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}], "2"]}], 
@@ -742,16 +735,16 @@ Cell[BoxData[
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "3"},
+             TemplateBox[{"x", "1"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "5"},
+             TemplateBox[{"x", "3"},
               "IndexedDefault"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "4"},
+             TemplateBox[{"x", "2"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "6"},
+             TemplateBox[{"x", "4"},
               "IndexedDefault"]}], "]"}], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -764,10 +757,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "1"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"]}], ")"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"(", 
@@ -777,10 +770,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "2"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"]}], ")"}], "2"]}], ")"}], "3"]}]]}], ")"}]}], 
    ",", 
    RowBox[{
@@ -799,11 +792,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
@@ -812,11 +805,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
@@ -835,11 +828,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -847,9 +840,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "1"}]]}], "+", 
@@ -857,9 +850,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -870,11 +863,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -882,9 +875,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "1"}]]}], "+", 
@@ -892,9 +885,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}]}], 
@@ -904,16 +897,16 @@ Cell[BoxData[
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], "]"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], "]"}], "2"]}]], " ", 
                 RowBox[{"(", 
                  RowBox[{
@@ -925,10 +918,10 @@ Cell[BoxData[
                     TemplateBox[{"vw", "1"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"]}], ")"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"(", 
@@ -938,30 +931,30 @@ Cell[BoxData[
                     TemplateBox[{"vw", "2"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"]}], ")"}], "2"]}], ")"}]}]], "]"}], 
              "2"]}]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
            RowBox[{
-            TemplateBox[{"x", "3"},
+            TemplateBox[{"x", "1"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"2", ",", "1"}]]}], "-", 
            RowBox[{
-            TemplateBox[{"x", "5"},
+            TemplateBox[{"x", "3"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"2", ",", "1"}]]}], "+", 
            RowBox[{
             RowBox[{"(", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], ")"}], " ", 
             SubscriptBox["r", 
              RowBox[{"2", ",", "2"}]]}]}], ")"}]}], 
@@ -971,16 +964,16 @@ Cell[BoxData[
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "3"},
+              TemplateBox[{"x", "1"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "5"},
+              TemplateBox[{"x", "3"},
                "IndexedDefault"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], "]"}], "2"]}]]}]]}], "+", 
       FractionBox[
        RowBox[{"64", " ", "A", " ", "rho", " ", 
@@ -993,11 +986,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
@@ -1006,11 +999,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
         RowBox[{"(", 
          RowBox[{
@@ -1018,11 +1011,11 @@ Cell[BoxData[
            "IndexedDefault"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "4"},
+             OverscriptBox["u", "."], "2"},
             "IndexedDefault"], "2"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "6"},
+             OverscriptBox["u", "."], "4"},
             "IndexedDefault"], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -1034,11 +1027,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -1046,9 +1039,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "1"}]]}], "+", 
@@ -1056,9 +1049,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -1069,11 +1062,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -1081,9 +1074,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "1"}]]}], "+", 
@@ -1091,9 +1084,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}], "2"]}], 
@@ -1103,16 +1096,16 @@ Cell[BoxData[
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "3"},
+             TemplateBox[{"x", "1"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "5"},
+             TemplateBox[{"x", "3"},
               "IndexedDefault"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "4"},
+             TemplateBox[{"x", "2"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "6"},
+             TemplateBox[{"x", "4"},
               "IndexedDefault"]}], "]"}], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -1125,10 +1118,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "1"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"]}], ")"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"(", 
@@ -1138,10 +1131,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "2"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"]}], ")"}], "2"]}], ")"}], "3"]}]]}], ")"}]}], 
    ",", 
    RowBox[{
@@ -1160,11 +1153,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
@@ -1173,11 +1166,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
@@ -1196,11 +1189,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -1208,9 +1201,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "1"}]]}], "+", 
@@ -1218,9 +1211,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -1231,11 +1224,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -1243,9 +1236,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "1"}]]}], "+", 
@@ -1253,9 +1246,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}]}], 
@@ -1265,16 +1258,16 @@ Cell[BoxData[
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], "]"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], "]"}], "2"]}]], " ", 
                 RowBox[{"(", 
                  RowBox[{
@@ -1286,10 +1279,10 @@ Cell[BoxData[
                     TemplateBox[{"vw", "1"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"]}], ")"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"(", 
@@ -1299,30 +1292,30 @@ Cell[BoxData[
                     TemplateBox[{"vw", "2"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"]}], ")"}], "2"]}], ")"}]}]], "]"}], 
              "2"]}]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
            RowBox[{
-            TemplateBox[{"x", "3"},
+            TemplateBox[{"x", "1"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"1", ",", "1"}]]}], "-", 
            RowBox[{
-            TemplateBox[{"x", "5"},
+            TemplateBox[{"x", "3"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"1", ",", "1"}]]}], "+", 
            RowBox[{
             RowBox[{"(", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], ")"}], " ", 
             SubscriptBox["r", 
              RowBox[{"1", ",", "2"}]]}]}], ")"}]}], 
@@ -1332,16 +1325,16 @@ Cell[BoxData[
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "3"},
+              TemplateBox[{"x", "1"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "5"},
+              TemplateBox[{"x", "3"},
                "IndexedDefault"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], "]"}], "2"]}]]}]]}], "+", 
       FractionBox[
        RowBox[{"64", " ", "A", " ", "rho", " ", 
@@ -1354,11 +1347,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
@@ -1367,11 +1360,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
         RowBox[{"(", 
          RowBox[{
@@ -1379,11 +1372,11 @@ Cell[BoxData[
            "IndexedDefault"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "3"},
+             OverscriptBox["u", "."], "1"},
             "IndexedDefault"], "2"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "5"},
+             OverscriptBox["u", "."], "3"},
             "IndexedDefault"], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -1395,11 +1388,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -1407,9 +1400,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "1"}]]}], "+", 
@@ -1417,9 +1410,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -1430,11 +1423,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -1442,9 +1435,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "1"}]]}], "+", 
@@ -1452,9 +1445,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}], "2"]}], 
@@ -1464,16 +1457,16 @@ Cell[BoxData[
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "3"},
+             TemplateBox[{"x", "1"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "5"},
+             TemplateBox[{"x", "3"},
               "IndexedDefault"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "4"},
+             TemplateBox[{"x", "2"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "6"},
+             TemplateBox[{"x", "4"},
               "IndexedDefault"]}], "]"}], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -1486,10 +1479,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "1"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"]}], ")"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"(", 
@@ -1499,10 +1492,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "2"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"]}], ")"}], "2"]}], ")"}], "3"]}]]}], ")"}]}], 
    ",", 
    RowBox[{
@@ -1521,11 +1514,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
@@ -1534,11 +1527,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
@@ -1557,11 +1550,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -1569,9 +1562,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "1"}]]}], "+", 
@@ -1579,9 +1572,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -1592,11 +1585,11 @@ Cell[BoxData[
                     "IndexedDefault"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "2"], "-", 
                     FractionBox[
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"], "2"]}], ")"}], " ", 
                    RowBox[{"(", 
                     RowBox[{
@@ -1604,9 +1597,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "1"}]]}], "+", 
@@ -1614,9 +1607,9 @@ Cell[BoxData[
                     RowBox[{"(", 
                     RowBox[{
                     RowBox[{"-", 
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"]}], "+", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], ")"}], " ", 
                     SubscriptBox["r", 
                     RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}]}], 
@@ -1626,16 +1619,16 @@ Cell[BoxData[
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "3"},
+                    TemplateBox[{"x", "1"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "5"},
+                    TemplateBox[{"x", "3"},
                     "IndexedDefault"]}], "]"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"Abs", "[", 
                     RowBox[{
-                    TemplateBox[{"x", "4"},
+                    TemplateBox[{"x", "2"},
                     "IndexedDefault"], "-", 
-                    TemplateBox[{"x", "6"},
+                    TemplateBox[{"x", "4"},
                     "IndexedDefault"]}], "]"}], "2"]}]], " ", 
                 RowBox[{"(", 
                  RowBox[{
@@ -1647,10 +1640,10 @@ Cell[BoxData[
                     TemplateBox[{"vw", "1"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "3"},
+                    OverscriptBox["u", "."], "1"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "5"},
+                    OverscriptBox["u", "."], "3"},
                     "IndexedDefault"]}], ")"}], "2"], "+", 
                   SuperscriptBox[
                    RowBox[{"(", 
@@ -1660,30 +1653,30 @@ Cell[BoxData[
                     TemplateBox[{"vw", "2"},
                     "IndexedDefault"]}], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "4"},
+                    OverscriptBox["u", "."], "2"},
                     "IndexedDefault"], "+", 
                     TemplateBox[{
-                    OverscriptBox["u", "."], "6"},
+                    OverscriptBox["u", "."], "4"},
                     "IndexedDefault"]}], ")"}], "2"]}], ")"}]}]], "]"}], 
              "2"]}]}], ")"}], " ", 
          RowBox[{"(", 
           RowBox[{
            RowBox[{
-            TemplateBox[{"x", "3"},
+            TemplateBox[{"x", "1"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"2", ",", "1"}]]}], "-", 
            RowBox[{
-            TemplateBox[{"x", "5"},
+            TemplateBox[{"x", "3"},
              "IndexedDefault"], " ", 
             SubscriptBox["r", 
              RowBox[{"2", ",", "1"}]]}], "+", 
            RowBox[{
             RowBox[{"(", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], ")"}], " ", 
             SubscriptBox["r", 
              RowBox[{"2", ",", "2"}]]}]}], ")"}]}], 
@@ -1693,16 +1686,16 @@ Cell[BoxData[
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "3"},
+              TemplateBox[{"x", "1"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "5"},
+              TemplateBox[{"x", "3"},
                "IndexedDefault"]}], "]"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"Abs", "[", 
              RowBox[{
-              TemplateBox[{"x", "4"},
+              TemplateBox[{"x", "2"},
                "IndexedDefault"], "-", 
-              TemplateBox[{"x", "6"},
+              TemplateBox[{"x", "4"},
                "IndexedDefault"]}], "]"}], "2"]}]]}]]}], "+", 
       FractionBox[
        RowBox[{"64", " ", "A", " ", "rho", " ", 
@@ -1715,11 +1708,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"], "2"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
@@ -1728,11 +1721,11 @@ Cell[BoxData[
               "IndexedDefault"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "2"], "-", 
              FractionBox[
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
+                OverscriptBox["u", "."], "4"},
                "IndexedDefault"], "2"]}], "]"}], "2"]}], ")"}], " ", 
         RowBox[{"(", 
          RowBox[{
@@ -1740,11 +1733,11 @@ Cell[BoxData[
            "IndexedDefault"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "4"},
+             OverscriptBox["u", "."], "2"},
             "IndexedDefault"], "2"], "-", 
           FractionBox[
            TemplateBox[{
-             OverscriptBox["u", "."], "6"},
+             OverscriptBox["u", "."], "4"},
             "IndexedDefault"], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -1756,11 +1749,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "3"},
+                 OverscriptBox["u", "."], "1"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "5"},
+                 OverscriptBox["u", "."], "3"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -1768,9 +1761,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "1"}]]}], "+", 
@@ -1778,9 +1771,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"1", ",", "2"}]]}]}], ")"}]}], "+", 
@@ -1791,11 +1784,11 @@ Cell[BoxData[
                "IndexedDefault"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "4"},
+                 OverscriptBox["u", "."], "2"},
                 "IndexedDefault"], "2"], "-", 
               FractionBox[
                TemplateBox[{
-                 OverscriptBox["u", "."], "6"},
+                 OverscriptBox["u", "."], "4"},
                 "IndexedDefault"], "2"]}], ")"}], " ", 
             RowBox[{"(", 
              RowBox[{
@@ -1803,9 +1796,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "3"},
+                  TemplateBox[{"x", "1"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "5"},
+                 TemplateBox[{"x", "3"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "1"}]]}], "+", 
@@ -1813,9 +1806,9 @@ Cell[BoxData[
                RowBox[{"(", 
                 RowBox[{
                  RowBox[{"-", 
-                  TemplateBox[{"x", "4"},
+                  TemplateBox[{"x", "2"},
                    "IndexedDefault"]}], "+", 
-                 TemplateBox[{"x", "6"},
+                 TemplateBox[{"x", "4"},
                   "IndexedDefault"]}], ")"}], " ", 
                SubscriptBox["r", 
                 RowBox[{"2", ",", "2"}]]}]}], ")"}]}]}], ")"}], "2"]}], 
@@ -1825,16 +1818,16 @@ Cell[BoxData[
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "3"},
+             TemplateBox[{"x", "1"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "5"},
+             TemplateBox[{"x", "3"},
               "IndexedDefault"]}], "]"}], "2"], "+", 
           SuperscriptBox[
            RowBox[{"Abs", "[", 
             RowBox[{
-             TemplateBox[{"x", "4"},
+             TemplateBox[{"x", "2"},
               "IndexedDefault"], "-", 
-             TemplateBox[{"x", "6"},
+             TemplateBox[{"x", "4"},
               "IndexedDefault"]}], "]"}], "2"]}], ")"}], " ", 
         SuperscriptBox[
          RowBox[{"(", 
@@ -1847,10 +1840,10 @@ Cell[BoxData[
                TemplateBox[{"vw", "1"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "3"},
+                OverscriptBox["u", "."], "1"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "5"},
+                OverscriptBox["u", "."], "3"},
                "IndexedDefault"]}], ")"}], "2"], "+", 
            SuperscriptBox[
             RowBox[{"(", 
@@ -1860,12 +1853,12 @@ Cell[BoxData[
                TemplateBox[{"vw", "2"},
                 "IndexedDefault"]}], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "4"},
+                OverscriptBox["u", "."], "2"},
                "IndexedDefault"], "+", 
               TemplateBox[{
-                OverscriptBox["u", "."], "6"},
-               "IndexedDefault"]}], ")"}], "2"]}], ")"}], "3"]}]]}], 
-     ")"}]}]}], "}"}]], "Output",
+                OverscriptBox["u", "."], "4"},
+               "IndexedDefault"]}], ")"}], "2"]}], ")"}], "3"]}]]}], ")"}]}], 
+   ",", "0", ",", "0"}], "}"}]], "Output",
  CellChangeTimes->{
   3.871793664838046*^9, 3.8717945139879985`*^9, 3.8717959265148363`*^9, {
    3.8717976483963475`*^9, 3.8717976616942883`*^9}, 3.8717976955885496`*^9, 
@@ -1882,9 +1875,10 @@ Cell[BoxData[
    3.874818199260564*^9, 3.8748209403012533`*^9, 3.874973612241952*^9, 
    3.8749757844495482`*^9, 3.8750634741017823`*^9, 3.875064161522279*^9, 
    3.8750644958905935`*^9, 3.8750647866608706`*^9, 3.875149455266644*^9, 
-   3.875173354633445*^9, 3.875249661962435*^9, 3.87524992756436*^9},
- CellLabel->
-  "Out[112]=",ExpressionUUID->"79defbf6-e605-4b02-929b-782015152dcb"]
+   3.875173354633445*^9, 3.875249661962435*^9, 3.87524992756436*^9, 
+   3.8754136380781507`*^9, 3.8754139929539084`*^9, 3.8754146769186697`*^9, 
+   3.8754155221620197`*^9, 3.8759396458802032`*^9},
+ CellLabel->"Out[25]=",ExpressionUUID->"ba4e4ec5-0300-4a30-a124-6948be2a36d0"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]],
@@ -1985,8 +1979,7 @@ Cell[BoxData[
    3.871794850907307*^9}, {3.871794882216361*^9, 3.8717950312152634`*^9}, {
    3.8717951097701755`*^9, 3.8717951405259457`*^9}, {3.8717958881745644`*^9, 
    3.871795921668481*^9}, 3.8727321354677515`*^9, 3.8748090388287945`*^9},
- CellLabel->
-  "In[113]:=",ExpressionUUID->"869730fd-f370-4eff-a23f-995cc4da52bb"]
+ CellLabel->"In[26]:=",ExpressionUUID->"869730fd-f370-4eff-a23f-995cc4da52bb"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -2017,8 +2010,7 @@ Cell[BoxData[{
   3.871795609859372*^9}, {3.8717958507096543`*^9, 3.8717958739150534`*^9}, {
   3.871796224054512*^9, 3.8717962852140493`*^9}, {3.8748090413769426`*^9, 
   3.874809052016361*^9}},
- CellLabel->
-  "In[114]:=",ExpressionUUID->"2e23ee4f-1dc2-4901-870d-e965128ad0a2"],
+ CellLabel->"In[27]:=",ExpressionUUID->"2e23ee4f-1dc2-4901-870d-e965128ad0a2"],
 
 Cell[BoxData[
  RowBox[{"{", 
@@ -2039,9 +2031,9 @@ Cell[BoxData[
    3.8749736213966155`*^9, 3.8749757944551764`*^9, 3.8750634813870325`*^9, 
    3.8750641727177873`*^9, 3.8750645022963414`*^9, 3.875064796751028*^9, 
    3.875149460972337*^9, 3.8751733603760896`*^9, 3.8752496673594503`*^9, 
-   3.875249938183399*^9},
- CellLabel->
-  "Out[115]=",ExpressionUUID->"c5c8aa4a-f9b4-4f1d-8faf-8262f3c9a4ee"],
+   3.875249938183399*^9, 3.8754136458031216`*^9, 3.875413998732768*^9, 
+   3.875414682427699*^9, 3.8754155315133057`*^9, 3.8759396516323595`*^9},
+ CellLabel->"Out[28]=",ExpressionUUID->"7f6cdd74-7f98-4898-8cca-ba9f5a76324a"],
 
 Cell[BoxData[
  RowBox[{"{", 
@@ -2062,9 +2054,9 @@ Cell[BoxData[
    3.8749736213966155`*^9, 3.8749757944551764`*^9, 3.8750634813870325`*^9, 
    3.8750641727177873`*^9, 3.8750645022963414`*^9, 3.875064796751028*^9, 
    3.875149460972337*^9, 3.8751733603760896`*^9, 3.8752496673594503`*^9, 
-   3.8752499381903954`*^9},
- CellLabel->
-  "Out[117]=",ExpressionUUID->"babf58e0-e4b4-4fdb-bcb0-61aec0fc4527"]
+   3.875249938183399*^9, 3.8754136458031216`*^9, 3.875413998732768*^9, 
+   3.875414682427699*^9, 3.8754155315133057`*^9, 3.8759396516423717`*^9},
+ CellLabel->"Out[30]=",ExpressionUUID->"9a6a6835-47df-4b77-a31e-b44015843660"]
 }, Open  ]]
 }, Open  ]],
 
@@ -2098,8 +2090,7 @@ Cell[BoxData[{
  RowBox[{"Dimensions", "[", "fudotudot", "]"}]}], "Input",
  CellChangeTimes->{{3.8717963392921233`*^9, 3.8717964057131844`*^9}, {
    3.8748090568794875`*^9, 3.8748090733113747`*^9}, 3.874809596861617*^9},
- CellLabel->
-  "In[118]:=",ExpressionUUID->"5b89c936-a01f-4853-9f91-675872d931fa"],
+ CellLabel->"In[31]:=",ExpressionUUID->"5b89c936-a01f-4853-9f91-675872d931fa"],
 
 Cell[BoxData[
  RowBox[{"{", 
@@ -2117,9 +2108,10 @@ Cell[BoxData[
    3.8748209548088183`*^9, 3.8749736234945693`*^9, 3.874975800929798*^9, 
    3.875063483510421*^9, 3.875064174573578*^9, 3.875064504318597*^9, 
    3.875064799857177*^9, 3.8751494631047115`*^9, 3.875173362582343*^9, 
-   3.875249669096187*^9, 3.875249940155593*^9},
- CellLabel->
-  "Out[119]=",ExpressionUUID->"ee3e92b9-6203-41d8-91e2-414f5ab9de79"],
+   3.875249669096187*^9, 3.875249940155593*^9, 3.8754136479443197`*^9, 
+   3.875414004234912*^9, 3.8754146842324257`*^9, 3.8754155330619545`*^9, 
+   3.8759396537785664`*^9},
+ CellLabel->"Out[32]=",ExpressionUUID->"b55b47ea-449c-4571-b409-5ddca698e8f6"],
 
 Cell[BoxData[
  RowBox[{"{", 
@@ -2137,9 +2129,10 @@ Cell[BoxData[
    3.8748209548088183`*^9, 3.8749736234945693`*^9, 3.874975800929798*^9, 
    3.875063483510421*^9, 3.875064174573578*^9, 3.875064504318597*^9, 
    3.875064799857177*^9, 3.8751494631047115`*^9, 3.875173362582343*^9, 
-   3.875249669096187*^9, 3.875249940215559*^9},
- CellLabel->
-  "Out[121]=",ExpressionUUID->"022144e3-8e03-441e-9cc3-dc8b85e9304c"],
+   3.875249669096187*^9, 3.875249940155593*^9, 3.8754136479443197`*^9, 
+   3.875414004234912*^9, 3.8754146842324257`*^9, 3.8754155330619545`*^9, 
+   3.875939653869516*^9},
+ CellLabel->"Out[34]=",ExpressionUUID->"158fbc5c-b3b9-4779-8c67-fce4eca5c018"],
 
 Cell[BoxData[
  RowBox[{"{", 
@@ -2157,9 +2150,10 @@ Cell[BoxData[
    3.8748209548088183`*^9, 3.8749736234945693`*^9, 3.874975800929798*^9, 
    3.875063483510421*^9, 3.875064174573578*^9, 3.875064504318597*^9, 
    3.875064799857177*^9, 3.8751494631047115`*^9, 3.875173362582343*^9, 
-   3.875249669096187*^9, 3.8752499402775245`*^9},
- CellLabel->
-  "Out[123]=",ExpressionUUID->"3e386013-c7b7-484a-a1cb-de2f5f7ba24f"]
+   3.875249669096187*^9, 3.875249940155593*^9, 3.8754136479443197`*^9, 
+   3.875414004234912*^9, 3.8754146842324257`*^9, 3.8754155330619545`*^9, 
+   3.875939653873514*^9},
+ CellLabel->"Out[36]=",ExpressionUUID->"08beb386-f9e8-4649-9a25-16335507e54e"]
 }, Open  ]]
 }, Open  ]],
 
@@ -2495,8 +2489,7 @@ Cell[BoxData[{
    3.871981577603414*^9}, {3.874808315918383*^9, 3.874808351382436*^9}, {
    3.874808682189893*^9, 3.8748087008515277`*^9}, {3.8748090776325636`*^9, 
    3.8748091090084743`*^9}},
- CellLabel->
-  "In[124]:=",ExpressionUUID->"fc1e6b0c-d70b-4963-91bf-27d6f893a7f5"]
+ CellLabel->"In[37]:=",ExpressionUUID->"fc1e6b0c-d70b-4963-91bf-27d6f893a7f5"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -2685,8 +2678,7 @@ Cell[BoxData[{
  CellChangeTimes->{{3.8748084401444645`*^9, 3.8748085003056793`*^9}, {
    3.874808727033477*^9, 3.8748087399636*^9}, {3.874809112039545*^9, 
    3.87480917356924*^9}, 3.874809878437761*^9},
- CellLabel->
-  "In[130]:=",ExpressionUUID->"6cc4e0af-af9b-475c-867c-11e4b3f3358e"]
+ CellLabel->"In[43]:=",ExpressionUUID->"6cc4e0af-af9b-475c-867c-11e4b3f3358e"]
 }, Open  ]],
 
 Cell[CellGroupData[{
@@ -2698,8 +2690,9 @@ Cell["Get 1st order terms in u_d", "Subsection",
 a34460bcde62"],
 
 Cell["Get derivatives", "Text",
- CellChangeTimes->{{3.874808761521042*^9, 
-  3.874808778658913*^9}},ExpressionUUID->"9c5ae09b-62c7-4f9b-9fd5-\
+ CellChangeTimes->{{3.874808761521042*^9, 3.874808778658913*^9}, {
+  3.8754146927436633`*^9, 
+  3.875414693668455*^9}},ExpressionUUID->"9c5ae09b-62c7-4f9b-9fd5-\
 10ed5243d483"],
 
 Cell[BoxData[{
@@ -2734,9 +2727,9 @@ Cell[BoxData[{
     RowBox[{"Tudotudot", ",", 
      RowBox[{"{", "udvec", "}"}]}], "]"}]}], ";"}]}], "Input",
  CellChangeTimes->{{3.8748087879507813`*^9, 3.8748089543775873`*^9}, {
-  3.874809181670184*^9, 3.8748092094640985`*^9}},
- CellLabel->
-  "In[136]:=",ExpressionUUID->"213794ec-553d-489f-ae7e-b0d8b06e051c"],
+  3.874809181670184*^9, 3.8748092094640985`*^9}, {3.875414860534092*^9, 
+  3.875414870660602*^9}},
+ CellLabel->"In[49]:=",ExpressionUUID->"213794ec-553d-489f-ae7e-b0d8b06e051c"],
 
 Cell["Evaluate at u_d = 0", "Text",
  CellChangeTimes->{{3.874809213535468*^9, 
@@ -2919,9 +2912,9 @@ Cell[BoxData[{
         RowBox[{"udvec", ",", "6"}], "]"}], "->", "0"}]}], "}"}]}]}], 
   ";"}]}], "Input",
  CellChangeTimes->{{3.8748092620151825`*^9, 3.874809302838691*^9}, 
-   3.8748097361083527`*^9, 3.8748097777279577`*^9, 3.874809887581309*^9},
- CellLabel->
-  "In[142]:=",ExpressionUUID->"15834966-5892-452a-ba36-7a7f206bf443"],
+   3.8748097361083527`*^9, 3.8748097777279577`*^9, 3.874809887581309*^9, {
+   3.8754148772377615`*^9, 3.8754148908355827`*^9}},
+ CellLabel->"In[55]:=",ExpressionUUID->"15834966-5892-452a-ba36-7a7f206bf443"],
 
 Cell[CellGroupData[{
 
@@ -3353,8 +3346,7 @@ Cell[BoxData[{
    3.872648138889423*^9}, {3.872670650722971*^9, 3.8726706726019483`*^9}, {
    3.8748098217916064`*^9, 3.874809868822403*^9}, {3.8748099012581654`*^9, 
    3.8748099560463114`*^9}},
- CellLabel->
-  "In[149]:=",ExpressionUUID->"0609579d-edfb-45b7-a98a-ca04a8b9af6f"]
+ CellLabel->"In[61]:=",ExpressionUUID->"0609579d-edfb-45b7-a98a-ca04a8b9af6f"]
 }, Open  ]]
 }, Open  ]],
 
@@ -4053,8 +4045,7 @@ Cell[BoxData[{
   3.871798769674131*^9, 3.871798960888772*^9}, {3.8717989942152996`*^9, 
   3.871799040421235*^9}, {3.871799265952262*^9, 3.871799397381171*^9}, {
   3.874809980950667*^9, 3.8748101302027445`*^9}},
- CellLabel->
-  "In[161]:=",ExpressionUUID->"1d3daf4f-82ff-4e6d-bc34-5901dda6bbb0"],
+ CellLabel->"In[73]:=",ExpressionUUID->"1d3daf4f-82ff-4e6d-bc34-5901dda6bbb0"],
 
 Cell[BoxData[""], "Input",
  CellChangeTimes->{{3.8717980985875225`*^9, 3.871798105977686*^9}, {
@@ -4162,10 +4153,7 @@ Cell[BoxData[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x04"}]}], "]"}], "->", 
        RowBox[{"sign", "[", 
-        RowBox[{"ud2", "+", 
-         RowBox[{
-          RowBox[{"(", 
-           RowBox[{"-", "1"}], ")"}], "*", "ud4"}], "+", "x02", "+", 
+        RowBox[{"x02", "+", 
          RowBox[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x04"}]}], "]"}]}], ",", 
@@ -4511,8 +4499,8 @@ Cell[BoxData[{
    3.8748191740194473`*^9}, {3.874819679221815*^9, 3.8748196889560847`*^9}, {
    3.8748201108463993`*^9, 3.874820118088709*^9}, 3.8748209168491263`*^9, {
    3.87497606256587*^9, 3.8749760725818305`*^9}, {3.875173455888755*^9, 
-   3.875173495269743*^9}},
- CellLabel->"In[86]:=",ExpressionUUID->"10841568-f8b7-4169-9b42-3e74a09a15eb"],
+   3.875173495269743*^9}, 3.8759397593962297`*^9},
+ CellLabel->"In[85]:=",ExpressionUUID->"10841568-f8b7-4169-9b42-3e74a09a15eb"],
 
 Cell[BoxData[
  StyleBox[
@@ -4550,10 +4538,7 @@ Cell[BoxData[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x05"}]}], "]"}], "->", 
        RowBox[{"sign", "[", 
-        RowBox[{"ud3", "+", 
-         RowBox[{
-          RowBox[{"(", 
-           RowBox[{"-", "1"}], ")"}], "*", "ud5"}], "+", "x03", "+", 
+        RowBox[{"x03", "+", 
          RowBox[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x05"}]}], "]"}]}]}], "}"}]}]}], 
@@ -4727,7 +4712,7 @@ Cell[BoxData[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x06"}]}], "]"}], "->", 
        RowBox[{"sign", "[", 
-        RowBox[{"ux04", "+", 
+        RowBox[{"x04", "+", 
          RowBox[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x06"}]}], "]"}]}], ",", 
@@ -4953,12 +4938,13 @@ Cell[BoxData[{
       "}"}]}]}], ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
   "\[IndentingNewLine]"}], "\[IndentingNewLine]"}], "Input",
  CellChangeTimes->{{3.872732735198293*^9, 3.872732864475334*^9}, {
-  3.8727332531451583`*^9, 3.8727332933143563`*^9}, {3.8749737220200806`*^9, 
-  3.8749738427067704`*^9}, {3.8749741687163253`*^9, 3.8749743304530263`*^9}, {
-  3.8749760420783234`*^9, 3.874976048441606*^9}, {3.875250018973253*^9, 
-  3.875250052536267*^9}},
+   3.8727332531451583`*^9, 3.8727332933143563`*^9}, {3.8749737220200806`*^9, 
+   3.8749738427067704`*^9}, {3.8749741687163253`*^9, 
+   3.8749743304530263`*^9}, {3.8749760420783234`*^9, 3.874976048441606*^9}, {
+   3.875250018973253*^9, 3.875250052536267*^9}, 3.87541478628592*^9, 
+   3.875414957528623*^9},
  CellLabel->
-  "In[173]:=",ExpressionUUID->"920ae19c-52dd-4503-bc8f-1f1dff37d3b2"],
+  "In[366]:=",ExpressionUUID->"920ae19c-52dd-4503-bc8f-1f1dff37d3b2"],
 
 Cell[BoxData[
  StyleBox[
@@ -4983,7 +4969,7 @@ Cell[BoxData[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x06"}]}], "]"}], "->", 
        RowBox[{"sign", "[", 
-        RowBox[{"ux02", "+", 
+        RowBox[{"x02", "+", 
          RowBox[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x06"}]}], "]"}]}], ",", 
@@ -5014,7 +5000,7 @@ Cell[BoxData[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x06"}]}], "]"}], "->", 
        RowBox[{"sign", "[", 
-        RowBox[{"ux02", "+", 
+        RowBox[{"x02", "+", 
          RowBox[{
           RowBox[{"(", 
            RowBox[{"-", "1"}], ")"}], "*", "x06"}]}], "]"}]}], ",", 
@@ -5362,12 +5348,14 @@ Cell[BoxData[{
            RowBox[{"-", "1"}], ")"}], "*", "x05"}]}], "]"}], "->", "0"}]}], 
      "}"}]}]}], ";"}]}], "Input",
  CellChangeTimes->{{3.8727339675242863`*^9, 3.8727339834930296`*^9}, {
-  3.8727340335607185`*^9, 3.8727340523710117`*^9}, {3.8727341267663794`*^9, 
-  3.872734195675826*^9}, {3.8727343475099964`*^9, 3.8727344028870726`*^9}, {
-  3.874975867657044*^9, 3.874976033737449*^9}, {3.8750644571585536`*^9, 
-  3.875064475717353*^9}, {3.8751531594856277`*^9, 3.8751531723263807`*^9}},
+   3.8727340335607185`*^9, 3.8727340523710117`*^9}, {3.8727341267663794`*^9, 
+   3.872734195675826*^9}, {3.8727343475099964`*^9, 3.8727344028870726`*^9}, {
+   3.874975867657044*^9, 3.874976033737449*^9}, {3.8750644571585536`*^9, 
+   3.875064475717353*^9}, {3.8751531594856277`*^9, 3.8751531723263807`*^9}, 
+   3.875413599573388*^9, {3.8754139704160795`*^9, 3.8754139723836174`*^9}, 
+   3.875414314480755*^9},
  CellLabel->
-  "In[104]:=",ExpressionUUID->"ea0ec37c-06cd-49b3-9acc-c01ebceb72c7"],
+  "In[451]:=",ExpressionUUID->"ea0ec37c-06cd-49b3-9acc-c01ebceb72c7"],
 
 Cell[CellGroupData[{
 
@@ -5376,14 +5364,14 @@ Cell[BoxData[{
   RowBox[{"NotebookDirectory", "[", "]"}], "]"}], "\n", 
  RowBox[{"<<", "ToMatlab.m"}]}], "Input",
  CellChangeTimes->{{3.8720545920748124`*^9, 3.8720545921028214`*^9}},
- CellLabel->"In[94]:=",ExpressionUUID->"42d0c295-6355-4ad0-8f2a-43606896662b"],
+ CellLabel->"In[97]:=",ExpressionUUID->"42d0c295-6355-4ad0-8f2a-43606896662b"],
 
 Cell[BoxData["\<\"C:\\\\Users\\\\mathi\\\\OneDrive\\\\Bureau\\\\make fishes \
 swim\\\\YetAnotherFEcode\\\\external\\\\Hydrodynamics\\\\force-derivation\"\>\
 "], "Output",
  CellChangeTimes->{3.872054593708045*^9, 3.8726703952234983`*^9, 
-  3.874810143613615*^9, 3.874973855354536*^9},
- CellLabel->"Out[94]=",ExpressionUUID->"76730240-2910-4810-a944-00d423cf295f"]
+  3.874810143613615*^9, 3.874973855354536*^9, 3.87541380947633*^9},
+ CellLabel->"Out[97]=",ExpressionUUID->"9e5e5219-ff53-4b9e-b830-ca59b29e5fd6"]
 }, Open  ]],
 
 Cell[BoxData[{
@@ -5393,7 +5381,7 @@ Cell[BoxData[{
   3.8719763641200886`*^9, {3.872054483944626*^9, 3.872054519276559*^9}, {
    3.872647505489975*^9, 3.872647518640437*^9}, {3.874810147707105*^9, 
    3.8748101492147937`*^9}},
- CellLabel->"In[95]:=",ExpressionUUID->"a71b95b3-48d1-4c8c-816a-43d8318abc67"],
+ CellLabel->"In[94]:=",ExpressionUUID->"a71b95b3-48d1-4c8c-816a-43d8318abc67"],
 
 Cell[BoxData[{
  RowBox[{"<<", "ToMatlab.m"}], "\[IndentingNewLine]", 
@@ -5428,7 +5416,7 @@ Cell[BoxData[
   ";"}]], "Input",
  CellChangeTimes->{{3.8748105525163555`*^9, 3.8748105526502714`*^9}},
  CellLabel->
-  "In[107]:=",ExpressionUUID->"439d262a-6889-4c4b-9804-f7940bd393f8"],
+  "In[375]:=",ExpressionUUID->"439d262a-6889-4c4b-9804-f7940bd393f8"],
 
 Cell[BoxData[
  RowBox[{
@@ -5440,7 +5428,7 @@ Cell[BoxData[
   3.872055327246831*^9, 3.8720553298366385`*^9}, {3.8726485727623205`*^9, 
   3.8726485800565033`*^9}, {3.87481048666626*^9, 3.874810514885085*^9}},
  CellLabel->
-  "In[108]:=",ExpressionUUID->"bfd2b44a-f83a-4472-b599-d36c6e36cd0c"],
+  "In[460]:=",ExpressionUUID->"bfd2b44a-f83a-4472-b599-d36c6e36cd0c"],
 
 Cell[BoxData[
  RowBox[{
@@ -5478,8 +5466,7 @@ Cell[BoxData[
   ";"}]], "Input",
  CellChangeTimes->{
   3.8719764558213463`*^9, {3.8748104936861935`*^9, 3.874810498221903*^9}},
- CellLabel->
-  "In[100]:=",ExpressionUUID->"88800cdf-ceb3-4380-ba11-402713614bb8"],
+ CellLabel->"In[96]:=",ExpressionUUID->"88800cdf-ceb3-4380-ba11-402713614bb8"],
 
 Cell[BoxData[
  RowBox[{
@@ -5539,8 +5526,8 @@ Cell[BoxData[""], "Input",
 0b06ed60bc52"]
 }, Open  ]]
 },
-WindowSize->{949, 474},
-WindowMargins->{{0, Automatic}, {Automatic, 0}},
+WindowSize->{1428., 829.5},
+WindowMargins->{{0, Automatic}, {539.5, Automatic}},
 Magnification:>0.7 Inherited,
 FrontEndVersion->"12.3 for Microsoft Windows (64-bit) (June 19, 2021)",
 StyleDefinitions->"Default.nb",
@@ -5571,113 +5558,113 @@ Cell[3314, 86, 2592, 76, 127, "Input",ExpressionUUID->"5009d474-b76e-43e9-878c-7
 }, Open  ]],
 Cell[CellGroupData[{
 Cell[5943, 167, 253, 4, 37, "Subsection",ExpressionUUID->"82e9fc0c-1094-4aed-8e6f-af9595f71b21"],
-Cell[6199, 173, 1199, 19, 47, "Input",ExpressionUUID->"b1339785-aef3-4540-823e-d71e0f808335"]
+Cell[6199, 173, 752, 16, 47, "Input",ExpressionUUID->"b1339785-aef3-4540-823e-d71e0f808335"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[7435, 197, 170, 3, 37, "Subsection",ExpressionUUID->"08796037-3e94-481d-8798-c8bac09e31aa"],
-Cell[7608, 202, 3357, 94, 88, "Input",ExpressionUUID->"2d7cc695-9fe5-48cf-bcb4-afb99ae9160f"]
+Cell[6988, 194, 170, 3, 37, "Subsection",ExpressionUUID->"08796037-3e94-481d-8798-c8bac09e31aa"],
+Cell[7161, 199, 3353, 93, 88, "Input",ExpressionUUID->"2d7cc695-9fe5-48cf-bcb4-afb99ae9160f"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[11002, 301, 208, 4, 37, "Subsection",ExpressionUUID->"d4fc8941-594a-44e5-8baf-a0392117352b"],
-Cell[11213, 307, 900, 27, 34, "Input",ExpressionUUID->"c97ffbfa-30f9-4cec-a401-3c6a31905b42"]
+Cell[10551, 297, 208, 4, 37, "Subsection",ExpressionUUID->"d4fc8941-594a-44e5-8baf-a0392117352b"],
+Cell[10762, 303, 896, 26, 34, "Input",ExpressionUUID->"c97ffbfa-30f9-4cec-a401-3c6a31905b42"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[12150, 339, 268, 4, 37, "Subsection",ExpressionUUID->"78c184df-f32f-4390-aa6e-efb99c75cc61"],
-Cell[12421, 345, 936, 23, 34, "Input",ExpressionUUID->"b6b66221-b5b7-4a93-8591-1010dc15ee58"]
+Cell[11695, 334, 268, 4, 37, "Subsection",ExpressionUUID->"78c184df-f32f-4390-aa6e-efb99c75cc61"],
+Cell[11966, 340, 932, 22, 34, "Input",ExpressionUUID->"b6b66221-b5b7-4a93-8591-1010dc15ee58"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[13394, 373, 282, 5, 37, "Subsection",ExpressionUUID->"ab580577-c5d1-4eeb-9f43-d4b66a22b8e0"],
+Cell[12935, 367, 282, 5, 37, "Subsection",ExpressionUUID->"ab580577-c5d1-4eeb-9f43-d4b66a22b8e0"],
 Cell[CellGroupData[{
-Cell[13701, 382, 1469, 37, 74, "Input",ExpressionUUID->"ee5bfd63-647f-400d-b773-beb32d3adbdf"],
-Cell[15173, 421, 53616, 1465, 710, "Output",ExpressionUUID->"79defbf6-e605-4b02-929b-782015152dcb"]
+Cell[13242, 376, 1465, 36, 74, "Input",ExpressionUUID->"ee5bfd63-647f-400d-b773-beb32d3adbdf"],
+Cell[14710, 414, 53738, 1466, 717, "Output",ExpressionUUID->"ba4e4ec5-0300-4a30-a124-6948be2a36d0"]
 }, Open  ]]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[68850, 1893, 236, 4, 47, "Section",ExpressionUUID->"930e7798-801b-4da8-a8de-30bb1cf8f835"],
+Cell[68509, 1887, 236, 4, 47, "Section",ExpressionUUID->"930e7798-801b-4da8-a8de-30bb1cf8f835"],
 Cell[CellGroupData[{
-Cell[69111, 1901, 237, 4, 37, "Subsection",ExpressionUUID->"7a45705c-42c2-4a8e-9891-79ec1971e682"],
-Cell[69351, 1907, 3205, 81, 87, "Input",ExpressionUUID->"869730fd-f370-4eff-a23f-995cc4da52bb"]
+Cell[68770, 1895, 237, 4, 37, "Subsection",ExpressionUUID->"7a45705c-42c2-4a8e-9891-79ec1971e682"],
+Cell[69010, 1901, 3201, 80, 87, "Input",ExpressionUUID->"869730fd-f370-4eff-a23f-995cc4da52bb"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[72593, 1993, 223, 4, 37, "Subsection",ExpressionUUID->"76164708-3c0a-42a0-9b6e-1f5ae56002d8"],
+Cell[72248, 1986, 223, 4, 37, "Subsection",ExpressionUUID->"76164708-3c0a-42a0-9b6e-1f5ae56002d8"],
 Cell[CellGroupData[{
-Cell[72841, 2001, 867, 19, 60, "Input",ExpressionUUID->"2e23ee4f-1dc2-4901-870d-e965128ad0a2"],
-Cell[73711, 2022, 1350, 21, 23, "Output",ExpressionUUID->"c5c8aa4a-f9b4-4f1d-8faf-8262f3c9a4ee"],
-Cell[75064, 2045, 1352, 21, 23, "Output",ExpressionUUID->"babf58e0-e4b4-4fdb-bcb0-61aec0fc4527"]
+Cell[72496, 1994, 863, 18, 60, "Input",ExpressionUUID->"2e23ee4f-1dc2-4901-870d-e965128ad0a2"],
+Cell[73362, 2014, 1466, 21, 23, "Output",ExpressionUUID->"7f6cdd74-7f98-4898-8cca-ba9f5a76324a"],
+Cell[74831, 2037, 1466, 21, 23, "Output",ExpressionUUID->"9a6a6835-47df-4b77-a31e-b44015843660"]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[76465, 2072, 170, 3, 37, "Subsection",ExpressionUUID->"69a0cd15-6fde-4ac7-8920-f017a821e8a5"],
+Cell[76346, 2064, 170, 3, 37, "Subsection",ExpressionUUID->"69a0cd15-6fde-4ac7-8920-f017a821e8a5"],
 Cell[CellGroupData[{
-Cell[76660, 2079, 941, 22, 87, "Input",ExpressionUUID->"5b89c936-a01f-4853-9f91-675872d931fa"],
-Cell[77604, 2103, 1105, 18, 23, "Output",ExpressionUUID->"ee3e92b9-6203-41d8-91e2-414f5ab9de79"],
-Cell[78712, 2123, 1105, 18, 23, "Output",ExpressionUUID->"022144e3-8e03-441e-9cc3-dc8b85e9304c"],
-Cell[79820, 2143, 1107, 18, 23, "Output",ExpressionUUID->"3e386013-c7b7-484a-a1cb-de2f5f7ba24f"]
+Cell[76541, 2071, 937, 21, 87, "Input",ExpressionUUID->"5b89c936-a01f-4853-9f91-675872d931fa"],
+Cell[77481, 2094, 1227, 19, 23, "Output",ExpressionUUID->"b55b47ea-449c-4571-b409-5ddca698e8f6"],
+Cell[78711, 2115, 1225, 19, 23, "Output",ExpressionUUID->"158fbc5c-b3b9-4779-8c67-fce4eca5c018"],
+Cell[79939, 2136, 1225, 19, 23, "Output",ExpressionUUID->"08beb386-f9e8-4649-9a25-16335507e54e"]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[80976, 2167, 235, 4, 37, "Subsection",ExpressionUUID->"9f624e6f-1411-453e-8cc6-bd7621fa5584"],
-Cell[81214, 2173, 11744, 325, 966, "Input",ExpressionUUID->"fc1e6b0c-d70b-4963-91bf-27d6f893a7f5"]
+Cell[81213, 2161, 235, 4, 37, "Subsection",ExpressionUUID->"9f624e6f-1411-453e-8cc6-bd7621fa5584"],
+Cell[81451, 2167, 11740, 324, 966, "Input",ExpressionUUID->"fc1e6b0c-d70b-4963-91bf-27d6f893a7f5"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[92995, 2503, 274, 4, 37, "Subsection",ExpressionUUID->"9a3fb53e-803c-4d85-9817-88da35d7411f"],
-Cell[93272, 2509, 6321, 179, 486, "Input",ExpressionUUID->"6cc4e0af-af9b-475c-867c-11e4b3f3358e"]
+Cell[93228, 2496, 274, 4, 37, "Subsection",ExpressionUUID->"9a3fb53e-803c-4d85-9817-88da35d7411f"],
+Cell[93505, 2502, 6317, 178, 486, "Input",ExpressionUUID->"6cc4e0af-af9b-475c-867c-11e4b3f3358e"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[99630, 2693, 225, 4, 37, "Subsection",ExpressionUUID->"5e414a4d-e10f-4794-a89b-a34460bcde62"],
-Cell[99858, 2699, 157, 3, 24, "Text",ExpressionUUID->"9c5ae09b-62c7-4f9b-9fd5-10ed5243d483"],
-Cell[100018, 2704, 1229, 34, 87, "Input",ExpressionUUID->"213794ec-553d-489f-ae7e-b0d8b06e051c"],
-Cell[101250, 2740, 163, 3, 24, "Text",ExpressionUUID->"f1322e50-0505-466b-9fbb-82c9765b81e2"],
-Cell[101416, 2745, 6286, 178, 486, "Input",ExpressionUUID->"15834966-5892-452a-ba36-7a7f206bf443"],
+Cell[99859, 2685, 225, 4, 37, "Subsection",ExpressionUUID->"5e414a4d-e10f-4794-a89b-a34460bcde62"],
+Cell[100087, 2691, 208, 4, 24, "Text",ExpressionUUID->"9c5ae09b-62c7-4f9b-9fd5-10ed5243d483"],
+Cell[100298, 2697, 1274, 34, 87, "Input",ExpressionUUID->"213794ec-553d-489f-ae7e-b0d8b06e051c"],
+Cell[101575, 2733, 163, 3, 24, "Text",ExpressionUUID->"f1322e50-0505-466b-9fbb-82c9765b81e2"],
+Cell[101741, 2738, 6336, 178, 486, "Input",ExpressionUUID->"15834966-5892-452a-ba36-7a7f206bf443"],
 Cell[CellGroupData[{
-Cell[107727, 2927, 274, 5, 21, "Input",ExpressionUUID->"b486098a-d3e6-4912-815d-66803032c669"],
-Cell[108004, 2934, 484, 9, 23, "Output",ExpressionUUID->"3741a773-7ac7-4a3e-8f25-79bbb568f2a3"]
+Cell[108102, 2920, 274, 5, 21, "Input",ExpressionUUID->"b486098a-d3e6-4912-815d-66803032c669"],
+Cell[108379, 2927, 484, 9, 23, "Output",ExpressionUUID->"3741a773-7ac7-4a3e-8f25-79bbb568f2a3"]
 }, Open  ]],
-Cell[108503, 2946, 156, 3, 21, "Input",ExpressionUUID->"625af7f6-a61b-4284-9009-d931f4a218fd"]
+Cell[108878, 2939, 156, 3, 21, "Input",ExpressionUUID->"625af7f6-a61b-4284-9009-d931f4a218fd"]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[108696, 2954, 238, 4, 37, "Subsection",ExpressionUUID->"16cc14c4-1a99-4834-8852-934f7bcebd40"],
-Cell[108937, 2960, 13176, 396, 222, "Input",ExpressionUUID->"0609579d-edfb-45b7-a98a-ca04a8b9af6f"]
+Cell[109071, 2947, 238, 4, 37, "Subsection",ExpressionUUID->"16cc14c4-1a99-4834-8852-934f7bcebd40"],
+Cell[109312, 2953, 13172, 395, 167, "Input",ExpressionUUID->"0609579d-edfb-45b7-a98a-ca04a8b9af6f"]
 }, Open  ]]
 }, Open  ]],
 Cell[CellGroupData[{
-Cell[122162, 3362, 215, 4, 47, "Section",ExpressionUUID->"b8e3de0e-2fb4-4629-8e69-8eb6c090aa61"],
-Cell[122380, 3368, 420, 9, 40, "Text",ExpressionUUID->"741a75e4-2f42-4afa-bf1a-93c33d842ee2"],
+Cell[122533, 3354, 215, 4, 47, "Section",ExpressionUUID->"b8e3de0e-2fb4-4629-8e69-8eb6c090aa61"],
+Cell[122751, 3360, 420, 9, 40, "Text",ExpressionUUID->"741a75e4-2f42-4afa-bf1a-93c33d842ee2"],
 Cell[CellGroupData[{
-Cell[122825, 3381, 399, 8, 21, "Input",ExpressionUUID->"d3057ae4-04dd-4c17-925d-fa75796295fd"],
-Cell[123227, 3391, 257, 3, 23, "Output",ExpressionUUID->"074ded1e-006b-43f0-8137-c73f7febff9b"]
+Cell[123196, 3373, 399, 8, 21, "Input",ExpressionUUID->"d3057ae4-04dd-4c17-925d-fa75796295fd"],
+Cell[123598, 3383, 257, 3, 23, "Output",ExpressionUUID->"074ded1e-006b-43f0-8137-c73f7febff9b"]
 }, Open  ]],
-Cell[123499, 3397, 369, 7, 21, "Input",ExpressionUUID->"c0a74f1b-fa39-4fe4-9bd8-6e0e10991383"],
-Cell[123871, 3406, 286, 6, 24, "Text",ExpressionUUID->"9c5cdcf3-ce61-43c0-b4de-ee4f544a263e"],
-Cell[124160, 3414, 24081, 642, 1925, "Input",ExpressionUUID->"1d3daf4f-82ff-4e6d-bc34-5901dda6bbb0"],
-Cell[148244, 4058, 301, 5, 21, "Input",ExpressionUUID->"bf3d4e2e-240c-4c76-af46-7d0836861c03"],
-Cell[148548, 4065, 323, 8, 26, "Input",ExpressionUUID->"5298196f-f4ed-442a-8a2a-2a91a81153c7"],
-Cell[148874, 4075, 13848, 439, 486, "Input",ExpressionUUID->"10841568-f8b7-4169-9b42-3e74a09a15eb"],
-Cell[162725, 4516, 272, 7, 26, "Input",ExpressionUUID->"8f1f2615-1af9-4f56-a12d-7f2b26a563a5"],
-Cell[163000, 4525, 13522, 435, 595, "Input",ExpressionUUID->"920ae19c-52dd-4503-bc8f-1f1dff37d3b2"],
-Cell[176525, 4962, 274, 7, 26, "Input",ExpressionUUID->"9e85cbfc-2139-48c0-8fc6-479c133779f7"],
-Cell[176802, 4971, 12293, 398, 433, "Input",ExpressionUUID->"ea0ec37c-06cd-49b3-9acc-c01ebceb72c7"],
+Cell[123870, 3389, 369, 7, 21, "Input",ExpressionUUID->"c0a74f1b-fa39-4fe4-9bd8-6e0e10991383"],
+Cell[124242, 3398, 286, 6, 24, "Text",ExpressionUUID->"9c5cdcf3-ce61-43c0-b4de-ee4f544a263e"],
+Cell[124531, 3406, 24077, 641, 1925, "Input",ExpressionUUID->"1d3daf4f-82ff-4e6d-bc34-5901dda6bbb0"],
+Cell[148611, 4049, 301, 5, 21, "Input",ExpressionUUID->"bf3d4e2e-240c-4c76-af46-7d0836861c03"],
+Cell[148915, 4056, 323, 8, 26, "Input",ExpressionUUID->"5298196f-f4ed-442a-8a2a-2a91a81153c7"],
+Cell[149241, 4066, 13760, 436, 544, "Input",ExpressionUUID->"10841568-f8b7-4169-9b42-3e74a09a15eb"],
+Cell[163004, 4504, 272, 7, 26, "Input",ExpressionUUID->"8f1f2615-1af9-4f56-a12d-7f2b26a563a5"],
+Cell[163279, 4513, 13460, 433, 540, "Input",ExpressionUUID->"920ae19c-52dd-4503-bc8f-1f1dff37d3b2"],
+Cell[176742, 4948, 274, 7, 26, "Input",ExpressionUUID->"9e85cbfc-2139-48c0-8fc6-479c133779f7"],
+Cell[177019, 4957, 12397, 400, 433, "Input",ExpressionUUID->"ea0ec37c-06cd-49b3-9acc-c01ebceb72c7"],
 Cell[CellGroupData[{
-Cell[189120, 5373, 293, 5, 34, "Input",ExpressionUUID->"42d0c295-6355-4ad0-8f2a-43606896662b"],
-Cell[189416, 5380, 362, 5, 23, "Output",ExpressionUUID->"76730240-2910-4810-a944-00d423cf295f"]
+Cell[189441, 5361, 293, 5, 34, "Input",ExpressionUUID->"42d0c295-6355-4ad0-8f2a-43606896662b"],
+Cell[189737, 5368, 383, 5, 23, "Output",ExpressionUUID->"9e5e5219-ff53-4b9e-b830-ca59b29e5fd6"]
 }, Open  ]],
-Cell[189793, 5388, 389, 7, 34, "Input",ExpressionUUID->"a71b95b3-48d1-4c8c-816a-43d8318abc67"],
-Cell[190185, 5397, 344, 7, 34, "Input",ExpressionUUID->"508ee931-c364-4666-a2d5-89a4b60ada1d"],
-Cell[190532, 5406, 175, 3, 21, "Input",ExpressionUUID->"03b9ed3c-c25b-40ac-b801-b1ef528a6f05"],
-Cell[190710, 5411, 470, 9, 21, "Input",ExpressionUUID->"477b35c3-06cc-462f-b9c9-c137373d272f"],
-Cell[191183, 5422, 346, 8, 21, "Input",ExpressionUUID->"439d262a-6889-4c4b-9804-f7940bd393f8"],
-Cell[191532, 5432, 494, 10, 21, "Input",ExpressionUUID->"bfd2b44a-f83a-4472-b599-d36c6e36cd0c"],
-Cell[192029, 5444, 343, 7, 21, "Input",ExpressionUUID->"ce943b2e-47d7-4dac-b789-6b14c861051d"],
-Cell[192375, 5453, 397, 8, 21, "Input",ExpressionUUID->"e17b1fe6-cb20-4e7c-8f10-092224ca49ae"],
-Cell[192775, 5463, 344, 7, 21, "Input",ExpressionUUID->"d867c43b-d222-4857-853b-e806740e994b"],
-Cell[193122, 5472, 373, 9, 21, "Input",ExpressionUUID->"88800cdf-ceb3-4380-ba11-402713614bb8"],
-Cell[193498, 5483, 345, 8, 21, "Input",ExpressionUUID->"1651e190-70ea-4839-a6b5-da7d751816ac"],
-Cell[193846, 5493, 402, 9, 21, "Input",ExpressionUUID->"dd347f71-7d80-420c-8e24-aaa8899d2a94"],
-Cell[194251, 5504, 349, 8, 21, "Input",ExpressionUUID->"41831886-c20c-4dae-9c86-c845711b5c8d"],
-Cell[194603, 5514, 403, 9, 21, "Input",ExpressionUUID->"937c8c8a-a59e-4f70-b4b1-8a1726c1d021"],
-Cell[195009, 5525, 350, 8, 21, "Input",ExpressionUUID->"19d08b43-b2db-427c-a7e6-f2a583f393c1"],
-Cell[195362, 5535, 130, 3, 21, "Input",ExpressionUUID->"0ec8e73b-ca0f-4ad4-9dbc-0b06ed60bc52"]
+Cell[190135, 5376, 389, 7, 34, "Input",ExpressionUUID->"a71b95b3-48d1-4c8c-816a-43d8318abc67"],
+Cell[190527, 5385, 344, 7, 34, "Input",ExpressionUUID->"508ee931-c364-4666-a2d5-89a4b60ada1d"],
+Cell[190874, 5394, 175, 3, 21, "Input",ExpressionUUID->"03b9ed3c-c25b-40ac-b801-b1ef528a6f05"],
+Cell[191052, 5399, 470, 9, 21, "Input",ExpressionUUID->"477b35c3-06cc-462f-b9c9-c137373d272f"],
+Cell[191525, 5410, 346, 8, 21, "Input",ExpressionUUID->"439d262a-6889-4c4b-9804-f7940bd393f8"],
+Cell[191874, 5420, 494, 10, 21, "Input",ExpressionUUID->"bfd2b44a-f83a-4472-b599-d36c6e36cd0c"],
+Cell[192371, 5432, 343, 7, 21, "Input",ExpressionUUID->"ce943b2e-47d7-4dac-b789-6b14c861051d"],
+Cell[192717, 5441, 397, 8, 21, "Input",ExpressionUUID->"e17b1fe6-cb20-4e7c-8f10-092224ca49ae"],
+Cell[193117, 5451, 344, 7, 21, "Input",ExpressionUUID->"d867c43b-d222-4857-853b-e806740e994b"],
+Cell[193464, 5460, 369, 8, 21, "Input",ExpressionUUID->"88800cdf-ceb3-4380-ba11-402713614bb8"],
+Cell[193836, 5470, 345, 8, 21, "Input",ExpressionUUID->"1651e190-70ea-4839-a6b5-da7d751816ac"],
+Cell[194184, 5480, 402, 9, 21, "Input",ExpressionUUID->"dd347f71-7d80-420c-8e24-aaa8899d2a94"],
+Cell[194589, 5491, 349, 8, 21, "Input",ExpressionUUID->"41831886-c20c-4dae-9c86-c845711b5c8d"],
+Cell[194941, 5501, 403, 9, 21, "Input",ExpressionUUID->"937c8c8a-a59e-4f70-b4b1-8a1726c1d021"],
+Cell[195347, 5512, 350, 8, 21, "Input",ExpressionUUID->"19d08b43-b2db-427c-a7e6-f2a583f393c1"],
+Cell[195700, 5522, 130, 3, 21, "Input",ExpressionUUID->"0ec8e73b-ca0f-4ad4-9dbc-0b06ed60bc52"]
 }, Open  ]]
 }
 ]

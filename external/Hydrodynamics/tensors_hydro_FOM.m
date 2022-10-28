@@ -60,11 +60,12 @@ u0 = zeros(myMesh.nDOFs, 1);
 disp(' FOM HYDRODYNAMIC TENSORS:')
 fprintf(' Assembling %d elements ...', nel)
 
-T1 = myAssembly.vector_skin('T1e', 'weights', skinElements, skinElementFaces, vwater, rho);
+T1 = myAssembly.vector_skin('T1', 'weights', skinElements, skinElementFaces, vwater, rho);
+T2 = myAssembly.matrix_skin('T2', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tu2 = myAssembly.matrix_skin('Tu2', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tu3 = myAssembly.tensor_skin('Tu3', [myMesh.nDOFs,myMesh.nDOFs,myMesh.nDOFs], 'weights', skinElements, skinElementFaces, vwater, rho);
+Tudot2 = myAssembly.matrix_skin('Tudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
 
-% Tr1 = RomAssembly.vector_skin('T1e', 'weights', skinElements, skinElementFaces, vwater, rho);
-% Tr2u = RomAssembly.matrix_skin('T2ue', 'weights', skinElements, skinElementFaces, vwater, rho);
-% Tr2udot = RomAssembly.matrix_skin('T2udote', 'weights', skinElements, skinElementFaces, vwater, rho);
 
 
 time = toc(t0);
@@ -75,10 +76,10 @@ fprintf(' SPEED: %.1f el/s\n',nel/time)
 
 % outputs
 tensors.T1 = T1;
-% tensors.T2 = T2;
-% tensors.Tu2 = Tu2;
-% tensors.Tu3 = Tu3;
-% tensors.Tudot2 = Tudot2;
+tensors.T2 = T2;
+tensors.Tu2 = Tu2;
+tensors.Tu3 = Tu3;
+tensors.Tudot2 = Tudot2;
 % tensors.Tudot3 = Tudot3;
 % tensors.Tuu3 = Tuu3;
 % tensors.Tuu4 = Tuu4;

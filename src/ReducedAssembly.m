@@ -269,7 +269,6 @@ classdef ReducedAssembly < Assembly
             m = size(self.V,2);
             [~,I] = find(SIZE == m);
             T = tenzeros(SIZE);
-            size(T)
             Elements = self.Mesh.Elements;
             V = self.V;                %#ok<*PROPLC>
             
@@ -286,22 +285,19 @@ classdef ReducedAssembly < Assembly
                 index = thisElement.iDOFs;          
                 Ve = V(index,:); %#ok<*PFBNS>
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
-                    Te = thisElement.(elementMethodName)(Ve,inputs{1}(j,:),inputs{2}, inputs{3});
-                    %[Te, ~] = thisElement.(elementMethodName)([Ve,inputs{1}(j,:),inputs{2}, inputs{3}]);
-                    T = T + Te;
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ve);
+                    T = T + Ter;
                 else
                       msg = 'Only the ELP mode is currently supported for hydrodynamic forces';
                       error(msg)
-%                     [Te, ~] = thisElement.(elementMethodName)(inputs{:});
-%                     % transform tensor
-%                     Vcell = cell(ndims(Te),1);
-%                     Vcell(:) = {Ve.'};
-%                     T = T + elementWeights(j) * ttm(Te, Vcell,I);
                 end
             end
-            
-            [subs, T] = sparsify(T,[],sumDIMS);
-            T = sptensor(subs, T, SIZE);
+            T = tensor(T);
+            % Next possible improvement: store the tensor as a sparse
+            % tensor
+            %[subs, T] = sparsify(T,[],sumDIMS);
+            %T = sptensor(subs, T, SIZE);
         end
 
     end

@@ -156,6 +156,53 @@ classdef Assembly < handle
             K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
         end
 
+        function [K] = matrix_skin(self,elementMethodName,varargin)
+            % This function assembles a finite element matrix from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the skin
+            % elements/nodes of the structure.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            n_e = self.Mesh.nElements;
+
+            I = cell(n_e,1); % row indices
+            J = cell(n_e,1); % column indices
+            K = cell(n_e,1); % values
+            Elements = self.Mesh.Elements;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+
+            % Computing element level contributions            
+            parfor j = elementSet
+                thisElement = Elements(j).Object;
+                
+                index = thisElement.iDOFs;
+                d = length(index);
+                I{j} = kron(true(d,1), index);
+                J{j} = kron(index, true(d,1));
+
+                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                K{j} = Ke(:);
+            end
+
+            I = vertcat(I{:});
+            J = vertcat(J{:});
+            K = vertcat(K{:});
+
+            K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
+
+        end
+
         function [F] = vector(self,elementMethodName,varargin)
             % This function assembles a generic finite element vector from
             % its element level counterpart.
@@ -344,6 +391,34 @@ classdef Assembly < handle
             T = vertcat(T{:});
             T = sptensor(subs, T, SIZE);
 
+        end
+
+        function [T] = tensor_skin(self,elementMethodName,SIZE,varargin)
+            % This function assembles a generic finite element tensor from
+            % its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.              
+           
+            Elements = self.Mesh.Elements;
+            T = tensor(SIZE);
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights)
+
+            for j = elementSet
+                thisElement = Elements(j).Object;                  
+                startIndex = (j-1)*6+1;
+                endIndex = (j-1)*6+1+5;
+                T(startIndex:endIndex,startIndex:endIndex,startIndex:endIndex) = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+            end
+  
+            T = sptensor(T);
         end
 
 

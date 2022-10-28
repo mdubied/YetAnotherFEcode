@@ -2,7 +2,7 @@
 % Script to test the implementation of hydrodynamic forces on 2D structures
 % with TRI3 elements, using a ROM formulation
 % 
-% Last modified: 04/10/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 28/10/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -165,10 +165,10 @@ ROMn_Assembly.DATA.K = Vn.'*Kn*Vn;    % reduced stiffness matrix (ROM-n)
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
 vwater = [1;0.1];
 rho = 1;
-tensors_hydro = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
+tensors_hydro_ROM = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
-F_ext = @(t,q,qd) (tensors_hydro.Tr1 + tensors_hydro.Tr2u*q + tensors_hydro.Tr2udot*qd); % q, qd are reduced order DOFs
+F_ext = @(t,q,qd) (tensors_hydro_ROM.Tr1 + tensors_hydro_ROM.Tr2u*q + tensors_hydro_ROM.Tr2udot*qd); % q, qd are reduced order DOFs
 
 % time step for integration
 h = 0.05;
