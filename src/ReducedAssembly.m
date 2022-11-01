@@ -108,6 +108,40 @@ classdef ReducedAssembly < Assembly
                 K = K + elementWeights(j) * (Ve.' * Ke * Ve);
             end
         end
+
+        function [K] = matrix_skin_PROM(self,elementMethodName,U,varargin)
+            % This function assembles a finite element matrix from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the skin
+            % elements/nodes of the structure.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            K = zeros(m,m);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            parfor j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ue = U(index,:);
+                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                K = K + elementWeights(j) * (Ve.' * Ke * Ue);
+            end
+        end
         
 
         function [f] = vector(self,elementMethodName,varargin)
@@ -176,6 +210,7 @@ classdef ReducedAssembly < Assembly
             end
         end
         
+        
         function [K, f] = matrix_and_vector(self,elementMethodName, varargin)
             % This function assembles a generic finite element matrix and
             % vector from its element level counterpart.
@@ -209,6 +244,7 @@ classdef ReducedAssembly < Assembly
                 f = f + elementWeights(j) * (Ve.' * fe);
             end
         end
+        
         
         function [T] = tensor(self,elementMethodName,SIZE,sumDIMS,mode,varargin)
             % This function assembles a generic finite element vector from
@@ -294,6 +330,61 @@ classdef ReducedAssembly < Assembly
                 end
             end
             T = tensor(T);
+            % Next possible improvement: store the tensor as a sparse
+            % tensor
+            %[subs, T] = sparsify(T,[],sumDIMS);
+            %T = sptensor(subs, T, SIZE);
+        end
+
+        function [T] = tensor_skin_PROM(self,elementMethodName,U,SIZE,sumDIMS,mode,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: in this function, we reduce all the dimensions with 
+            % the same reduction basis
+            
+            m = size(self.V,2);
+            md = size(U,2);
+            [~,I] = find(SIZE == m);
+            TDouble = zeros(SIZE); % if md=1, array of dimension mxmxmd are computed as matrices mxm, but we want a tensor mxmx1 as a final result
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;                %#ok<*PROPLC>
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); 
+                Ue = U(index,:);
+                if strcmpi(mode,'ELP') % toggle Element-Level projection
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ue);
+                    TDouble = TDouble + Ter;
+                else
+                      msg = 'Only the ELP mode is currently supported for hydrodynamic forces';
+                      error(msg)
+                end
+            end
+
+            if md==1
+                T(:,:,1) = TDouble;    
+            else
+                T = tensor(TDouble);
+            end 
+           
+            
             % Next possible improvement: store the tensor as a sparse
             % tensor
             %[subs, T] = sparsify(T,[],sumDIMS);

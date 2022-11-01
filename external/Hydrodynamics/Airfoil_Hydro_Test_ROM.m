@@ -42,6 +42,9 @@ switch elementType
         myElementConstructor = @()Tri3Element(thickness, myMaterial);
 end
 
+% PROM parameters
+xi1 = 0.2;
+
 % MESH_____________________________________________________________________
 Lx = 3;
 Ly = .2;
@@ -66,18 +69,57 @@ backNode = find_node_2D(Lx,0,nodes);
 nset = {frontNode,backNode};
 MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 
+% defect shapes
+% (1) thinning airfoil 
+Lx=0.15;
+nodes_translated = [nodes(:,1), nodes(:,2)*0.8];
+vdA = nodes_translated(:,2) - nodes(:,2);
+thinAirfoil = zeros(numel(nodes),1);
+thinAirfoil(2:2:end) = vdA;
+
+% defected mesh
+U = thinAirfoil;   % defect basis
+xi = xi1;           % parameter vector
+m = length(xi);     % number of parameters
+
+% update defected mesh nodes
+d = U*xi;                       % displacement fields introduced by defects
+dd = [d(1:2:end) d(2:2:end)]; 
+nodes_defected = nodes + dd;    % nominal + d ---> defected 
+DefectedMesh = Mesh(nodes_defected);
+DefectedMesh.create_elements_table(elements,myElementConstructor);
+DefectedMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+
+figure('units','normalized','position',[.2 .3 .6 .4])
+elementPlot = elements(:,1:3); hold on % plot only corners (otherwise it's a mess)
+PlotMesh(nodes_defected, elementPlot, 0); 
+PlotMesh(nodes,elementPlot,0);
+v1 = reshape(U*xi, 2, []).';
+S = 1;
+hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+title(sprintf('Defect, \\xi=[%.1f, %.1f, %.1f, %.1f], S=%.1f\\times',...
+    xi1, S))
+axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 
 % ASSEMBLY ________________________________________________________________
+
+% nominal
 NominalAssembly = Assembly(MeshNominal);
 Mn = NominalAssembly.mass_matrix();
 nNodes = size(nodes,1);
 u0 = zeros( MeshNominal.nDOFs, 1);
 [Kn,~] = NominalAssembly.tangent_stiffness_and_force(u0);
+    % store matrices
+    NominalAssembly.DATA.K = Kn;
+    NominalAssembly.DATA.M = Mn;
 
-% store matrices
-NominalAssembly.DATA.K = Kn;
-NominalAssembly.DATA.M = Mn;
-%f = QuadAssembly.vector('drag_force', u, ud);
+% defected
+DefectedAssembly = Assembly(DefectedMesh);
+Md = DefectedAssembly.mass_matrix();
+[Kd,~] = DefectedAssembly.tangent_stiffness_and_force(u0);
+    % store matrices
+    DefectedAssembly.DATA.K = Kd;
+    DefectedAssembly.DATA.M = Md;
 
 
 %% PLOT MESH WITH NODES AND ELEMENTS
@@ -85,13 +127,19 @@ elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
 figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMesh(nodes, elementPlot, 1);
 
+%% DAMPING 
+alfa = 3.1;
+beta = 6.3*1e-6;
+Dn = alfa*Mn + beta*Kn; % Rayleigh damping
+NominalAssembly.DATA.D = Dn;
+Dc = NominalAssembly.constrain_matrix(Dn);
 
-%% EIGENMODES - VIBRATION MODES  
+%% EIGENMODES - VIBRATION MODES (VMs)
 
 n_VMs = 2;
 
-% EIGENVALUE PROBLEM_______________________________________________________
-% Vibration Modes (VM): nominal
+% NOMINAL _________________________________________________________________
+% eigenvalue problem
 Kc = NominalAssembly.constrain_matrix(Kn);
 Mc = NominalAssembly.constrain_matrix(Mn);
 [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
@@ -102,7 +150,7 @@ for ii = 1:n_VMs
 end
 VMn = NominalAssembly.unconstrain_vector(VMn);
 
-% PLOT ____________________________________________________________________
+% plot
 mod = 1;
 elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
 figure('units','normalized','position',[.2 .1 .6 .8])
@@ -111,48 +159,62 @@ v1 = reshape(VMn(:,mod), 2, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
 title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0n(mod),3) ' Hz']);
 
-% DAMPING _________________________________________________________________
-alfa = 3.1;
-beta = 6.3*1e-6;
-Dn = alfa*Mn + beta*Kn; % Rayleigh damping
-NominalAssembly.DATA.D = Dn;
-Dc = NominalAssembly.constrain_matrix(Dn);
+% DEFECTED ________________________________________________________________
+% eigentvalue problem
+Kdc = DefectedAssembly.constrain_matrix(Kd);
+Mdc = DefectedAssembly.constrain_matrix(Md);
+[VMd,om] = eigs(Kdc, Mdc, n_VMs, 'SM');
+[f0d,ind] = sort(sqrt(diag(om))/2/pi);
+VMd = VMd(:,ind);
+for ii = 1:n_VMs
+    VMd(:,ii) = VMd(:,ii)/max(sqrt(sum(VMd(:,ii).^2,2)));
+end
+VMd = DefectedAssembly.unconstrain_vector(VMd);
 
-%% MODAL DERIVATIVES                      
+% plot
+mod = 1;
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMesh(nodes, elementPlot, 0);
+v1 = reshape(VMd(:,mod), 2, []).';
+PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0d(mod),3) ' Hz'])
+
+%% MODAL DERIVATIVES (MDs)                     
 
 % nominal
 [MDn, MDname] = modal_derivatives(NominalAssembly, elements, VMn);
-% % defected
-% MDd = modal_derivatives(DefectedAssembly, elements, VMd);
-% 
-% % defect sensitivities
-% [DS, names] = defect_sensitivities(NominalAssembly, elements, VMn, U, ...
-%     FORMULATION);
+% defected
+MDd = modal_derivatives(DefectedAssembly, elements, VMd);
+ 
+% defect sensitivities
+[DS, names] = defect_sensitivities(NominalAssembly, elements, VMn, U, ...
+    FORMULATION);
 
 %% ROM TENSORS (INTERNAL FORCES)                         
 % define reduced order basis
 Vn = [VMn MDn];     % reduced order basis (ROM-n)
-% V  = [VMn MDn DS]; 	% reduced order basis (DpROM)
-% Vd = [VMd MDd];   	% reduced order basis (ROM-d)
+V  = [VMn MDn DS]; 	% reduced order basis (PROM)
+Vd = [VMd MDd];   	% reduced order basis (ROM-d)
 
 % orthonormalize reduction basis
 Vn = orth(Vn);	% ROM-n
-% V  = orth(V);	% DpROM
-% Vd = orth(Vd);	% ROM-d
+V  = orth(V);	% PROM
+Vd = orth(Vd);	% ROM-d
 
-% standard reduced order model (no defects in the mesh)
+% ROM-n: standard reduced order model (no defects in the mesh)
 tensors_ROMn = reduced_tensors_ROM(NominalAssembly, elements, Vn, USEJULIA);
 
-% % standard reduced order model (defects in the mesh)
-% tensors_ROMd = reduced_tensors_ROM(DefectedAssembly, elements, Vd, USEJULIA);
-% tensors_ROMd.xi = xi; % save for which xi ROMd is computed
-% 
-% % parametric formulation for defects
-% tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, ...
-%     V, U, FORMULATION, VOLUME, USEJULIA); %compute tensors
-% 
-% % evaluate the defected tensors at xi
-% [Q2, ~, ~, ~, ~, Mxi] = DefectedTensors(tensors_DpROM, xi);
+% ROM-d: standard reduced order model (defects in the mesh)
+tensors_ROMd = reduced_tensors_ROM(DefectedAssembly, elements, Vd, USEJULIA);
+tensors_ROMd.xi = xi; % save for which xi ROMd is computed
+
+% PROM: parametric formulation for defects
+tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, ...
+    V, U, FORMULATION, VOLUME, USEJULIA); %compute tensors
+
+% evaluate the defected tensors at xi
+[Q2, ~, ~, ~, ~, Mxi] = DefectedTensors(tensors_DpROM, xi);
 
 %% Reduced Assembly
 ROMn_Assembly = ReducedAssembly(MeshNominal, Vn);
@@ -165,10 +227,17 @@ ROMn_Assembly.DATA.K = Vn.'*Kn*Vn;    % reduced stiffness matrix (ROM-n)
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
 vwater = [1;0.1];
 rho = 1;
-tensors_hydro_ROM = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
+
+% ROM-n
+tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
+% ROM-d
+tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
+%% PROM
+tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, Vn, U, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
-F_ext = @(t,q,qd) (tensors_hydro_ROM.Tr1 + tensors_hydro_ROM.Tr2u*q + tensors_hydro_ROM.Tr2udot*qd); % q, qd are reduced order DOFs
+
+% Parameters' initialization for all models _______________________________
 
 % time step for integration
 h = 0.05;
@@ -178,23 +247,50 @@ q0 = zeros(size(Vn,2),1);
 qd0 = zeros(size(Vn,2),1);
 qdd0 = zeros(size(Vn,2),1);
 
-% Instantiate object for nonlinear time integration
-TI_NL = ImplicitNewmark('timestep',h,'alpha',0.005);
+%% ROM-n __________________________________________________________________
 
-% Modal nonlinear Residual evaluation function handle
+F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
+    double(tensors_hydro_ROMn.Tru2*q) + double(tensors_hydro_ROMn.Trudot2*qd) + ...
+    double(ttv(ttv(tensors_hydro_ROMn.Truu3,q,3), q,2)) + ...
+    double(ttv(ttv(tensors_hydro_ROMn.Truudot3,qd,3), q,2)) + ...
+    double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
+
+% instantiate object for nonlinear time integration
+TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
 
-% Nonlinear Time Integration
+% nonlinear Time Integration
 tmax = 4.0; 
-TI_NL.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
-TI_NL.Solution.u = Vn * TI_NL.Solution.q; % get full order solution
+TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
 
-%TI_NL_sol = reshape(TI_NL.Solution.u(:,36), 2, []).';
+%% ROM-d __________________________________________________________________
+
+F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
+    double(tensors_hydro_ROMn.Tru2*q) + double(tensors_hydro_ROMn.Trudot2*qd) + ...
+    double(ttv(ttv(tensors_hydro_ROMn.Truu3,q,3), q,2)) + ...
+    double(ttv(ttv(tensors_hydro_ROMn.Truudot3,qd,3), q,2)) + ...
+    double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
+
+% instantiate object for nonlinear time integration
+TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005);
+
+% modal nonlinear Residual evaluation function handle
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
+
+% nonlinear Time Integration
+tmax = 4.0; 
+TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
+
+%% PROM ___________________________________________________________________
 
 %% Visualize
 %PlotMesh(nodes, elementPlot, 0)
 %PlotFieldonDeformedMesh(nodes, elementPlot, TI_NL_sol, 'factor', 100)
-AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL.Solution.u,'factor',100,'index',1:2,'filename','result_video')
+AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',100,'index',1:2,'filename','result_video')
 
 
 

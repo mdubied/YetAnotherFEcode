@@ -69,7 +69,7 @@ u = V*q; %q is the reduced variable
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
-F_ext_V =  Fext(t,q,qd);%V.'*Fext(t);
+F_ext_V =  Fext(t,q,qd);
 r = F_inertial + F_damping + F_V - F_ext_V ;
 drdqdd = M_V;
 drdqd = C_V;

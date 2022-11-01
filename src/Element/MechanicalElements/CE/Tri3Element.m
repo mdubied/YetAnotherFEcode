@@ -58,7 +58,7 @@ classdef Tri3Element < ContinuumElement
         
         % ADDITIONAL FUNCTIONS ____________________________________________
 
-        % Tensors as a function of ud
+        % Tensors as a function of ud (early-stage version)
         function T = T1e_func_ud(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns the 1st order tensor (i.e., a vector) stemming from 
@@ -289,6 +289,7 @@ classdef Tri3Element < ContinuumElement
 
         end
 
+        
         function T = Teu2(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
@@ -357,7 +358,6 @@ classdef Tri3Element < ContinuumElement
                 end
             end
 
-            T = tensor(T);
             T = permute(T,[3 1 2]);
 
         end
@@ -397,6 +397,42 @@ classdef Tri3Element < ContinuumElement
 
         end
 
+        function T = Teudot3(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
+            % the drag and the thrust force. These forces are acting on the
+            % ``specificFace'' of an element. The forces are divided by 2 
+            % and applied to the nodes at of the considered face. 
+            % _____________________________________________________________
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
+            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+  
+            if specificFace(1) == 1
+                T = Tudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+            elseif specificFace(1) == 2
+                T = Tudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+            else
+                T = Tudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+            end
+            
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
+                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
+                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                
+                if specificFace(2) == 1
+                    T = Tudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                elseif specificFace(1) == 2
+                    T = Tudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                else
+                    T = Tudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                end
+            end
+
+        end
+        
+        
         function T = Teuu3(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
