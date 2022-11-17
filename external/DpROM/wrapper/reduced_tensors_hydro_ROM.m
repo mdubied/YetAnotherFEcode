@@ -33,7 +33,7 @@
 %   - List of currently supported elements: 
 %     TRI3
 %
-% Last modified: 28/10/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 17/11/2022, Mathieu Dubied, ETH Zürich
 
 function tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, skinElements, skinElementFaces, vwater, rho)
 
@@ -50,19 +50,26 @@ RomAssembly = ReducedAssembly(myMesh, V);
 
 % compute reduced tensors
 disp(' REDUCED HYDRODYNAMIC TENSORS:')
-fprintf(' Assembling %d elements ...', nel)
+fprintf(' Assembling %d elements ...\n', nel)
 
+tic;
 Tr1 = RomAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho);
+fprintf('   1st order terms - Tr1: %.2f s\n',toc)
+
+tic;
 Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho);
 Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
-Truu3 = RomAssembly.tensor_skin('Teuu3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Truudot3 = RomAssembly.tensor_skin('Teuudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudotudot3 = RomAssembly.tensor_skin('Teudotudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+fprintf('   2nd order terms - Tru2, Trudot2: %.2f s\n',toc)
 
-time = toc(t0);
+tic;
+Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+Truudot3 = RomAssembly.tensor_skin('Teuudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+fprintf('   3rd order terms - Truu3, Truudot3, Turudotudot3: %.2f s\n',toc)
 
 % display time needed for computation
-fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
+time = toc(t0);
+fprintf(' TOTAL TIME: %.2f s\n',toc(t0),time)
 fprintf(' SPEED: %.1f el/s\n',nel/time)
 fprintf(' SIZEs: %d \n\n', size(V,2))
 

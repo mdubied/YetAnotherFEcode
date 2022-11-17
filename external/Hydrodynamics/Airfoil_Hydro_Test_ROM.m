@@ -1,8 +1,8 @@
 % ------------------------------------------------------------------------ 
 % Script to test the implementation of hydrodynamic forces on 2D structures
-% with TRI3 elements, using a ROM formulation
+% with TRI3 elements, using a PROM formulation
 % 
-% Last modified: 28/10/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 13/11/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -43,7 +43,7 @@ switch elementType
 end
 
 % PROM parameters
-xi1 = 0.2;
+xi1 = 0.8;
 
 % MESH_____________________________________________________________________
 Lx = 3;
@@ -55,7 +55,7 @@ switch upper( whichModel )
         [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
     case 'ABAQUS'
         % Alternatively, one can write an input file in ABAQUS and read it as:
-        filename = 'naca0012TRI';
+        filename = 'naca0012TRI_medium_mesh';%'naca0012TRI';
         [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 end
 
@@ -194,13 +194,13 @@ MDd = modal_derivatives(DefectedAssembly, elements, VMd);
 %% ROM TENSORS (INTERNAL FORCES)                         
 % define reduced order basis
 Vn = [VMn MDn];     % reduced order basis (ROM-n)
-V  = [VMn MDn DS]; 	% reduced order basis (PROM)
 Vd = [VMd MDd];   	% reduced order basis (ROM-d)
+V  = [VMn MDn]; %DS]; 	% reduced order basis (PROM) what about defect sensitivities DS? Are there needed?
 
 % orthonormalize reduction basis
 Vn = orth(Vn);	% ROM-n
-V  = orth(V);	% PROM
 Vd = orth(Vd);	% ROM-d
+V  = orth(V);	% PROM
 
 % ROM-n: standard reduced order model (no defects in the mesh)
 tensors_ROMn = reduced_tensors_ROM(NominalAssembly, elements, Vn, USEJULIA);
@@ -210,18 +210,25 @@ tensors_ROMd = reduced_tensors_ROM(DefectedAssembly, elements, Vd, USEJULIA);
 tensors_ROMd.xi = xi; % save for which xi ROMd is computed
 
 % PROM: parametric formulation for defects
-tensors_DpROM = reduced_tensors_DpROM(NominalAssembly, elements, ...
+tensors_PROM = reduced_tensors_DpROM(NominalAssembly, elements, ...
     V, U, FORMULATION, VOLUME, USEJULIA); %compute tensors
 
 % evaluate the defected tensors at xi
-[Q2, ~, ~, ~, ~, Mxi] = DefectedTensors(tensors_DpROM, xi);
+[Q2, ~, ~, ~, ~, Mxi] = DefectedTensors(tensors_PROM, xi);
 
-%% Reduced Assembly
+%% REDUCED ASSEMBLIES
+
+% ROM-n ___________________________________________________________________
 ROMn_Assembly = ReducedAssembly(MeshNominal, Vn);
-
-ROMn_Assembly.DATA.M = ROMn_Assembly.mass_matrix();         % reduced mass matrix (ROM-n)
-ROMn_Assembly.DATA.C = Vn.'*Dn*Vn;      % reduced damping matrix (ROM-n), using C as needed by the residual function of Newmark integration
+ROMn_Assembly.DATA.M = ROMn_Assembly.mass_matrix();  % reduced mass matrix (ROM-n)
+ROMn_Assembly.DATA.C = Vn.'*Dn*Vn;    % reduced damping matrix (ROM-n), using C as needed by the residual function of Newmark integration
 ROMn_Assembly.DATA.K = Vn.'*Kn*Vn;    % reduced stiffness matrix (ROM-n)
+
+% ROM-d ___________________________________________________________________
+ROMd_Assembly = ReducedAssembly(MeshNominal, Vd);
+ROMd_Assembly.DATA.M = ROMd_Assembly.mass_matrix();  % reduced mass matrix (ROM-d)
+ROMd_Assembly.DATA.C = Vd.'*Dn*Vd;    % reduced damping matrix (ROM-d), using C as needed by the residual function of Newmark integration
+ROMd_Assembly.DATA.K = Vd.'*Kn*Vd;    % reduced stiffness matrix (ROM-d)
 
 %% ROM TENSORS - HYDRODYNAMIC FORCES
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
@@ -232,23 +239,22 @@ rho = 1;
 tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
 % ROM-d
 tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
-%% PROM
+% PROM
 tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, Vn, U, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
 
 % Parameters' initialization for all models _______________________________
-
 % time step for integration
-h = 0.05;
+h = 0.025;
 
-% Initial condition: equilibrium
+%% ROM-n __________________________________________________________________
+% initial condition: equilibrium
 q0 = zeros(size(Vn,2),1);
 qd0 = zeros(size(Vn,2),1);
 qdd0 = zeros(size(Vn,2),1);
 
-%% ROM-n __________________________________________________________________
-
+% hydrodynamic forces
 F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
     double(tensors_hydro_ROMn.Tru2*q) + double(tensors_hydro_ROMn.Trudot2*qd) + ...
     double(ttv(ttv(tensors_hydro_ROMn.Truu3,q,3), q,2)) + ...
@@ -267,54 +273,86 @@ TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
 
 %% ROM-d __________________________________________________________________
+% initial condition: equilibrium
+q0 = zeros(size(Vd,2),1);
+qd0 = zeros(size(Vd,2),1);
+qdd0 = zeros(size(Vd,2),1);
 
-F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
-    double(tensors_hydro_ROMn.Tru2*q) + double(tensors_hydro_ROMn.Trudot2*qd) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Truu3,q,3), q,2)) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Truudot3,qd,3), q,2)) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
+% hydrodynamic forces
+F_ext = @(t,q,qd) (double(tensors_hydro_ROMd.Tr1) + ...
+    double(tensors_hydro_ROMd.Tru2*q) + double(tensors_hydro_ROMd.Trudot2*qd) + ...
+    double(ttv(ttv(tensors_hydro_ROMd.Truu3,q,3), q,2)) + ...
+    double(ttv(ttv(tensors_hydro_ROMd.Truudot3,qd,3), q,2)) + ...
+    double(ttv(ttv(tensors_hydro_ROMd.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
-% instantiate object for nonlinear time integration
-TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005);
+% instantiate object for nonlinear time integration (TI)
+TI_NL_ROMd = ImplicitNewmark('timestep',h,'alpha',0.005);
 
-% modal nonlinear Residual evaluation function handle
-Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
+% nonlinear residual evaluation function handle
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMd_Assembly,F_ext);
 
-% nonlinear Time Integration
-tmax = 4.0; 
-TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
-TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
+% nonlinear time integration (TI)
+TI_NL_ROMd.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL_ROMd.Solution.u = Vd * TI_NL_ROMd.Solution.q; % get full order solution
 
-%% PROM ___________________________________________________________________
 
-%% Visualize
-%PlotMesh(nodes, elementPlot, 0)
-%PlotFieldonDeformedMesh(nodes, elementPlot, TI_NL_sol, 'factor', 100)
+%% SENSITIVITY ANALYSIS ___________________________________________________
+% initial conditions
+s0 = zeros(size(Vd,2),1);
+sd0 = zeros(size(Vd,2),1);
+sdd0 = zeros(size(Vd,2),1);
+
+% evaluate partial derivatives along solution
+pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM);
+pd_fint_PROM = @(q)DpROM_derivatives(q,tensors_PROM,1); % what about linear terms?
+
+% instantiate object for time integration
+TI_sens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true);
+
+% residual function handle
+Residual_sens = @(s,sd,sdd,t,it)residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,TI_NL_ROMn.Solution.q,TI_NL_ROMn.Solution.qd,pd_fext_PROM,pd_fint_PROM,h);
+
+% time integration (TI)
+TI_sens.Integrate(q0,qd0,qdd0,tmax,Residual_sens);
+TI_sens.Solution.s = Vd * TI_sens.Solution.q; % get full order solution
+
+
+%% VISUALIZE ______________________________________________________________
+
+%% 1-DOF PLOT _____________________________________________________________
+
+% find a specific result node and corresponding DOF
+rNodeDOFS = MeshNominal.get_DOF_from_location([0.75*Lx, 0]);
+rNodeDOF = rNodeDOFS(2); % y-direction
+
+% plot
+figure 
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+tplot=linspace(0,tmax,tmax/h);
+plot(tplot,TI_NL_ROMn.Solution.u(rNodeDOF,1:end-2)*100)
+hold on
+plot(tplot,TI_NL_ROMd.Solution.u(rNodeDOF,1:end-2)*100, "-.")
+plot(tplot,(TI_NL_ROMn.Solution.u(rNodeDOF,1:end-2)+TI_sens.Solution.s(rNodeDOF,1:end-2)*xi)*100,"--")
+
+title('Vertical displacement for a specific node')
+ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
+xlabel('Time [s]')
+set(gca,'FontName','ComputerModern');
+grid on
+legend({'ROM-n','ROM-d','Approximation of ROM-d using PROM sensitivities'}, 'Location', 'southoutside','Orientation','horizontal')
+hold off
+
+
+
+%% Animations _____________________________________________________________
+%% ROM-n __________________________________________________________________
 AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',100,'index',1:2,'filename','result_video')
 
+%% ROM-d __________________________________________________________________
+AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMd.Solution.u,'factor',100,'index',1:2,'filename','result_video')
 
 
-%% BELOW: TESTING OF VISUAL APPEARANCE OF THE FORCES
-%
-%
-%
-%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% GET OUTER SURFACE
-[skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
-
-
-%% APPLY FORCE TO SKIN ELEMENTS
-%f = BeamAssembly.vector('drag_force', u, ud);
-vwater = [1;0];
-rho = 1;
-%f = AirfoilAssembly.skin_force('force_length_prop_skin_normal', 'weights',
-%skinElements, skinElementFaces); % change in assembly -> skin_force needed
-%for this function
-f = NominalAssembly.skin_force('drag_force', 'weights', skinElements, skinElementFaces, vwater, rho);
-
-
-%% PLOT FORCES ON MESH
-PlotMeshandForce(nodes, elementPlot, 1,30*f);
 
 
