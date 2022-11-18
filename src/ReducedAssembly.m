@@ -371,6 +371,7 @@ classdef ReducedAssembly < Assembly
                 Ue = U(index,:);
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
                     Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Te = permute(Te,[3 1 2]);
                     Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ue);
                     TDouble = TDouble + Ter;
                 else
