@@ -9,13 +9,13 @@
 % each time step with the solution `qsol' and `qdsol'.
 %
 % INPUTS: 
-% (1) s, sd, sdd, t:   variables for the function handle
-% (2) ROMn_Assembly:   ROM-n assembly, needed to get the mass matrix M
-% (3) qsol, qdsol:     solutions of the simulations
-% (4) pd_fext:         partial derivatives of external forces 
-%                      (hydrodynamic forces) used for the sensitivity ODE
-% (5) pd_fint:         partial derivative of internal forces
-% (6) h:               time step size h                       
+% (1) s, sd, sdd, t:        variables for the function handle
+% (2) ROMn_Assembly:        ROM-n assembly, needed to get the mass matrix M
+% (3) qsol,qdsol,qddsol:    solutions of the simulations
+% (4) pd_fext:              partial derivatives of external forces 
+%                           (hydrodynamic forces) used for the sensitivity ODE
+% (5) pd_fint:              partial derivative of internal forces
+% (6) h:                    time step size h                       
 %
 % OUTPUTS:
 % (1) [r, drdsdd, drdsd, drds]:     function handle describing the
@@ -27,7 +27,7 @@
 %   on p?
 %
 % Last modified: 17/11/2022, Mathieu Dubied, ETH Zürich
-function [r, drdsdd, drdsd, drds] = residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,pd_fext,pd_fint,h)
+function [r, drdsdd, drdsd, drds] = residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol,pd_fext,pd_fint,h)
 
     % compute current time step
     it = cast(t/h,"int16");
@@ -38,6 +38,7 @@ function [r, drdsdd, drdsd, drds] = residual_linear_sens(s,sd,sdd,t,ROMn_Assembl
     K = ROMn_Assembly.DATA.K;
     qsolIt = qsol(:,it);
     qdsolIt = qdsol(:,it);
+    qddsolIt = qddsol(:,it);
     derivative_fext_PROM = pd_fext(qsolIt,qdsolIt);
     derivative_fint_PROM = pd_fint(qsolIt);
     % external forces (hydrodynamic forces)
@@ -47,10 +48,11 @@ function [r, drdsdd, drdsd, drds] = residual_linear_sens(s,sd,sdd,t,ROMn_Assembl
     % internal forces (only a function of q and not qd)
     dfintdq = derivative_fint_PROM.dfdq;
     dfintdp = derivative_fint_PROM.dfdp;
+    dMdp = derivative_fint_PROM.dMdp;
     
     % residual, from sensitivity ODE. Partial derivative of fint are on the
     % RHS of the equation according to the formulation of previous papers
-    r = M*sdd - dfextdqd*sd - dfextdq*s  - dfextdp + ...
+    r =  dMdp*qddsolIt + M*sdd - dfextdqd*sd - dfextdq*s  - dfextdp + ...
         dfintdq*s + dfintdp + C*sd + K*s;
     drdsdd = M;
     drdsd = -dfextdqd + C;

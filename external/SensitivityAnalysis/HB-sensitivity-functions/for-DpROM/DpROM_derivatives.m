@@ -48,7 +48,7 @@ end
 % populate tensors
 % *************************************************************************
 
-Q2n = tensors_DpROM.Q2n{1,1}; 
+Q2n = tensors_DpROM.Q2n{1,1};
 Q3n = tensors_DpROM.Q3n{1,1};
 Q4n = tensors_DpROM.Q4n{1,1};
 Q3d = tensors_DpROM.Q3d{1,1};
