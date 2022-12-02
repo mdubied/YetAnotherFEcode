@@ -2,7 +2,7 @@
 % Script to test the implementation of hydrodynamic forces on 2D structures
 % with TRI3 elements, using a PROM formulation
 % 
-% Last modified: 13/11/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 22/11/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -63,10 +63,12 @@ MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
 
 % boundary conditions of nominal mesh: front and back nodes fixed
-frontNode = find_node_2D(0,0,nodes);
+frontNode = find_node_2D(0,0,nodes)
 Lx = 0.15;
 backNode = find_node_2D(Lx,0,nodes);
-nset = {frontNode,backNode};
+frontNode2 = find_node_2D(0.005,0,nodes)
+%nset = {frontNode,backNode};
+nset = {frontNode, frontNode2};
 MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 
 % defect shapes
@@ -419,7 +421,7 @@ hold off
 
 %% Animations _____________________________________________________________
 %% ROM-n __________________________________________________________________
-AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',100,'index',1:2,'filename','result_video')
+AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',1,'index',1:2,'filename','result_video')
 
 %% ROM-d __________________________________________________________________
 AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMd.Solution.u,'factor',100,'index',1:2,'filename','result_video')
