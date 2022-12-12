@@ -259,7 +259,8 @@ tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, sk
 % ROM-d
 tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
 % PROM
-tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, skinElements, skinElementFaces, vwater, rho);
+fourthOrder = 1;
+tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
 

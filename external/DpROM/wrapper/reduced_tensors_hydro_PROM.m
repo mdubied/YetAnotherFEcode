@@ -1,7 +1,7 @@
 % reduced_tensors_hydro_PROM
 %
 % Synthax:
-% tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, skinElements, skinElementFaces, vwater, rho)
+% tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho)
 %
 % Description: This function computes the reduced order hydrodynamic
 % tensors at the Assembly level, by combining (i.e., summing), the
@@ -12,6 +12,8 @@
 %   - myAssembly: Assembly from YetAnotherFEcode.
 %   - elements: table of the elements
 %   - V: Reduced Order Basis (unconstrained)
+%   - U: Shape variation basis
+%   - fourthOrder: 1 or 0, for the computation (1) of 4th order tensors
 %   - skinElements
 %   - skinElementFaces
 %   - vwater
@@ -39,9 +41,9 @@
 %   - List of currently supported elements: 
 %     TRI3
 %
-% Last modified: 17/11/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 12/12/2022, Mathieu Dubied, ETH Zürich
 
-function tensors = reduced_tensors_hydro_PROM(myAssembly, elements, V, U, skinElements, skinElementFaces, vwater, rho)
+function tensors = reduced_tensors_hydro_PROM(myAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho)
 
 t0=tic;
 
@@ -58,26 +60,48 @@ RomAssembly = ReducedAssembly(myMesh, V);
 % compute reduced tensors
 disp(' REDUCED HYDRODYNAMIC TENSORS (PROM):')
 fprintf(' Assembling %d elements ...\n', nel)
+fprintf('   0th order in ud:\n')
 
 tic;
 Tr1 = RomAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho);
-Tr2 = RomAssembly.matrix_skin_PROM('Te2', U,'weights', skinElements, skinElementFaces, vwater, rho);
-fprintf('   1st order terms in u - Tr1, Tr2: %.2f s\n',toc)
+fprintf('       1st order terms - Tr1: %.2f s\n',toc)
 
 tic;
 Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho);
-Tru3 = RomAssembly.tensor_skin_PROM('Teu3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
 Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudot3 = RomAssembly.tensor_skin_PROM('Teudot3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-fprintf('   2nd order terms in u - Tru2, Tru3, Trudot2, Trudot3: %.2f s\n',toc)
+fprintf('       2nd order terms - Tru2, Trudot2: %.2f s\n',toc)
 
 tic;
 Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
 Truudot3 = RomAssembly.tensor_skin('Teuudot3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
 Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-fprintf('   3rd order terms in u - Truu3, Truudot3, Trudotudot3: %.2f s\n',toc)
+fprintf('       3rd order terms - Truu3, Truudot3, Trudotudot3: %.2f s\n',toc)
 
-% display time needed for computation
+
+fprintf('   1st order in ud:\n')
+
+tic;
+Tr2 = RomAssembly.matrix_skin_PROM('Te2', U,'weights', skinElements, skinElementFaces, vwater, rho);
+fprintf('       2nd order terms - Tr2: %.2f s\n',toc)
+
+tic;
+Tru3 = RomAssembly.tensor_skin_PROM('Teu3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+Trudot3 = RomAssembly.tensor_skin_PROM('Teudot3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+fprintf('       3rd order terms - Tru3, Trudot3: %.2f s\n',toc)
+
+if fourthOrder
+    tic;
+    Truu4 = 0.5*RomAssembly.tensor4_skin_PROM('Teuu4', U, [m m m md], [2 3 4], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+    Truudot4 = RomAssembly.tensor4_skin_PROM('Teuudot4', U,  [m m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+    Trudotudot4 = 0.5*RomAssembly.tensor4_skin_PROM('Teudotudot4', U, [m m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+    fprintf('       4th order terms - Truu4, Truudot4, Trudotudot4: %.2f s\n',toc)
+else
+    fprintf('       4th order terms - not computed \n')
+end
+
+
+
+% display total time needed for computation
 time = toc(t0);
 fprintf(' TOTAL TIME: %.2f s\n',toc(t0),time)
 fprintf(' SPEED: %.1f el/s\n',nel/time)
@@ -93,6 +117,13 @@ tensors.Trudot3 = Trudot3;
 tensors.Truu3 = Truu3;
 tensors.Truudot3 = Truudot3;
 tensors.Trudotudot3 = Trudotudot3;
+
+if fourthOrder
+    tensors.Truu4 = Truu4;
+    tensors.Truudot4 = Truudot4;
+    tensors.Trudotudot4 = Trudotudot4;
+end
+
 tensors.time = time;
 
 end

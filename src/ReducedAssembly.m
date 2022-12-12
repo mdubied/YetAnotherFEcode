@@ -371,7 +371,6 @@ classdef ReducedAssembly < Assembly
                 Ue = U(index,:);
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
                     Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
-                    Te = permute(Te,[3 1 2]);
                     Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ue);
                     TDouble = TDouble + Ter;
                 else
@@ -382,6 +381,61 @@ classdef ReducedAssembly < Assembly
 
             if md==1
                 T(:,:,1) = TDouble;    
+            else
+                T = tensor(TDouble);
+            end 
+           
+            
+            % Next possible improvement: store the tensor as a sparse
+            % tensor
+            %[subs, T] = sparsify(T,[],sumDIMS);
+            %T = sptensor(subs, T, SIZE);
+        end
+
+        function [T] = tensor4_skin_PROM(self,elementMethodName,U,SIZE,sumDIMS,mode,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: in this function, we reduce all the dimensions with 
+            % the same reduction basis
+            
+            m = size(self.V,2);
+            md = size(U,2);
+            [~,I] = find(SIZE == m);
+            TDouble = zeros(SIZE); % if md=1, array of dimension mxmxmd are computed as matrices mxm, but we want a tensor mxmx1 as a final result
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;                %#ok<*PROPLC>
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); 
+                Ue = U(index,:);
+                if strcmpi(mode,'ELP') % toggle Element-Level projection
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ue);
+                    TDouble = TDouble + Ter;
+                else
+                      msg = 'Only the ELP mode is currently supported for hydrodynamic forces';
+                      error(msg)
+                end
+            end
+
+            if md==1
+                T(:,:,:,1) = TDouble;    
             else
                 T = tensor(TDouble);
             end 
