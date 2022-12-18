@@ -58,13 +58,21 @@ thinAirfoil = zeros(numel(nodes),1);
 thinAirfoil(2:2:end) = vdA;
 U = thinAirfoil;   % defect basis
 
-%% OPTIMIZATION PIPELINE P3
+%% OPTIMIZATION PIPELINE P1
 d = [1;0];
 h = 0.05;
 tmax = 0.5;
 
+tic
+[xiStar1,LrEvo1] = optimization_pipeline_1(myElementConstructor,nset,nodes,elements,U,d,h,tmax,...
+    FORMULATION,VOLUME,USEJULIA);
+toc
+
+%% OPTIMIZATION PIPELINE P3
+tic
 [xiStar3,LrEvo3] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,...
     FORMULATION,VOLUME,USEJULIA);
+toc
 
 %% VISUALIZATION
 

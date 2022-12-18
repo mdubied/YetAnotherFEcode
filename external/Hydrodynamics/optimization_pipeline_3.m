@@ -24,12 +24,10 @@
 % (2) LrEvo:        evolution of the cost function values
 %     
 %
-% Additional notes: The functions "reduce_vector" and "cost_function" used
-% by optimization_pipeline_3 are defined below.
+% Additional notes: none
 %
 %
 % Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
-
 function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA)
     
     % STEP 1: set xi_0 = 0 ________________________________________________
@@ -78,8 +76,8 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
     etad_k = etad;
 
     N = size(eta,2);
-    dr = reduce_vector(d,V);
-    Lr = cost_function(N,tensors_hydro_PROM,eta,etad,dr);
+    dr = reduced_constant_vector(d,V);
+    Lr = reduced_cost_function(N,tensors_hydro_PROM,eta,etad,dr);
     LrEvo = Lr;
 
     for k = 1:2
@@ -88,46 +86,10 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
         eta_k = eta_k + S*xi_k; 
         % step 8
         nablaLr = gradient_cost_function(dr,xi_k,eta_k,etad_k,S,Sd,tensors_hydro_PROM);
-        LrEvo = [LrEvo, cost_function(N,tensors_hydro_PROM,eta_k,etad_k,dr)];
+        LrEvo = [LrEvo, reduced_cost_function(N,tensors_hydro_PROM,eta_k,etad_k,dr)];
         % step 9 and 10
         xi_k = xi_k - 0.8*nablaLr;
     end
     xiStar = xi_k;
 
-end
-
-
-% reduce_vector
-% 
-% Description: Helper function to compute the reduce version of the vector
-% d, i.e., dr
-%
-function dr = reduce_vector(d,V)
-    n = size(V,1);
-    m = size(V,2);
-    dr = zeros(m,1);
-    for i=1:6:n
-        Ve = V(i:i+5,:);
-        de = [d;d;d];
-        dr = dr + Ve.'*de;  
-    end
-end
-
-% cost_function
-%
-% Description: Computes the cost function for a give eta, etad,dr and PROM
-%
-function Lr = cost_function(N,tensors_hydro_PROM,eta,etad,dr)
-    Lr = 0;
-    for i=1:N-2
-        eta_i = eta(:,i);
-        etad_i = etad(:,i);
-        fhydro = double(tensors_hydro_PROM.Tr1) + ...
-        double(tensors_hydro_PROM.Tru2*eta_i) + double(tensors_hydro_PROM.Trudot2*etad_i) + ...
-        double(ttv(ttv(tensors_hydro_PROM.Truu3,eta_i,3), eta_i,2)) + ...
-        double(ttv(ttv(tensors_hydro_PROM.Truudot3,etad_i,3), eta_i,2)) + ...
-        double(ttv(ttv(tensors_hydro_PROM.Trudotudot3,etad_i,3), etad_i,2));
-       
-        Lr = Lr - dr'*fhydro;
-    end
 end
