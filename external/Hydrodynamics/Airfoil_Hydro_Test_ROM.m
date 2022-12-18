@@ -259,7 +259,7 @@ tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, sk
 % ROM-d
 tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
 % PROM
-fourthOrder = 1;
+fourthOrder = 0;
 tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
@@ -418,8 +418,6 @@ legend({'ROM-n','ROM-d','PROM-n','Approximation of ROM-d using PROM sensitivitie
 hold off
 
 
-
-
 %% Animations _____________________________________________________________
 %% ROM-n __________________________________________________________________
 AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',1,'index',1:2,'filename','result_video')
@@ -428,5 +426,9 @@ AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',1,'
 AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMd.Solution.u,'factor',100,'index',1:2,'filename','result_video')
 
 
-
+%% OPTIMIZATION ___________________________________________________________
+d = [1;0];
+%pd_fhydro_PROM = @(q,qd,xi)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM);
+[xiStar,LrEvo] = optimization_pipeline_1(V,d,tensors_PROM, tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_sens.Solution.q,TI_sens.Solution.qd)
+%xi_star = optimization_pipeline_1(Vd,d,tensors_ROMd, tensors_hydro_ROMd,TI_NL_ROMd.Solution.q,TI_NL_ROMd.Solution.qd)
 
