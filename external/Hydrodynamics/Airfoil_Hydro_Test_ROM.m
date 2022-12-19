@@ -259,8 +259,8 @@ tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, sk
 % ROM-d
 tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
 % PROM
-fourthOrder = 0;
-tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho);
+FOURTHORDER = 1;
+tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
 
@@ -371,7 +371,7 @@ sd0 = zeros(size(V,2),1);
 sdd0 = zeros(size(V,2),1);
 
 % evaluate partial derivatives along solution
-pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM);
+pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM,FOURTHORDER);
 pd_fint_PROM = @(q)DpROM_derivatives(q,tensors_PROM); 
 
 % instantiate object for time integration

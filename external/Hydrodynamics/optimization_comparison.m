@@ -2,7 +2,7 @@
 % Script to test and compare the optimization pipeline presented in the
 % paper.
 % 
-% Last modified: 18/12/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 19/12/2022, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -59,12 +59,19 @@ thinAirfoil(2:2:end) = vdA;
 U = thinAirfoil;   % defect basis
 
 %% OPTIMIZATION PIPELINE P1
-d = [1;0];
+d = [-1;0];
 h = 0.05;
 tmax = 0.5;
 
 tic
 [xiStar1,LrEvo1] = optimization_pipeline_1(myElementConstructor,nset,nodes,elements,U,d,h,tmax,...
+    FORMULATION,VOLUME,USEJULIA);
+toc
+
+%% OPTIMIZATION PIPELINE P2
+
+tic
+[xiStar2,LrEvo2] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,...
     FORMULATION,VOLUME,USEJULIA);
 toc
 
@@ -77,7 +84,7 @@ toc
 %% VISUALIZATION
 
 % defected mesh
-xi = xiStar3;           % parameter vector
+xi = xiStar1;           % parameter vector
 m = length(xi);     % number of parameters
 
 % update defected mesh nodes

@@ -80,7 +80,7 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
     Lr = reduced_cost_function(N,tensors_hydro_PROM,eta,etad,dr);
     LrEvo = Lr;
 
-    for k = 1:2
+    for k = 1:10
         fprintf('Optimization loop iteration: k= %d\n',k-1)
         % step 7
         eta_k = eta_k + S*xi_k; 

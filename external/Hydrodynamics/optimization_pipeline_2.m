@@ -1,10 +1,10 @@
-% optimization_pipeline_1
+% optimization_pipeline_2
 %
 % Synthax:
-% [xiStar,LrEvo] = optimization_pipeline_1(MeshNominal,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA)
+% [xiStar,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA)
 %
-% Description: Implementation of the optimization pipeline 1 presented in
-% the paper, based on Newton's method. 
+% Description: Implementation of the optimization pipeline 2 presented in
+% the paper, based on Newton's method.
 %
 % INPUTS: 
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
@@ -28,7 +28,7 @@
 %
 %
 % Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
-function [xiStar,LrEvo] = optimization_pipeline_1(myElementConstructor,nset,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA)
+function [xiStar,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA)
     
     % STEP 1: set xi_0 = 0 ________________________________________________
     fprintf('____________________\n')
@@ -37,38 +37,40 @@ function [xiStar,LrEvo] = optimization_pipeline_1(myElementConstructor,nset,node
 
     xi_k = 0;
     
-
-    % STEP 2-12: optimization loop ________________________________________
+    % STEP 2: mesh the structure and build a PROM _________________________
     fprintf('____________________\n')
-    fprintf('STEP 2-11\n')
+    fprintf('STEP 2\n')    
+    
+    [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = ...
+        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA);
+    
+    % STEP 3: solve EoMs to get nominal solution eta_0 and dot{eta}_0 _____
+    fprintf('____________________\n')
+    fprintf('STEP 2\n')
+
+    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
+    eta = TI_NL_PROM.Solution.q;
+    etad = TI_NL_PROM.Solution.qd;
+      
+    eta_k = eta;
+    etad_k = etad;
+    S_k = zeros(size(eta,1),size(xi_k,1));
+
+
+    % STEP 4-12: optimization loop ________________________________________
+    fprintf('____________________\n')
+    fprintf('STEP 3-12\n')
     %waitbar(0.5,'Step 2 ...');
 
+    N = size(eta,2);
+    dr = reduced_constant_vector(d,V);
 
-    for k = 1:2
+    for k = 1:10
         fprintf('Optimization loop iteration: k = %d\n',k-1)
-        % STEP 4: mesh the structure and build a PROM _____________________
-        % update defected mesh nodes
-        df = U*xi_k;                       % displacement fields introduced by defects
-        ddf = [df(1:2:end) df(2:2:end)]; 
-        nodes_defected = nodes + ddf;    % nominal + d ---> defected 
-        DefectedMesh = Mesh(nodes_defected);
-        DefectedMesh.create_elements_table(elements,myElementConstructor);
-        DefectedMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+        % STEP 6: approximate eta_k _____________________
+        eta_k = eta_k + S_k*xi_k; 
 
-        [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = ...
-        build_PROM(DefectedMesh,nodes_defected,elements,U,FORMULATION,VOLUME,USEJULIA);
-        
-        dr = reduced_constant_vector(d,V);
-
-        % STEP 5: solve EoMs to get nominal solution eta and dot{eta} _____
-        TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
-
-        eta_k = TI_NL_PROM.Solution.q;
-        etad_k = TI_NL_PROM.Solution.qd;
-
-        N = size(eta_k,2);
-        
-        % STEP 6: solve sensitivity equation to get S _____________________
+        % STEP 7: solve sensitivity equation to get S _____________________
         TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
         tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
         TI_NL_PROM.Solution.qdd,h,tmax);
@@ -76,15 +78,15 @@ function [xiStar,LrEvo] = optimization_pipeline_1(myElementConstructor,nset,node
         S_k = TI_sens.Solution.q;
         Sd_k = TI_sens.Solution.qd;
 
-        % STEP 7: evaluate gradient _______________________________________
+        % STEP 8: evaluate gradient _______________________________________
         nablaLr = gradient_cost_function(dr,xi_k,eta_k,etad_k,S_k,Sd_k,tensors_hydro_PROM);
 
-        % STEP 8-9: update xi_k __________________________________________
+        % STEP 9-10: update xi_k __________________________________________
         if k==1
             LrEvo = reduced_cost_function(N,tensors_hydro_PROM,eta_k,etad_k,dr);
         else
             LrEvo = [LrEvo, reduced_cost_function(N,tensors_hydro_PROM,eta_k,etad_k,dr)];
-        end
+      
         xi_k = xi_k - 0.8*nablaLr;
     end
     xiStar = xi_k;
