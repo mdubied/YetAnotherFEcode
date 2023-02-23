@@ -19,7 +19,7 @@ USEJULIA = 0;
 %% PREPARE (NOMINAL) MODEL AND SHAPE VARIATION                                                    
 
 % DATA ____________________________________________________________________
-E       = 160000;       %263824;       % Young's modulus [Pa]
+E       = 0.6*263824;       %263824;       % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
 nu      = 0.499;        % Poisson's ratio 
 thickness = .1;         % [m] beam's out-of-plane thickness
@@ -52,7 +52,7 @@ MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 
 % shape variation
 % (1) thinning airfoil 
-nodes_translated = [nodes(:,1), nodes(:,2)*0.8];
+nodes_translated = [nodes(:,1), nodes(:,2)*0];
 vdA = nodes_translated(:,2) - nodes(:,2);
 thinAirfoil = zeros(numel(nodes),1);
 thinAirfoil(2:2:end) = vdA;
@@ -62,24 +62,24 @@ U = thinAirfoil;   % defect basis
 d = [-1;0];
 h = 0.05;
 tmax = 0.5;
-
-tic
-[xiStar1,LrEvo1] = optimization_pipeline_1(myElementConstructor,nset,nodes,elements,U,d,h,tmax,...
-    FORMULATION,VOLUME,USEJULIA);
-toc
+FOURTHORDER = 0;
+tStart = tic;
+[xiStar1,xiEvo1,LrEvo1] = optimization_pipeline_1(myElementConstructor,nset,nodes,elements,U,d,h,tmax,...
+    FORMULATION,VOLUME,USEJULIA,FOURTHORDER);
+tP1 = toc(tStart)
 
 %% OPTIMIZATION PIPELINE P2
 
-tic
-[xiStar2,LrEvo2] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,...
-    FORMULATION,VOLUME,USEJULIA);
-toc
+tStart = tic;
+[xiStar2,xiEvo2,LrEvo2] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,...
+    FORMULATION,VOLUME,USEJULIA,FOURTHORDER);
+tP2 = toc(tStart)
 
 %% OPTIMIZATION PIPELINE P3
-tic
-[xiStar3,LrEvo3] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,...
-    FORMULATION,VOLUME,USEJULIA);
-toc
+tStart = tic;
+[xiStar3,xiEvo3,LrEvo3] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,...
+    FORMULATION,VOLUME,USEJULIA,FOURTHORDER);
+tP3 = toc(tStart)
 
 %% VISUALIZATION
 

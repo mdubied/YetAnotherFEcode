@@ -27,7 +27,7 @@
 %
 % Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
 
-function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA)
+function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER)
     
     % ASSEMBLY ____________________________________________________________
     NominalAssembly = Assembly(MeshNominal);
@@ -86,6 +86,5 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNomi
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
     vwater = [1;0.1];
     rho = 1;
-    fourthOrder = 0;
-    tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho);
+tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
 end

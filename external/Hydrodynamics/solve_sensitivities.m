@@ -28,7 +28,7 @@
 %
 % Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
 
-function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,etaSol,etadSol,etaddSol,h,tmax)
+function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,etaSol,etadSol,etaddSol,h,tmax,FOURTHORDER)
     
     % SIMULATION PARAMETERS AND ICs _______________________________________
     s0 = zeros(size(V,2),1);
@@ -36,7 +36,7 @@ function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tensors
     sdd0 = zeros(size(V,2),1);
     
     % EVALUATE PARTIAL DERIVATIVE ALONG NOMINAL SOLUTION __________________
-    pd_fext_PROM = @(eta,etad)DpROM_hydro_derivatives(eta,etad,xi_k,tensors_hydro_PROM);
+    pd_fext_PROM = @(eta,etad)DpROM_hydro_derivatives(eta,etad,xi_k,tensors_hydro_PROM,FOURTHORDER);
     pd_fint_PROM = @(eta)DpROM_derivatives(eta,tensors_PROM); 
 
     

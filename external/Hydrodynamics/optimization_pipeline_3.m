@@ -28,7 +28,7 @@
 %
 %
 % Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
-function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA)
+function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,FORMULATION,VOLUME,USEJULIA,FOURTHORDER)
     
     % STEP 1: set xi_0 = 0 ________________________________________________
     fprintf('____________________\n')
@@ -36,6 +36,7 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
     f = waitbar(0,'Step 1 ...','Name','Optimization pipeline P3');
 
     xi_k = 0;
+    xiEvo = xi_k;
 
     % STEP 2: mesh the structure and build a PROM _________________________
     fprintf('____________________\n')
@@ -43,7 +44,7 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
     waitbar(.05,f,'Step 2 ...');
 
     [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = ...
-        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA);
+        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER);
         
     % STEP 3: solve EoMs to get nominal solution eta and dot{eta} _________
     fprintf('____________________\n')
@@ -59,7 +60,7 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
 
     TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
         tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
-        TI_NL_PROM.Solution.qdd,h,tmax);
+        TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
     
     % STEP 5-13: OPTIMIZATION LOOP ________________________________________
     fprintf('____________________\n')
@@ -85,10 +86,11 @@ function [xiStar,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d
         % step 7
         eta_k = eta_k + S*xi_k; 
         % step 8
-        nablaLr = gradient_cost_function(dr,xi_k,eta_k,etad_k,S,Sd,tensors_hydro_PROM);
+        nablaLr = gradient_cost_function(dr,xi_k,eta_k,etad_k,S,Sd,tensors_hydro_PROM,FOURTHORDER);
         LrEvo = [LrEvo, reduced_cost_function(N,tensors_hydro_PROM,eta_k,etad_k,dr)];
         % step 9 and 10
         xi_k = xi_k - 0.8*nablaLr;
+        xiEvo = [xiEvo,xi_k];
     end
     xiStar = xi_k;
 

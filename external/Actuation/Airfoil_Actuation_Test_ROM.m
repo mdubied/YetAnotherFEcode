@@ -1,19 +1,16 @@
 % ------------------------------------------------------------------------ 
-% Script to test the implementation of hydrodynamic forces on 2D structures
+% Script to test the implementation of actuation forces on 2D structures
 % with TRI3 elements, using a PROM formulation
 % 
-% Last modified: 22/11/2022, Mathieu Dubied, ETH Zurich
+% Last modified: 23/02/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
 close all; 
 clc
 
-%whichModel = 'CUSTOM'; % or "ABAQUS"
 whichModel = 'ABAQUS';
-%elementType = 'QUAD4';
 elementType = 'TRI3';
-% elementType = 'QUAD8'; % only QUAD4 is implemented for now
 
 FORMULATION = 'N1'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
@@ -46,27 +43,17 @@ end
 xi1 = 0.2;
 
 % MESH_____________________________________________________________________
-Lx = 3;
-Ly = .2;
-nx = 5;
-ny = 6;
-switch upper( whichModel )
-    case 'CUSTOM'
-        [nodes, elements, nset] = mesh_2Drectangle(Lx,Ly,nx,ny,elementType);
-    case 'ABAQUS'
-        % Alternatively, one can write an input file in ABAQUS and read it as:
-        filename = 'naca0012TRI_medium_mesh';%'naca0012TRI';
-        [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
-end
+filename = 'naca0012TRI_medium_mesh';%'naca0012TRI';
+[nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
 
 % boundary conditions of nominal mesh: front and back nodes fixed
-frontNode = find_node_2D(0,0,nodes)
+frontNode = find_node_2D(0,0,nodes);
 Lx = 0.15;
 backNode = find_node_2D(Lx,0,nodes);
-frontNode2 = find_node_2D(0.005,0,nodes)
+frontNode2 = find_node_2D(0.005,0,nodes);
 %nset = {frontNode,backNode};
 nset = {frontNode, frontNode2};
 MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
@@ -243,11 +230,6 @@ PROM_Assembly.DATA.M = PROM_Assembly.mass_matrix();  % reduced mass matrix (PROM
 PROM_Assembly.DATA.C = V.'*Dn*V;    % reduced damping matrix (PROM), using C as needed by the residual function of Newmark integration
 PROM_Assembly.DATA.K = V.'*Kn*V;    % reduced stiffness matrix (PROM)
 
-% % PROM-d __________________________________________________________________
-% PROMd_Assembly = ReducedAssembly(DefectedMesh, V);
-% PROMd_Assembly.DATA.M = PROMd_Assembly.mass_matrix();  % reduced mass matrix (PROM)
-% PROMd_Assembly.DATA.C = V.'*Dd*V;    % reduced damping matrix (PROM), using C as needed by the residual function of Newmark integration
-% PROMd_Assembly.DATA.K = V.'*Kd*V;    % reduced stiffness matrix (PROM)
 
 %% ROM TENSORS - HYDRODYNAMIC FORCES
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);

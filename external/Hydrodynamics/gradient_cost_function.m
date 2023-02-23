@@ -19,12 +19,12 @@
 % Additional notes: -
 %
 % Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
-function nablaLr = gradient_cost_function(dr,xi,eta,etad,s,sd,tensors_hydro_PROM)
+function nablaLr = gradient_cost_function(dr,xi,eta,etad,s,sd,tensors_hydro_PROM,FOURTHORDER)
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
     
     for i=1:N 
-        derivative_hydro = DpROM_hydro_derivatives(eta(:,i),etad(:,i),xi,tensors_hydro_PROM);
+        derivative_hydro = DpROM_hydro_derivatives(eta(:,i),etad(:,i),xi,tensors_hydro_PROM,FOURTHORDER);
         dfhydrodeta = derivative_hydro.dfdq; 
         dfhydrodetad = derivative_hydro.dfdqd;
         dfhydrodxi = derivative_hydro.dfdp;
