@@ -25,7 +25,7 @@ nnel  = size(elements,2); % number of nodes per element
 switch nnel
     case 4 % QUAD4
         faces = [1 2; 2 3; 3 4; 4 1];
-    case 3 % TET3
+    case 3 % TRI3
         faces = [1 2; 2 3; 3 1];
 end
 

@@ -1,3 +1,4 @@
+% -------------------------------------------------------------------------
 % getSkin3D(elements): computes the external faces of the mesh. 
 % INPUTS:
 %   elements: table of elements (Nelements X Ndofs)
@@ -5,14 +6,19 @@
 %   skin: table of nodes labels of external faces. Each column contains the
 %         nodes of one face.
 %   allfaces: as skin, but with all the faces.
+%   skinElements: logical vector of size (nElements X 1), 1 meaning the element
+%                 has a face which is part of the skin.  
+%   skinElementFaces: describes which face(s) of the element is part of the
+%                     skin. The faces of a given element are numerated the
+%                     same way they are ordered. A single element can have
+%                     up to 2 skin faces.
 %
-% Note: quadratic elements are plotted as linear ones, discarding mid-edge
-% nodes to improve plot performances
-%
-% Supported elements: TET4, TET10, HEX8, HEX20
-% Last modified: 12/09/2019, Jacopo Marconi, PoliMi
-
-function [skin,allfaces] = getSkin3D(elements)
+% Supported elements: TET4, maybe more as adapted from the master branch
+% version
+% Note: a large portion of the code is taken from getSkin3D
+% Last modified: 24/08/2022, Mathieu Dubied, ETH Zurich
+% -------------------------------------------------------------------------
+function [skin,allfaces,skinElements,skinElementFaces] = getSkin3D(elements)
 
 nnel  = size(elements,2); % number of nodes per element
 
@@ -54,4 +60,67 @@ icc = icc == 1;                 % take only terms occurring ONCE
 skin = FACES(:,icc);
 allfaces = FACES;
 
+
+% find elements with faces being part of the skin
+skinElements = zeros(N,1);
+skinElementFaces = zeros(N,3);
+indexSkinElements = 1;
+skinMembers = ismember(allfaces.',skin','rows');
+
+for ii = 1:size(skinMembers,1)
+    if skinMembers(ii) == 1
+        skinElements(indexSkinElements) = 1;
+        fN = faceNumber(elements(indexSkinElements,:), allfaces(:,ii));
+        if skinElementFaces(indexSkinElements,1) == 0
+            skinElementFaces(indexSkinElements,1) = fN;
+        else
+            if skinElementFaces(indexSkinElements,2) == 0
+                skinElementFaces(indexSkinElements,2) = fN;
+            else
+                skinElementFaces(indexSkinElements,3) = fN;
+            end
+            
+        end
+    end 
+
+    if mod(ii,size(faces,1)) == 0
+        indexSkinElements = indexSkinElements + 1;
+    end
+end 
+
+% nested function faceNumber
+% INPUTS: -element, vector containing the nodes' numbers of `element'
+%         -nodes, vector containing the nodes in which we are interested
+% OUTPUT: the face's number of `element' that corresponds to `nodes'
+    function fN = faceNumber(element,nodes)
+        fN = 0;
+        for i=1:size(element,2)
+            if i == size(element,2)
+                next=1;
+            else
+                next = i+1;
+            end
+            if i+1 == size(element,2)
+                nextnext = 1;
+            elseif i == size(element,2)
+                nextnext = 2;
+            else
+                nextnext = i+2;
+            end
+     
+
+            if isequal([element(i);element(next);element(nextnext)],nodes) || ...
+               isequal([element(i);element(nextnext);element(next)],nodes) || ...
+               isequal([element(next);element(i);element(nextnext)],nodes) || ...
+               isequal([element(next);element(nextnext);element(i)],nodes) || ...
+               isequal([element(nextnext);element(i);element(next)],nodes) || ...
+               isequal([element(nextnext);element(next);element(i)],nodes)
+                fN = i;
+            end           
+        end
+    end
+
+
+
+end 
 

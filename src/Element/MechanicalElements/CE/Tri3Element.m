@@ -888,11 +888,13 @@ classdef Tri3Element < ContinuumElement
                 r12 = -1;
                 r21 = 1;
                 r22 = 0;
+                disp("need to rotate +")
             else
                 r11 = 0;
                 r12 = 1;
                 r21 = -1;
                 r22 = 0;
+                disp("need to rotate -")
             end
         end 
 
