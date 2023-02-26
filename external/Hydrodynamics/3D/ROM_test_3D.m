@@ -39,8 +39,7 @@ filename = 'testPartTET4D4';%'naca0012TRI';
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
 
-%%
-[skin,allfaces,skinElements,skinElementFaces] = getSkin3D(elements);
+
 %%
 % boundary conditions of nominal mesh: front and back nodes fixed
 frontNode = find_node_2D(0,0,nodes);
@@ -83,7 +82,7 @@ title(sprintf('Defect, \\xi=[%.1f], S=%.1f\\times',...
     xi1, S))
 axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 
-% ASSEMBLY ________________________________________________________________
+%% ASSEMBLY ________________________________________________________________
 
 % nominal
 NominalAssembly = Assembly(MeshNominal);
@@ -95,6 +94,11 @@ u0 = zeros( MeshNominal.nDOFs, 1);
     NominalAssembly.DATA.K = Kn;
     NominalAssembly.DATA.M = Mn;
 
+ %%
+[skin,allfaces,skinElements,skinElementFaces] = getSkin3D(elements);
+F = NominalAssembly.skin_force('force_length_prop_skin_normal', 'weights', skinElements, skinElementFaces);
+PlotMeshandForce(nodes,elements,0,F);
+%%
 % defected
 DefectedAssembly = Assembly(DefectedMesh);
 Md = DefectedAssembly.mass_matrix();

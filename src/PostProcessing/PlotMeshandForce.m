@@ -1,24 +1,23 @@
 function p = PlotMeshandForce(Nodes,Elements,show,F)
 %--------------------------------------------------------------------------
 % Purpose:
-%         To plot 2D and 3D Finite Element Method Mesh,currently
-%         this function only works for meshes with a constant number of
-%         nodes per element
+%         To plot 2D and 3D Finite Element Method Mesh with additional
+%         force F. Currently this function only works for meshes with a 
+%         constant number of nodes per element
 % Synopsis :
-%           PlotMesh(coordinates,nodes)
+%           PlotMeshandForce(Nodes,Elements,show,F)
 % Variable Description:
-%           coordinates - The nodal coordinates of the mesh
-%           -----> coordinates = [X Y Z]
-%           nodes - The nodal connectivity of the elements
-%           -----> nodes = [node1 node2......]
+%           Nodes - The nodal connectivity of the elements
+%           Elements - Set of element with their node
+%          
 %           show - to dispaly nodal and element numbers
 %                  0 (default) - do not display
 %                  1           - display
 %           F - the force(s) to display
 %
 % Note: a large part of this code is taken from PlotMesh
-%       ONLY TESTED ON 2D MODELS
-% Last modified: 19/08/2022, Mathieu Dubied, ETH Zurich
+%       
+% Last modified: 26/02/2023, Mathieu Dubied, ETH Zurich
 %--------------------------------------------------------------------------
 
 if nargin == 2
@@ -52,6 +51,7 @@ if dimension == 3   % For 3D plots
     p = patch(X,Y,Z,'w','FaceAlpha',1.0,'EdgeAlpha',1,...
         'EdgeColor','k','LineStyle','-','DisplayName','Mesh');
     view(3)
+    hold on
     
 elseif dimension == 2           % For 2D plots
     elementdim = rank(diff(Nodes(Elements(1,:),1:2))); % dimension of element
@@ -66,6 +66,13 @@ elseif dimension == 2           % For 2D plots
     
 end
 
+
+set(gca,'XTick',[]) ; set(gca,'YTick',[]); set(gca,'ZTick',[]);
+rotate3d on;
+axis equal;
+axis off;
+
+
 % plot force F on nodes
 if size(Nodes,2)==2
     for i = 1:nnode
@@ -77,9 +84,9 @@ if size(Nodes,2)==2
 elseif size(Nodes,2)==3
     for i = 1:nnode
         drawArrow = @(x,y,z) quiver3( x(1),y(1),z(1),x(2)-x(1),y(2)-y(1),z(2)-z(1),0,'MaxHeadSize',0.3,'Color','r','LineWidth',1) ;
-            x = [Nodes(i,1) Nodes(i,1)+F(i*3-2)/2];
-            y = [Nodes(i,2) Nodes(i,2)+F(i*3-1)/2];
-            z = [Nodes(i,3) Nodes(i,3)+F(i*3)/2];
+            x = [Nodes(i,1) Nodes(i,1)+F(i*3-2)/4];
+            y = [Nodes(i,2) Nodes(i,2)+F(i*3-1)/4];
+            z = [Nodes(i,3) Nodes(i,3)+F(i*3)/4];
             drawArrow(x,y,z);
     end
 end
@@ -102,7 +109,7 @@ if show ~= 0
         p.FaceAlpha = 0.2;
     end
 end
-% set(gca,'XTick',[]) ; set(gca,'YTick',[]); set(gca,'ZTick',[]);
+set(gca,'XTick',[]) ; set(gca,'YTick',[]); set(gca,'ZTick',[]);
 rotate3d on;
 axis equal;
 axis off;

@@ -85,6 +85,104 @@ classdef Tet4Element < ContinuumElement
             G(7:9,3:3:12) = dH;
         end
         
+        % Test functions
+        function F = force_length_prop_skin_normal(self,specificFace)
+            % _____________________________________________________________
+            % Applies a force proportional to the the area of a skin
+            % element on the 3 corresponding nodes, in the direction normal
+            % to the face considered. Robust to elements having up to 2 
+            % skin faces.
+            % _____________________________________________________________
+            F = sparse(self.nelDOFs,1);
+            [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(1));
+            n = normal_vector(self, self.nodes(startNode,:), self.nodes(midNode,:),self.nodes(endNode,:), self.nodes(nextNode,:));
+
+            area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+            Force = area*n;
+            F = apply_force(self, F, Force, startNode, midNode, endNode);
+        
+            if specificFace(2) ~= 0
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
+                n = normal_vector(self, self.nodes(startNode,:), self.nodes(midNode,:),self.nodes(endNode,:), self.nodes(nextNode,:));
+    
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+                Force = area*n;
+                F = apply_force(self, F, Force, startNode, midNode, endNode);
+            end
+        end 
+
+        function F = apply_force(~, Fbase, FtoApply, startNode, midNode, endNode)
+            % _____________________________________________________________
+            % Returns the addition of the force to apply FtoApply and the
+            % base force Fbase.
+            % _____________________________________________________________
+            F = Fbase;
+            F(startNode*3-2) = Fbase(startNode*3-2) + FtoApply(1)/3;    % x-coordinate
+            F(startNode*3-1) = Fbase(startNode*3-1) + FtoApply(2)/3;    % y-coordinate
+            F(startNode*3)   = Fbase(startNode*3) + FtoApply(3)/3;      % z-coordinate
+            F(midNode*3-2)   = Fbase(midNode*3-2) + FtoApply(1)/3;      % x-coordinate
+            F(midNode*3-1)   = Fbase(midNode*3-1) + FtoApply(2)/3;      % y-coordinate
+            F(midNode*3)     = Fbase(midNode*3) + FtoApply(3)/3;        % z-coordinate
+            F(endNode*3-2)   = Fbase(endNode*3-2) + FtoApply(1)/3;      % x-coordinate
+            F(endNode*3-1)   = Fbase(endNode*3-1) + FtoApply(2)/3;      % y-coordinate
+            F(endNode*3)     = Fbase(endNode*3) + FtoApply(3)/3;        % z-coordinate
+        end 
+        
+        % Useful helper functions
+        function n = normal_vector(~, startNodePos, midNodePos, endNodePos, nextNodePos)
+            % _____________________________________________________________
+            % Returns a vector of unit length normal to the surface
+            % defined by `startNodePos', 'midNodePos', and 'enNodePos',
+            % pointing outward the considered element. 'nextNodePos' is the
+            % position of last node of the element.
+            % _____________________________________________________________
+            v1 = midNodePos - startNodePos;
+            v2 = endNodePos - startNodePos;
+            v3 = nextNodePos - startNodePos;
+            n = cross(v1,v2);
+            n = n/norm(n); % normalizing n
+            dotProd = dot(n,v3);
+            if dotProd >= 0
+                n = -n; % inverting the direction of n if it points toward the element
+                disp("inversion")
+            else
+                disp("no inversion")
+            end
+        end
+
+        function [startNode, midNode, endNode, nextNode] = get_node_from_face(~, face)
+            % _____________________________________________________________
+            % Returns the nodes' indexes from a give face. 
+            % `nextNode' is the index off the 4th element's node that is 
+            % not part of the face.
+            % _____________________________________________________________
+            switch face
+                case 1
+                    startNode = 1;
+                    midNode = 2;
+                    endNode = 3;
+                    nextNode = 4;
+                case 2
+                    startNode = 2;
+                    midNode = 3;
+                    endNode = 4;
+                    nextNode = 1;
+                case 3
+                    startNode = 3;
+                    midNode = 4;
+                    endNode = 1;
+                    nextNode = 2;
+                case 4
+                    startNode = 4;
+                    midNode = 1;
+                    endNode = 2;
+                    nextNode = 3;
+                otherwise
+                    disp("Error in `get_node_from_face', Tet4Element.m")
+            end
+
+            
+        end
     end
     
     methods (Static)

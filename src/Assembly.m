@@ -88,7 +88,7 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;
-                F{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                F{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:));
             end
             
             % Assembling
