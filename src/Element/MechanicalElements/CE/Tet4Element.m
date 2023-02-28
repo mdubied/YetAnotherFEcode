@@ -150,6 +150,28 @@ classdef Tet4Element < ContinuumElement
             end
         end
 
+
+        function inv = normal_vector_inversion(~, startNodePos, midNodePos, endNodePos, nextNodePos)
+            % _____________________________________________________________
+            % Returns returns -1 if the normal vector computed with the
+            % basic formula cross(v1,v2)/norm(cross(v1,v2)) (see
+            % `normal_vector') needs to be inverted. Returns 1 if this is
+            % not the case.
+            % _____________________________________________________________
+            v1 = midNodePos - startNodePos;
+            v2 = endNodePos - startNodePos;
+            v3 = nextNodePos - startNodePos;
+            n = cross(v1,v2);
+            n = n/norm(n); % normalizing n
+            dotProd = dot(n,v3);
+            if dotProd >= 0
+                inv = -1; % inversion is needed if n points toward the element
+            else
+                inv = 1;
+            end
+        end
+
+
         function [startNode, midNode, endNode, nextNode] = get_node_from_face(~, face)
             % _____________________________________________________________
             % Returns the nodes' indexes from a give face. 

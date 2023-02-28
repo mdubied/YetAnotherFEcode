@@ -33,7 +33,7 @@ myElementConstructor = @()Tet4Element(myMaterial);
 xi1 = 0.2;
 
 % MESH_____________________________________________________________________
-filename = 'testPartTET4D4';%'naca0012TRI';
+filename = 'testPartFineTET4D4';
 [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
 
 MeshNominal = Mesh(nodes);
