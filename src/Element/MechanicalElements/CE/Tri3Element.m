@@ -49,8 +49,8 @@ classdef Tri3Element < ContinuumElement
             J = dHn*xy;
             detJ = det(J);
             dH = J\dHn;	% derivatives in physical coordinates,
-                      	% 2x8 matrix, [dNi_dx; dNi_dy]
-                       	% with i = 1...8
+                      	% 2x6 matrix, [dNi_dx; dNi_dy]
+                       	% with i = 1...6
             G = self.initialization.G;
             G(1:2,1:2:end) = dH;
             G(3:4,2:2:end) = dH;
