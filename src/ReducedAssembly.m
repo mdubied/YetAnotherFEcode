@@ -76,6 +76,74 @@ classdef ReducedAssembly < Assembly
             end
         end
 
+
+        function [K] = matrix_actuation(self,elementMethodName,varargin)
+            % This function assembles a generic finite element matrix from
+            % its element level counterpart. It uses a for loop instead of
+            % a parfor loop to allow the elementSet to be a subpart of the
+            % whole elements set.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            K = zeros(m,m);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ke = thisElement.(elementMethodName)(inputs{:});
+                K = K + elementWeights(j) * (Ve.' * Ke * Ve);
+            end
+        end
+
+        function [K] = matrix_actuation_PROM(self,elementMethodName,U,varargin)
+            % This function assembles a generic finite element matrix from
+            % its element level counterpart. It uses a for loop instead of
+            % a parfor loop to allow the elementSet to be a subpart of the
+            % whole elements set.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            K = zeros(m,m);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ue = U(index,:);
+                Ke = thisElement.(elementMethodName)(inputs{:});
+                K = K + elementWeights(j) * (Ve.' * Ke * Ue);
+            end
+        end
+
         function [K] = matrix_skin(self,elementMethodName,varargin)
             % This function assembles a finite element matrix from
             % its element level counterpart. The method allows to pass
@@ -168,7 +236,41 @@ classdef ReducedAssembly < Assembly
             elementSet = find(elementWeights);
             
             % Computing element level contributions
-            parfor j = elementSet
+            parfor j = elementSet 
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                fe = thisElement.(elementMethodName)(inputs{:});
+                f = f + elementWeights(j) * (Ve.' * fe);
+            end
+        end
+
+        function [f] = vector_actuation(self,elementMethodName,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart. It uses a for loop instead of
+            % a parfor loop to allow the elementSet to be a subpart of the
+            % whole elements set.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+
+            m = size(self.V,2);
+            f = zeros(m,1);
+
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            for j = elementSet 
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);

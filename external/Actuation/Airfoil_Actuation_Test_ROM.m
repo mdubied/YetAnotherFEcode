@@ -2,7 +2,7 @@
 % Script to test the implementation of actuation forces on 2D structures
 % with TRI3 elements, using a PROM formulation
 % 
-% Last modified: 23/02/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 06/03/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -233,14 +233,15 @@ PROM_Assembly.DATA.K = V.'*Kn*V;    % reduced stiffness matrix (PROM)
 
 %% ROM TENSORS - ACTUATION FORCES
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
-actuationDirection = [1;0];
+actuationDirection = [1;0;0];%[1;0]-->[1;0;0];
+
 
 % ROM-n
-tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, Vn, skinElements, actuationDirection);
+tensors_actuation_ROMn = reduced_tensors_actuation_ROM(NominalAssembly, Vn, skinElements, actuationDirection);
 % ROM-d
-%tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
+tensors_actuation_ROMd = reduced_tensors_actuation_ROM(DefectedAssembly, Vd, skinElements, actuationDirection);
 % PROM
-%tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
+tensors_actuation_PROM = reduced_tensors_actuation_PROM(NominalAssembly, Vn, U, skinElements, actuationDirection);
 
 %% TIME INTEGRATION
 
