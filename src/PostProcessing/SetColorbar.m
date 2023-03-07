@@ -6,10 +6,10 @@ cbar = colorbar;
 % cpos(2) = cpos(2)+.1 ;
 % cpos(4) = cpos(4)-.2 ;
 %set(cbar,'Position',cpos) ;
-brighten(0.5); 
+%brighten(0.1); 
      
 % Title of the colorbar
-set(get(cbar,'title'),'string','VAL');
+set(get(cbar,'title'),'string','disp [cm]');
 %locate = get(cbar,'title');
 %tpos = get(locate,'position');
 %tpos(3) = tpos(3)+5. ;
@@ -24,7 +24,8 @@ numpts = 24 ;    % Number of points to be displayed on colorbar
 kssv = linspace(clim(1),clim(2),numpts);
 set(cbar,'YtickMode','manual','YTick',kssv); % Set the tickmode to manual
 for i = 1:numpts
-    imep = num2str(kssv(i),'%+3.2E');
+    %imep = num2str(kssv(i),'%+3.2E');
+    imep = num2str(kssv(i)*100);
     vasu(i) = {imep} ;
 end
 set(cbar,'YTickLabel',vasu(1:numpts),'fontsize',9);

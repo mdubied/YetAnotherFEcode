@@ -50,13 +50,30 @@ MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
 
 % boundary conditions of nominal mesh: front and back nodes fixed
-frontNode = find_node_2D(0,0,nodes);
+frontNode = find_node_2D(0,0,nodes)
 Lx = 0.15;
 backNode = find_node_2D(Lx,0,nodes);
 frontNode2 = find_node_2D(0.005,0,nodes);
+frontNode3 = find_node_2D(0.005,0.005,nodes);
+frontNode4 = find_node_2D(0.005,-0.005,nodes);
 %nset = {frontNode,backNode};
-nset = {frontNode, frontNode2};
-MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+nset = {frontNode, frontNode2, frontNode3, frontNode4};
+nset{2}
+
+nel = size(elements,1);
+nset = {}
+for el=1:nel   
+    for n=1:size(elements,2)
+        if  nodes(elements(el,n),1)<Lx*0.2 && ~any(cat(2, nset{:}) == elements(el,n))
+            nset{end+1} = elements(el,n)
+        end
+    end   
+end
+
+for l=1:length(nset)
+    MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0)
+end
+%MeshNominal.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
 
 % defect shapes
 % (1) thinning airfoil 
@@ -233,15 +250,29 @@ PROM_Assembly.DATA.K = V.'*Kn*V;    % reduced stiffness matrix (PROM)
 
 %% ROM TENSORS - ACTUATION FORCES
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
-actuationDirection = [1;0;0];%[1;0]-->[1;0;0];
+
+nel = size(elements,1);
+actuationElements = zeros(nel,1);
+for el=1:nel
+    if skinElements(el)==1
+        for n=1:size(elements,2)
+            if nodes(elements(el,n),2)>0.001 && nodes(elements(el,n),1)<Lx*0.6 && nodes(elements(el,n),1)>Lx*0.2
+                actuationElements(el) = 1;
+                disp(elements(el,n))
+            end
+        end
+    end
+end
+
+actuationDirection = [1;0;0];%[1;0]-->[1;0;0] (Voigt notation);
 
 
 % ROM-n
-tensors_actuation_ROMn = reduced_tensors_actuation_ROM(NominalAssembly, Vn, skinElements, actuationDirection);
+tensors_actuation_ROMn = reduced_tensors_actuation_ROM(NominalAssembly, Vn, actuationElements, actuationDirection);
 % ROM-d
-tensors_actuation_ROMd = reduced_tensors_actuation_ROM(DefectedAssembly, Vd, skinElements, actuationDirection);
+tensors_actuation_ROMd = reduced_tensors_actuation_ROM(DefectedAssembly, Vd, actuationElements, actuationDirection);
 % PROM
-tensors_actuation_PROM = reduced_tensors_actuation_PROM(NominalAssembly, Vn, U, skinElements, actuationDirection);
+tensors_actuation_PROM = reduced_tensors_actuation_PROM(NominalAssembly, Vn, U, actuationElements, actuationDirection);
 
 %% TIME INTEGRATION
 
@@ -255,23 +286,31 @@ q0 = zeros(size(Vn,2),1);
 qd0 = zeros(size(Vn,2),1);
 qdd0 = zeros(size(Vn,2),1);
 
-% hydrodynamic forces
-F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
-    double(tensors_hydro_ROMn.Tru2*q) + double(tensors_hydro_ROMn.Trudot2*qd) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Truu3,q,3), q,2)) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Truudot3,qd,3), q,2)) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
+% actuation forces
+k=1;
+B1 = tensors_actuation_ROMn.B1;
+B2 = tensors_actuation_ROMn.B2;
+F_ext = @(t,q) k/2*(1-(1+0.003*sin(t*2*pi/10)))*(B1+B2*q); % q is the reduced order DOFs
+
 
 % instantiate object for nonlinear time integration
 TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005);
 
 % modal nonlinear Residual evaluation function handle
-Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actuation(q,qd,qdd,t,ROMn_Assembly,F_ext);
 
 % nonlinear Time Integration
-tmax = 4.0; 
+tmax = 10.0; 
 TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
+
+%% ROM-n __________________________________________________________________
+actuationValues = zeros(size(TI_NL_ROMn.Solution.u,2),1);
+for t=1:size(TI_NL_ROMn.Solution.u,2)
+    actuationValues(t) = 1+0.003*sin(t*h*2*pi/10);
+end
+
+AnimateFieldonDeformedMeshActuation(nodes, elementPlot,actuationElements,actuationValues,TI_NL_ROMn.Solution.u,'factor',1,'index',1:2,'filename','result_video','framerate',1/h)
 
 %% ROM-d __________________________________________________________________
 % initial condition: equilibrium
@@ -279,7 +318,7 @@ q0 = zeros(size(Vd,2),1);
 qd0 = zeros(size(Vd,2),1);
 qdd0 = zeros(size(Vd,2),1);
 
-% hydrodynamic forces
+% actuation forces
 F_ext = @(t,q,qd) (double(tensors_hydro_ROMd.Tr1) + ...
     double(tensors_hydro_ROMd.Tru2*q) + double(tensors_hydro_ROMd.Trudot2*qd) + ...
     double(ttv(ttv(tensors_hydro_ROMd.Truu3,q,3), q,2)) + ...
@@ -290,7 +329,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_ROMd.Tr1) + ...
 TI_NL_ROMd = ImplicitNewmark('timestep',h,'alpha',0.005);
 
 % nonlinear residual evaluation function handle
-Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMd_Assembly,F_ext);
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actuation(q,qd,qdd,t,ROMd_Assembly,F_ext);
 
 % nonlinear time integration (TI)
 TI_NL_ROMd.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
@@ -382,12 +421,12 @@ set(groot,'defaultAxesTickLabelInterpreter','latex');
 tplot=linspace(0,tmax,tmax/h);
 plot(tplot,TI_NL_ROMn.Solution.u(rNodeDOF,1:end-2)*100)
 hold on
-plot(tplot,TI_NL_ROMd.Solution.u(rNodeDOF,1:end-2)*100, "-.")
-plot(tplot,TI_NL_PROM.Solution.u(rNodeDOF,1:end-2)*100, "--")
+%plot(tplot,TI_NL_ROMd.Solution.u(rNodeDOF,1:end-2)*100, "-.")
+%plot(tplot,TI_NL_PROM.Solution.u(rNodeDOF,1:end-2)*100, "--")
 %plot(tplot,TI_NL_PROMd.Solution.u(rNodeDOF,1:end-2)*100, ":")
 %plot(tplot,(TI_NL_PROM.Solution.u(rNodeDOF,1:end-2)+TI_sens.Solution.s(rNodeDOF,1:end-2)*xi)*100,":")
-approx = V*(TI_NL_PROM.Solution.q(:,1:end-2)+TI_sens.Solution.q(:,1:end-2)*xi)*100;
-plot(tplot,approx(rNodeDOF,:))
+%approx = V*(TI_NL_PROM.Solution.q(:,1:end-2)+TI_sens.Solution.q(:,1:end-2)*xi)*100;
+%plot(tplot,approx(rNodeDOF,:))
 
 title('Vertical displacement for a specific node')
 ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')

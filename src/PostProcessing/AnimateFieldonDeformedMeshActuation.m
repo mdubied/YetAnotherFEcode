@@ -1,4 +1,4 @@
-function AnimateFieldonDeformedMesh(Nodes,Elements,S,varargin)
+function AnimateFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,ActuationValues,S,varargin)
 %% function to animate the displacement snapshots in S (solution cell or matrix) 
 % More than one solution signals can be simultaneously animated,
 % if S is a cell, then each cell component corresponds to a different
@@ -46,13 +46,26 @@ nDOFperNode = size(S{1},1)/nnodes;
 M(size(S{1},2)) = struct('cdata',[],'colormap',[]);
 color = get(groot, 'defaultAxesColorOrder');
 color = [0 0 0; color];
+a1 = [];
+a2 = [];
+normalizedActuationValues = normalize(ActuationValues,'range',[-1 1]);
+
 for j = 1:nt
     for k = 1:ns
         Solution = S{k};
         meshcolor = color(k,:);
         U = reshape(Solution(:,j),nDOFperNode,[]).';
         disp = U(:,index);
-        PlotFieldonDeformedMesh(Nodes,Elements,disp,'factor',scalefactor,'color', meshcolor) ;
+        PlotFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,normalizedActuationValues(j),disp,'factor',scalefactor,'color', meshcolor) ;
+        delete(a1);
+        delete(a2);
+        a1 = annotation('textbox', [0.2, 0.2, 0.25, 0.06], 'String', "actuation a=" + ActuationValues(j));
+        if normalizedActuationValues(j) >=0
+            a2 = annotation('rectangle',[0.155, 0.2, 0.045, 0.06],'FaceColor','red','FaceAlpha',abs(normalizedActuationValues(j)));
+        else
+            a2 = annotation('rectangle',[0.155, 0.2, 0.045, 0.06],'FaceColor','blue','FaceAlpha',abs(normalizedActuationValues(j)));
+        end
+        
         if j == 1
             brighten(0.6)
         end
