@@ -50,11 +50,12 @@ if dimension == 3   % For 3D plots
     uz = disp(:,3) ;
     d = sqrt(ux.^2 + uy.^2 + uz.^2);
     
-    if elementdim == 3 % solid in 3D when we simply plot the skin elements    
-        faces = getSkin3D(Elements);        
-        Elements = faces.';
-        nel = size(Elements,1);      % total number of faces
-        nnel = size(Elements,2);     % number of nodes per face
+    if elementdim == 3 % solid in 3D when we simply plot the skin elements 
+        originalElements = Elements;
+        [skin,~,skinElements,skinElementFaces] = getSkin3D(Elements)        
+        skinFaces = skin.';
+        nSkinFaces = size(skinFaces,1);      % total number of faces
+        nodePerSkinFace = size(skinFaces,2);     % number of nodes per face
     end
         
         
@@ -74,15 +75,15 @@ if dimension == 3   % For 3D plots
     % the i-th node of the j-th element in the mesh, i.e., the node
     % with the index Elements(j,i).
 
-    X = Nodes(Elements',1); X = reshape(X, nnel, nel);
-    Y = Nodes(Elements',2); Y = reshape(Y, nnel, nel);
-    Z = Nodes(Elements',3); Z = reshape(Z, nnel, nel);
+    X = Nodes(skinFaces',1); X = reshape(X, nodePerSkinFace, nSkinFaces);
+    Y = Nodes(skinFaces',2); Y = reshape(Y, nodePerSkinFace, nSkinFaces);
+    Z = Nodes(skinFaces',3); Z = reshape(Z, nodePerSkinFace, nSkinFaces);
     
-    UX = ux(Elements',1); UX = reshape(UX, nnel, nel);
-    UY = uy(Elements',1); UY = reshape(UY, nnel, nel);
-    UZ = uz(Elements',1); UZ = reshape(UZ, nnel, nel);
-    profile = c(Elements',1);
-    profile = reshape(profile,[nnel length(profile)/nnel]);
+    UX = ux(skinFaces',1); UX = reshape(UX, nodePerSkinFace, nSkinFaces);
+    UY = uy(skinFaces',1); UY = reshape(UY, nodePerSkinFace, nSkinFaces);
+    UZ = uz(skinFaces',1); UZ = reshape(UZ, nodePerSkinFace, nSkinFaces);
+    profile = c(skinFaces',1);
+    profile = reshape(profile,[nodePerSkinFace length(profile)/nodePerSkinFace]);
     
     % Plotting the profile of a property on the deformed mesh
     defoX = X+factor*UX ;
@@ -90,8 +91,60 @@ if dimension == 3   % For 3D plots
     defoZ = Z+factor*UZ ;
     
     view(3); hold on;
-    h = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
+    h{1} = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
         'DisplayName','Deformed Mesh');
+    hIdx = 2;
+    for idx=1:size(ActuationElements,1)
+        % check if an element is part of the skin elements and actuation
+        % elements
+
+        if ActuationElements(idx) == 1 && skinElements(idx) == 1
+            test = idx
+            % find nodes of the skin faces of this element
+            faceNodes = faceFromsSkinElement(originalElements(idx,:),skinElementFaces(idx,:))
+            % find idx in `skin' (i.e. skin faces) that corresponds to the
+            % faceNodes we just found (order can be different)
+            [i1, ~]=find(skinFaces==faceNodes(1,1));
+            [i2, ~]=find(skinFaces==faceNodes(1,2));
+            [i3, ~]=find(skinFaces==faceNodes(1,3));
+            i12 = intersect(i1,i2);
+            ColumnIdx = intersect(i12,i3);
+
+
+            h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'white','EdgeColor',meshcolor);
+            hIdx = hIdx + 1;
+
+            if ActuationValue >=0
+                h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'red','EdgeColor',meshcolor);
+            else
+                h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'blue','EdgeColor',meshcolor);
+            end  
+            set(h{hIdx},'FaceAlpha',abs(ActuationValue))
+            hIdx = hIdx + 1;
+            % possibly a second element in this face being par of the skin
+            if faceNodes(2,1) ~= 0
+                [i1, ~]=find(skinFaces==faceNodes(2,1));
+                [i2, ~]=find(skinFaces==faceNodes(2,2));
+                [i3, ~]=find(skinFaces==faceNodes(2,3));
+                i12 = intersect(i1,i2);
+                ColumnIdx = intersect(i12,i3);
+
+                h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'white','EdgeColor',meshcolor);
+                hIdx = hIdx + 1;
+    
+                if ActuationValue >=0
+                    h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'red','EdgeColor',meshcolor);
+                else
+                    h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'blue','EdgeColor',meshcolor);
+                end  
+                set(h{hIdx},'FaceAlpha',abs(ActuationValue))
+                hIdx = hIdx + 1;
+            end
+
+        end
+        
+    end
+
     rotate3d on;
 
 elseif dimension == 2           % For 2D plots
@@ -130,9 +183,7 @@ elseif dimension == 2           % For 2D plots
                 else
                     h{idx*2+2} = patch(defoX(idx*3-2:idx*3),defoY(idx*3-2:idx*3),'blue','EdgeColor',meshcolor);
                 end
-                
-                %h{idx*2+2}.FaceVertexAlphaData = 0.01;%ActuationValue;
-                %h{idx*2+2}.FaceAlpha = 'flat' ;
+
                 set(h{idx*2+2},'FaceAlpha',abs(ActuationValue))
             end
             
@@ -170,4 +221,29 @@ meshcolor = p.Results.color;
 factor = p.Results.factor;
 c = p.Results.component;
 
+end
+
+function nodes = faceFromsSkinElement(element,faceNumber)
+    nodes = [0 0 0; 0 0 0];
+    node = faceNumber(1);
+    nodes(1,1) = element(node);
+    for i = 1:2
+        node = node + 1;
+        if node == 5
+            node = 1;
+        end
+        nodes(1,i+1) = element(node);
+    end
+    
+    if faceNumber(2) ~= 0
+        node = faceNumber(2);
+    nodes(2,1) = element(node);
+    for i = 1:2
+        node = node + 1;
+        if node == 5
+            node = 1;
+        end
+        nodes(2,i+1) = element(node);
+    end
+    end
 end

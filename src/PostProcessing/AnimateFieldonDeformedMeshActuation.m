@@ -55,7 +55,7 @@ for j = 1:nt
         Solution = S{k};
         meshcolor = color(k,:);
         U = reshape(Solution(:,j),nDOFperNode,[]).';
-        disp = U(:,index);
+        disp = U(:,index)
         PlotFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,normalizedActuationValues(j),disp,'factor',scalefactor,'color', meshcolor) ;
         delete(a1);
         delete(a2);
