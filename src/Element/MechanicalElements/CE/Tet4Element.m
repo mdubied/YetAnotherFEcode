@@ -85,6 +85,226 @@ classdef Tet4Element < ContinuumElement
             G(7:9,3:3:12) = dH;
         end
         
+        % Tensors in their final form - hydrodynamic forces
+        function T = Te1(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the 1st order tensor (i.e., a vector) stemming from 
+            % the drag and the thrust force. These forces are acting on the
+            % ``specificFace'' of an element. The forces are divided by 3 
+            % and applied to the nodes at of the considered face. 
+            % _____________________________________________________________
+            [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(1));
+            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+            area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+  
+            if specificFace(1) == 1
+                T = T1_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+            elseif specificFace(1) == 2
+                T = T1_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+            elseif specificFace(1) == 3
+                T = T1_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+            else
+                T = T1_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+            end
+            
+            if specificFace(2) ~= 0
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(2) == 1
+                    T = T1_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                elseif specificFace(2) == 2
+                    T = T1_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                elseif specificFace(2) == 3
+                    T = T1_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                else
+                    T = T1_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                end
+            end
+
+            if specificFace(3) ~= 0 % up to 3 faces of an element as skin faces
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(3));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(3) == 1
+                    T = T1_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                elseif specificFace(3) == 2
+                    T = T1_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                elseif specificFace(3) == 3
+                    T = T1_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                else
+                    T = T1_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3)).';      
+                end
+            end
+
+        end
+
+        function T = Te2(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the 1st order tensor (i.e., a vector) stemming from 
+            % the drag and the thrust force. These forces are acting on the
+            % ``specificFace'' of an element. The forces are divided by 3 
+            % and applied to the nodes at of the considered face. 
+            % _____________________________________________________________
+            [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(1));
+            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+            area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+  
+            if specificFace(1) == 1
+                T = T2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            elseif specificFace(1) == 2
+                T = T2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            elseif specificFace(1) == 3
+                T = T2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            else
+                T = T2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            end
+            
+            if specificFace(2) ~= 0
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(2) == 1
+                    T = T2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(2) == 2
+                    T = T2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(2) == 3
+                    T = T2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                else
+                    T = T2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                end
+            end
+
+            if specificFace(3) ~= 0 % up to 3 faces of an element as skin faces
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(3));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(3) == 1
+                    T = T2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(3) == 2
+                    T = T2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(3) == 3
+                    T = T2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                else
+                    T = T2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                end
+            end
+
+        end
+
+        function T = Teu2(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the 1st order tensor (i.e., a vector) stemming from 
+            % the drag and the thrust force. These forces are acting on the
+            % ``specificFace'' of an element. The forces are divided by 3 
+            % and applied to the nodes at of the considered face. 
+            % _____________________________________________________________
+            [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(1));
+            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+            area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+  
+            if specificFace(1) == 1
+                T = Tu2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            elseif specificFace(1) == 2
+                T = Tu2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            elseif specificFace(1) == 3
+                T = Tu2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            else
+                T = Tu2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            end
+            
+            if specificFace(2) ~= 0
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(2) == 1
+                    T = Tu2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(2) == 2
+                    T = Tu2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(2) == 3
+                    T = Tu2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                else
+                    T = Tu2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                end
+            end
+
+            if specificFace(3) ~= 0 % up to 3 faces of an element as skin faces
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(3));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(3) == 1
+                    T = Tu2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(3) == 2
+                    T = Tu2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(3) == 3
+                    T = Tu2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                else
+                    T = Tu2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                end
+            end
+
+        end
+
+        function T = Teudot2(self, specificFace, vwater, rho)
+            % _____________________________________________________________
+            % Returns the 1st order tensor (i.e., a vector) stemming from 
+            % the drag and the thrust force. These forces are acting on the
+            % ``specificFace'' of an element. The forces are divided by 3 
+            % and applied to the nodes at of the considered face. 
+            % _____________________________________________________________
+            [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(1));
+            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+            area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+  
+            if specificFace(1) == 1
+                T = Tudot2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            elseif specificFace(1) == 2
+                T = Tudot2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            elseif specificFace(1) == 3
+                T = Tudot2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            else
+                T = Tudot2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+            end
+            
+            if specificFace(2) ~= 0
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(2) == 1
+                    T = Tudot2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(2) == 2
+                    T = Tudot2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(2) == 3
+                    T = Tudot2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                else
+                    T = Tudot2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                end
+            end
+
+            if specificFace(3) ~= 0 % up to 3 faces of an element as skin faces
+                [startNode, midNode, endNode, nextNode] = get_node_from_face(self, specificFace(3));
+                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(midNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
+                area = norm(cross(self.nodes(midNode,:)-self.nodes(startNode,:),self.nodes(endNode,:)-self.nodes(startNode,:)));
+        
+                if specificFace(3) == 1
+                    T = Tudot2_TET4_conf1(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(3) == 2
+                    T = Tudot2_TET4_conf2(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                elseif specificFace(3) == 3
+                    T = Tudot2_TET4_conf3(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                else
+                    T = Tudot2_TET4_conf4(area,rho,vwater(1),vwater(2),vwater(3),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(1,3),self.nodes(2,1),self.nodes(2,2),self.nodes(2,3),self.nodes(3,1),self.nodes(3,2),self.nodes(3,3),self.nodes(4,1),self.nodes(4,2),self.nodes(4,3));      
+                end
+            end
+
+        end
         % Test functions
         function F = force_length_prop_skin_normal(self,specificFace)
             % _____________________________________________________________

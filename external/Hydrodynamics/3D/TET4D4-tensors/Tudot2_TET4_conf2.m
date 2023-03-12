@@ -1,4 +1,4 @@
-function T = Tudot2_3D_conf2(A,rho,vw1,vw2,vw3,inv,x01,x02,x03,x04,x05,x06,x07,x08,x09,x010,x011,x012)
+function T = Tudot2_TET4_conf2(A,rho,vw1,vw2,vw3,inv,x01,x02,x03,x04,x05,x06,x07,x08,x09,x010,x011,x012)
 T(1,:)=zeros(1,12);
 T(2,:)=zeros(1,12);
 T(3,:)=zeros(1,12);

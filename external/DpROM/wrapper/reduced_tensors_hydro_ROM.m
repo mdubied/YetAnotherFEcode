@@ -31,9 +31,9 @@
 %   - ALL the elements are assumed to have the same properties in terms
 %     of MATERIAL and QUADRATURE rules.
 %   - List of currently supported elements: 
-%     TRI3
+%     TRI3, TET4
 %
-% Last modified: 17/11/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 12/03/2023, Mathieu Dubied, ETH Zurich
 
 function tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, skinElements, skinElementFaces, vwater, rho)
 
@@ -61,11 +61,11 @@ Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces
 Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
 fprintf('   2nd order terms - Tru2, Trudot2: %.2f s\n',toc)
 
-tic;
-Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Truudot3 = RomAssembly.tensor_skin('Teuudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-fprintf('   3rd order terms - Truu3, Truudot3, Turudotudot3: %.2f s\n',toc)
+% tic;
+% Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+% Truudot3 = RomAssembly.tensor_skin('Teuudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+% Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+% fprintf('   3rd order terms - Truu3, Truudot3, Turudotudot3: %.2f s\n',toc)
 
 % display time needed for computation
 time = toc(t0);
@@ -77,9 +77,9 @@ fprintf(' SIZEs: %d \n\n', size(V,2))
 tensors.Tr1 = Tr1;                     
 tensors.Tru2 = Tru2;
 tensors.Trudot2 = Trudot2;
-tensors.Truu3 = Truu3;
-tensors.Truudot3 = Truudot3;
-tensors.Trudotudot3 = Trudotudot3;
+% tensors.Truu3 = Truu3;
+% tensors.Truudot3 = Truudot3;
+% tensors.Trudotudot3 = Trudotudot3;
 tensors.time = time;
 
 end
