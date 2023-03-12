@@ -13,6 +13,8 @@ function h = PlotFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,A
 %           Optional parameters:
 %           color - the color of the mesh (black by default)
 %           factor - Amplification factor (Change accordingly, trial)
+%           cameraPos - camera placement using view() for 3D plot
+%           upVec - set vectors that should be oriented vertically
 %           component -  The components whose profile to be plotted 
 %           -----> components  can be given in the following form: 
 %                               1. a column vector in the order of node
@@ -24,11 +26,15 @@ function h = PlotFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,A
 %                               4. 'U1', 'U2' or 'U3': disp components:
 %                               disp(:,1), disp(:,2) or disp (:,3)
 %                               repectively.
+%
+% Additional notes: only tested for TRI3 and TET4 elements
+%
+% Last modified: 12/03/2023, Mathieu Dubied, ETH Zurich
 %--------------------------------------------------------------------------
 
 
 %%
-[meshcolor,factor,c] = parse_inputs(varargin{:});
+[meshcolor,factor,cameraPos,upVec,c] = parse_inputs(varargin{:});
 
 nnodes = size(Nodes,1);      % number of nodes
 dimension = size(Nodes,2) ;  % Dimension of the mesh
@@ -52,7 +58,7 @@ if dimension == 3   % For 3D plots
     
     if elementdim == 3 % solid in 3D when we simply plot the skin elements 
         originalElements = Elements;
-        [skin,~,skinElements,skinElementFaces] = getSkin3D(Elements)        
+        [skin,~,skinElements,skinElementFaces] = getSkin3D(Elements);      
         skinFaces = skin.';
         nSkinFaces = size(skinFaces,1);      % total number of faces
         nodePerSkinFace = size(skinFaces,2);     % number of nodes per face
@@ -90,7 +96,7 @@ if dimension == 3   % For 3D plots
     defoY = Y+factor*UY ;
     defoZ = Z+factor*UZ ;
     
-    view(3); hold on;
+    view(cameraPos); hold on;
     h{1} = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
         'DisplayName','Deformed Mesh');
     hIdx = 2;
@@ -99,9 +105,8 @@ if dimension == 3   % For 3D plots
         % elements
 
         if ActuationElements(idx) == 1 && skinElements(idx) == 1
-            test = idx
             % find nodes of the skin faces of this element
-            faceNodes = faceFromsSkinElement(originalElements(idx,:),skinElementFaces(idx,:))
+            faceNodes = faceFromsSkinElement(originalElements(idx,:),skinElementFaces(idx,:));
             % find idx in `skin' (i.e. skin faces) that corresponds to the
             % faceNodes we just found (order can be different)
             [i1, ~]=find(skinFaces==faceNodes(1,1));
@@ -144,6 +149,11 @@ if dimension == 3   % For 3D plots
         end
         
     end
+    
+    camup(upVec) 
+    
+    
+
 
     rotate3d on;
 
@@ -201,24 +211,31 @@ end
     if ~isempty(c)
         SetColorbar
     end
-
 end
 
-function [meshcolor,factor,c] = parse_inputs(varargin)
+function [meshcolor,factor,cameraPos,upVec,c] = parse_inputs(varargin)
 
 defaultColor = 'k';
 defaultFactor = 1;
+defaultCameraPos = 3;
+defaultUpVec = [0;1;0];
 defaultComponent = 'U'; % plot norm of displacement
 p = inputParser;
 
 addParameter(p,'color',defaultColor)
 addParameter(p,'factor',defaultFactor,@(x)validateattributes(x, ...
     {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'cameraPos',defaultCameraPos,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty'}) );
+addParameter(p,'upVec',defaultUpVec,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty'}) );
 addParameter(p,'component',defaultComponent);
 parse(p,varargin{:});
 
 meshcolor = p.Results.color;
 factor = p.Results.factor;
+cameraPos = p.Results.cameraPos;
+upVec = p.Results.upVec;
 c = p.Results.component;
 
 end

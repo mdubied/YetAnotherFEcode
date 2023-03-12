@@ -9,15 +9,19 @@ function AnimateFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,Ac
 % index: numerical array specifying which DOFs on the node correspond to translational
 % displacements in X, Y, Z directions for 3D meshes, X,Y direction for 2D
 % meshes and simply a X direction for 1 D meshes
-% factor: the factor with which displacements should be scaled  
+% factor: the factor with which displacements should be scaled
+% cameraPos: camera placement using view() for 3D plot
+% upVec: set vectors that should be oriented vertically
 % filename: for storing animation files (with path)
 % framerate: numerical rate of frames to be played per second in the video
+%
+% Last modified: 12/03/2023, Mathieu Dubied, ETH Zurich
 
-[scalefactor,index,filename,framerate] = parse_inputs(varargin{:});
+[scalefactor,index,cameraPos,upVec,filename,framerate] = parse_inputs(varargin{:});
 
 %% video object
 nnodes = size(Nodes,1);
-myVideo = VideoWriter([filename '.avi']);
+myVideo = VideoWriter(filename,'MPEG-4');
 myVideo.FrameRate = framerate;
 
 if iscell(S)
@@ -48,24 +52,28 @@ color = get(groot, 'defaultAxesColorOrder');
 color = [0 0 0; color];
 a1 = [];
 a2 = [];
+a3 = [];
 normalizedActuationValues = normalize(ActuationValues,'range',[-1 1]);
 
 for j = 1:nt
+    hold on
     for k = 1:ns
         Solution = S{k};
         meshcolor = color(k,:);
         U = reshape(Solution(:,j),nDOFperNode,[]).';
-        disp = U(:,index)
-        PlotFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,normalizedActuationValues(j),disp,'factor',scalefactor,'color', meshcolor) ;
+        disp = U(:,index);
+        
+        PlotFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,normalizedActuationValues(j),disp,'factor',scalefactor,'cameraPos',cameraPos,'upVec',upVec,'color', meshcolor) ;
         delete(a1);
         delete(a2);
+        delete(a3);
         a1 = annotation('textbox', [0.2, 0.2, 0.25, 0.06], 'String', "actuation a=" + ActuationValues(j));
         if normalizedActuationValues(j) >=0
             a2 = annotation('rectangle',[0.155, 0.2, 0.045, 0.06],'FaceColor','red','FaceAlpha',abs(normalizedActuationValues(j)));
         else
             a2 = annotation('rectangle',[0.155, 0.2, 0.045, 0.06],'FaceColor','blue','FaceAlpha',abs(normalizedActuationValues(j)));
         end
-        
+        a3 = annotation('textbox', [0.5, 0.2, 0.25, 0.06], 'String', "time: " + num2str(j/framerate,'%4.2f') + "s");
         if j == 1
             brighten(0.6)
         end
@@ -75,7 +83,7 @@ for j = 1:nt
             xlim = get(gca,'xlim');
             ylim = get(gca,'ylim');
         end
-        set(gca,'xlim',xlim,'ylim',ylim)
+        set(gca,'xlim',xlim*1.5,'ylim',ylim*1.5)
     end
     % gif movie
     frame = getframe(gcf);
@@ -92,6 +100,7 @@ for j = 1:nt
         imwrite(imind,cm,[filename '.gif'],'gif','WriteMode','append');
     end
     cla
+    hold off
 end
 open(myVideo)
 writeVideo(myVideo,M);
@@ -99,10 +108,12 @@ close(myVideo)
 close(gcf)
 end
 
-function [scalefactor,index,filename,framerate] = parse_inputs(varargin)
+function [scalefactor,index,cameraPos,upVec,filename,framerate] = parse_inputs(varargin)
 %% parsing inputs
 defaultindex = 1;
 defaultFactor = 1;
+defaultCameraPos = 3;
+defaultUpVec = [0;1;0];
 defaultfilename = 'test'; % plot norm of displacement\
 defaultframerate = 100;
 
@@ -111,6 +122,10 @@ addParameter(p,'index',defaultindex, @(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','integer','positive'}) );
 addParameter(p,'factor',defaultFactor,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'cameraPos',defaultCameraPos,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty'}) );
+addParameter(p,'upVec',defaultUpVec,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty'}) );
 addParameter(p,'filename',defaultfilename,@(x)validateattributes(x, ...
                 {'char'},{'nonempty'}))
 addParameter(p,'framerate',defaultframerate,@(x)validateattributes(x, ...
@@ -120,6 +135,8 @@ parse(p,varargin{:});
 
 scalefactor = p.Results.factor;
 index = p.Results.index;
+cameraPos= p.Results.cameraPos;
+upVec = p.Results.upVec;
 filename = p.Results.filename;
 framerate = p.Results.framerate;
 end

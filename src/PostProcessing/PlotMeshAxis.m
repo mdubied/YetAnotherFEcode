@@ -16,7 +16,8 @@ function p = PlotMeshAxis(Nodes,Elements,show)
 %                  1           - display
 %
 % Additional notes: based on PlotMesh. For 3D plots, it shows element
-% indexes rather than skinFace indexes as in PlotMesh
+% indexes rather than skinFace indexes as in PlotMesh. Tested for TRI3 and
+% TET4 meshes. Maximum 3 faces out of 4 as skin faces in 3D
 %
 % Last modified: 11/03/2023, Mathieu Dubied, ETH Zurich
 %--------------------------------------------------------------------------
@@ -98,6 +99,10 @@ if show ~= 0
                 if skinElementFaces(skinElementFacesIdx,columnCheck) ~= 0
                     elementIdxSkinFace(i) = skinElementFacesIdx;
                     columnCheck = columnCheck + 1;
+                    if columnCheck == 4
+                        skinElementFacesIdx = skinElementFacesIdx + 1;
+                        columnCheck = 1;
+                    end
                     elementFound = 1;
                 else
                     skinElementFacesIdx = skinElementFacesIdx + 1;
