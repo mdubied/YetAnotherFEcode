@@ -16,7 +16,7 @@ function AnimateFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,Ac
 % framerate: numerical rate of frames to be played per second in the video
 %
 % Last modified: 12/03/2023, Mathieu Dubied, ETH Zurich
-
+figure
 [scalefactor,index,cameraPos,upVec,filename,framerate] = parse_inputs(varargin{:});
 
 %% video object

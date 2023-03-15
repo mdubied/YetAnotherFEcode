@@ -107,7 +107,9 @@ classdef ImplicitNewmark < handle
                             
                             %% Check convergence
                             epsilon = norm(r)/c0;
-                            disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
+                            if it>10
+                                disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
+                            end
                             if (epsilon<obj.tol)  % Error < Tolerance : break
                                 break;
                             else % Error >= Tolerance : perform correction

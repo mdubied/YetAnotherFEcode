@@ -12,12 +12,12 @@ function AnimateFieldonDeformedMesh(Nodes,Elements,S,varargin)
 % factor: the factor with which displacements should be scaled  
 % filename: for storing animation files (with path)
 % framerate: numerical rate of frames to be played per second in the video
-
+figure
 [scalefactor,index,filename,framerate] = parse_inputs(varargin{:});
 
 %% video object
 nnodes = size(Nodes,1);
-myVideo = VideoWriter([filename '.avi']);
+myVideo = VideoWriter(filename,'MPEG-4');
 myVideo.FrameRate = framerate;
 
 if iscell(S)
@@ -46,7 +46,9 @@ nDOFperNode = size(S{1},1)/nnodes;
 M(size(S{1},2)) = struct('cdata',[],'colormap',[]);
 color = get(groot, 'defaultAxesColorOrder');
 color = [0 0 0; color];
+a = [];
 for j = 1:nt
+    delete(a)
     for k = 1:ns
         Solution = S{k};
         meshcolor = color(k,:);
@@ -64,6 +66,8 @@ for j = 1:nt
         end
         set(gca,'xlim',xlim,'ylim',ylim)
     end
+    a = annotation('textbox', [0.5, 0.2, 0.25, 0.06], 'String', "time: " + num2str(j/framerate,'%4.2f') + "s");
+
     % gif movie
     frame = getframe(gcf);
     M(j) = frame;

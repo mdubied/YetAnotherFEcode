@@ -643,8 +643,95 @@ classdef Tri3Element < ContinuumElement
             T = permute(T,[4 3 1 2]);
         end
 
+        % Hydrodynamic force in its orginal (full) nonlinear form and 
+        % related functions
 
-        % Forces for early-stage tests
+
+        function F = drag_force_full(self, specificFace, vwater, rho, u, ud)
+            % _____________________________________________________________
+            % Returns the drag force F_drag acting the face
+            % ``specificFace'' of an element. The force is divided by 2 and
+            % applied to the nodes at of the considered face.
+            % _____________________________________________________________
+            F = sparse(self.nelDOFs,1);
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
+
+            % Compute drag force
+            Fdrag = compute_drag_force(startNode, endNode, nextNode);
+            % Apply drag force on nodes
+            F = apply_force(self, F, Fdrag, startNode, endNode);
+
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
+
+                % Compute drag force
+                Fdrag = compute_drag_force(startNode, endNode, nextNode);
+                % Apply drag force on nodes
+                F = apply_force(self, F, Fdrag, startNode, endNode);
+            end
+
+            function Fdrag = compute_drag_force(startNode, endNode, nextNode)
+                % _________________________________________________________
+                % Computes the drag force vector for a specific surface
+                %__________________________________________________________
+                % Terms needed for the drag force - REPLACE VREL (to do) !!
+                n = normal_vector(self, self.nodes(startNode,:)+u(startNode,:), self.nodes(endNode,:)+u(endNode,:), self.nodes(nextNode,:)+u(nextNode,:));  
+                length = norm(self.nodes(endNode,:)+u(endNode,:)-self.nodes(startNode,:)-u(startNode,:));
+                A = length; % in 2D, area proportional force is length proportional
+                ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
+                vrel = vwater - 1/ns*(ud(startNode,:)+ud(endNode,:)); 
+                d = vrel/norm(vrel);
+                Cd = 2*(n.'*d)^2;
+                
+                % Drag force
+                Fdrag = 1/2*rho*A*Cd*norm(vrel)^2*d;
+            end 
+            
+        end
+
+        function F = thrust_force_full(self, specificFace, vwater, rho, u, ud)
+            % _____________________________________________________________
+            % Returns the thrust force F_drag acting the face
+            % ``specificFace'' of an element. The force is divided by 2 and
+            % applied to the nodes at of the considered face.
+            % _____________________________________________________________
+            F = sparse(self.nelDOFs,1);
+            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
+
+            % Computes thrust force
+            Fthrust = compute_thrust_force(startNode, endNode, nextNode);
+            % Applies thrust force on nodes
+            F = apply_force(self, F, Fthrust, startNode, endNode);
+
+            if specificFace(2) ~= 0
+                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
+
+                % Computes thrust force
+                Fthrust = compute_thrust_force(startNode, endNode, nextNode);
+                % Apply thrust force on nodes
+                F = apply_force(self, F, Fthrust, startNode, endNode);
+
+            end
+
+            function Fthrust = compute_thrust_force(startNode, endNode, nextNode)
+                % _________________________________________________________
+                % Computes the thrust force vector for a specific surface
+                %__________________________________________________________
+                % Terms needed for the thrust force - REPLACE VREL (to do) !!
+                n = normal_vector(self, self.nodes(startNode,:)+u(startNode,:), self.nodes(endNode,:)+u(endNode,:), self.nodes(nextNode,:)+u(nextNode,:));  
+                length = norm(self.nodes(endNode,:)+u(endNode,:)-self.nodes(startNode,:)-u(startNode,:));
+                A = length; % in 2D, area proportional force is length proportional
+                ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
+                vrel = vwater - 1/ns*(ud(startNode,:)+ud(endNode,:)); 
+                d = vrel/norm(vrel);
+                Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
+                
+                % Thrust force
+                Fthrust = -1/2*A*rho*Ct*norm(vrel)^2*n;
+            end 
+                  
+        end
+  
         function F = force_length_prop_skin_normal(self,specificFace)
             % _____________________________________________________________
             % Applies a force proportional to the the length of a skin
@@ -670,6 +757,19 @@ classdef Tri3Element < ContinuumElement
             end
         end 
         
+        function F = apply_force(~, Fbase, FtoApply, startNode, endNode)
+            % _____________________________________________________________
+            % Returns the addition of the force to apply FtoApply and the
+            % base force Fbase.
+            % _____________________________________________________________
+            F = Fbase;
+            F(startNode*2-1) = Fbase(startNode*2-1) + FtoApply(1)/2;    % x-coordinate
+            F(startNode*2) = Fbase(startNode*2) + FtoApply(2)/2;        % y-coordinate
+            F(endNode*2-1) = Fbase(endNode*2-1) + FtoApply(1)/2;        % x-coordinate
+            F(endNode*2) = Fbase(endNode*2) + FtoApply(2)/2;            % y-coordinate
+        end 
+                
+
         function F = drag_force(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns the drag force F_drag acting the face
@@ -746,104 +846,6 @@ classdef Tri3Element < ContinuumElement
             
             
         end
-
-        function F = drag_force_full(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns the drag force F_drag acting the face
-            % ``specificFace'' of an element. The force is divided by 2 and
-            % applied to the nodes at of the considered face.
-            % _____________________________________________________________
-            F = sparse(self.nelDOFs,1);
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-
-            % Compute drag force
-            Fdrag = compute_drag_force(startNode, endNode, nextNode);
-            % Apply drag force on nodes
-            F = apply_force(self, F, Fdrag, startNode, endNode);
-
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-
-                % Compute drag force
-                Fdrag = compute_drag_force(startNode, endNode, nextNode);
-                % Apply drag force on nodes
-                F = apply_force(self, F, Fdrag, startNode, endNode);
-            end
-
-            function Fdrag = compute_drag_force(startNode, endNode, nextNode)
-                % _________________________________________________________
-                % Computes the drag force vector for a specific surface
-                %__________________________________________________________
-                % Terms needed for the drag force - REPLACE VREL (to do) !!
-                n = normal_vector(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));  
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                A = length; % in 2D, area proportional force is length proportional
-                ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
-                vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
-                d = vrel/norm(vrel);
-                Cd = 2*(n.'*d)^2;
-                
-                % Drag force
-                Fdrag = 1/2*rho*A*Cd*norm(vrel)^2*d;
-            end 
-            
-        end
-
-        function F = thrust_force_full(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns the thrust force F_drag acting the face
-            % ``specificFace'' of an element. The force is divided by 2 and
-            % applied to the nodes at of the considered face.
-            % _____________________________________________________________
-            F = sparse(self.nelDOFs,1);
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-
-            % Computes thrust force
-            Fthrust = compute_thrust_force(startNode, endNode, nextNode);
-            % Applies thrust force on nodes
-            F = apply_force(self, F, Fthrust, startNode, endNode);
-
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-
-                % Computes thrust force
-                Fthrust = compute_thrust_force(startNode, endNode, nextNode);
-                % Apply thrust force on nodes
-                F = apply_force(self, F, Fthrust, startNode, endNode);
-
-            end
-
-            function Fthrust = compute_thrust_force(startNode, endNode, nextNode)
-                % _________________________________________________________
-                % Computes the thrust force vector for a specific surface
-                %__________________________________________________________
-                % Terms needed for the thrust force - REPLACE VREL (to do) !!
-                n = normal_vector(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                A = length; % in 2D, area proportional force is length proportional
-                ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
-                vrel = vwater - 1/ns*[0;0]; %(self.nodes(startNode,:) + self.nodes(endNode,:)); % need to be replaced by velocity
-                d = vrel/norm(vrel);
-                Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
-                
-                % Thrust force
-                Fthrust = -1/2*A*rho*Ct*norm(vrel)^2*n;
-            end 
-                  
-        end
-
-        function F = apply_force(~, Fbase, FtoApply, startNode, endNode)
-            % _____________________________________________________________
-            % Returns the addition of the force to apply FtoApply and the
-            % base force Fbase.
-            % _____________________________________________________________
-            F = Fbase;
-            F(startNode*2-1) = Fbase(startNode*2-1) + FtoApply(1)/2;    % x-coordinate
-            F(startNode*2) = Fbase(startNode*2) + FtoApply(2)/2;        % y-coordinate
-            F(endNode*2-1) = Fbase(endNode*2-1) + FtoApply(1)/2;        % x-coordinate
-            F(endNode*2) = Fbase(endNode*2) + FtoApply(2)/2;            % y-coordinate
-        end 
-        
         % Useful helper functions
         function [r11, r12, r21, r22] = normal_vec_rot_matrix(~, startNodePos, endNodePos, nextNodePos)
             n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
@@ -854,13 +856,11 @@ classdef Tri3Element < ContinuumElement
                 r12 = -1;
                 r21 = 1;
                 r22 = 0;
-                disp("need to rotate +")
             else
                 r11 = 0;
                 r12 = 1;
                 r21 = -1;
                 r22 = 0;
-                disp("need to rotate -")
             end
         end 
 

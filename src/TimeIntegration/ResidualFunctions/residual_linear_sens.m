@@ -23,8 +23,7 @@
 %     
 % Additional notes:
 %   The EoMs are
-%   Mq_dd + Cq_d + K(p)q + f_int_nl(q,p) = f_ext(q,qd,p) % does K depends
-%   on p?
+%   M(q)q_dd + Cq_d + Kq + f_int_nl(q,p) = f_ext(q,qd,p) 
 %
 % Last modified: 17/11/2022, Mathieu Dubied, ETH Zürich
 function [r, drdsdd, drdsd, drds] = residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol,pd_fext,pd_fint,h)

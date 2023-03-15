@@ -24,22 +24,22 @@
 %   - p should be understood as xi.
 %
 % Last modified: 17/11/2022, Mathieu Dubied, ETH Zürich
-function der = DpROM_hydro_derivatives(q,qd,xi,tensors_DpROM,FOURTHORDER)
+function der = DpROM_hydro_derivatives(q,qd,xi,tensors_PROM,FOURTHORDER)
 
 % populate tensors
-Tr1 = tensors_DpROM.Tr1;
-Tr2 = tensors_DpROM.Tr2; 
-Tru2 = tensors_DpROM.Tru2;
-Tru3 = tensors_DpROM.Tru3;
-Trudot2 = tensors_DpROM.Trudot2;
-Trudot3 = tensors_DpROM.Trudot3;
-Truu3 = tensors_DpROM.Truu3;
-Truudot3 = tensors_DpROM.Truudot3;
-Trudotudot3 = tensors_DpROM.Trudotudot3;
+Tr1 = tensors_PROM.Tr1;
+Tr2 = tensors_PROM.Tr2; 
+Tru2 = tensors_PROM.Tru2;
+Tru3 = tensors_PROM.Tru3;
+Trudot2 = tensors_PROM.Trudot2;
+Trudot3 = tensors_PROM.Trudot3;
+Truu3 = tensors_PROM.Truu3;
+Truudot3 = tensors_PROM.Truudot3;
+Trudotudot3 = tensors_PROM.Trudotudot3;
 if FOURTHORDER
-    Truu4 = tensors_DpROM.Truu4;
-    Truudot4 = tensors_DpROM.Truudot4;
-    Trudotudot4 = tensors_DpROM.Trudotudot4;
+    Truu4 = tensors_PROM.Truu4;
+    Truudot4 = tensors_PROM.Truudot4;
+    Trudotudot4 = tensors_PROM.Trudotudot4;
 end
 
 % evaluate partial derivatives
