@@ -31,6 +31,7 @@
 % Author: Alexander Saccani, Msc in mechanical engineering
 % University: Politecnico di Milano
 % Created:  09/2021
+% Modified: 03/2023, Mathieu Dubied, ETH Zurich
 
 function der = DpROM_derivatives(q, tensors_DpROM, varargin)
 
@@ -206,6 +207,7 @@ der.dfdq = double(dfdq);
 der.dfdq2 = double(dfdq2);
 der.dfdp2 = double(dfdp2);
 der.dfdqdp = double(dfdqdp);
+der.dfdpdq = double(dfdpdq);
 
 if isIsochoric ~= 1
     der.dMdp = dMdp;

@@ -26,7 +26,7 @@
 function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi,dr,A,b)
     Lr = 0;
     nConstraints = size(b);
-    barrierParam = 1000;
+    barrierParam = 500;%1000;
     
     for t=1:N-2
         eta_i = eta(:,t);

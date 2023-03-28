@@ -1,7 +1,8 @@
 % build_PROM
 %
 % Synthax:
-% [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA)
+% [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM, tensors_actu_bottom_PROM] 
+%   = build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,,FOURTHORDER,ACTUATION)
 %
 % Description: Builds a PROM based on the nominal mesh and shape variation
 % basis.
@@ -15,19 +16,26 @@
 % (6) VOLUME:       integration over defected (1) or nominal volume (0)
 % (7) USEJULIA:     use of JULIA (1) for the computation of internal forces
 %                   tensors
+% (8) FOURTHORDER:  computing the 4th order tensors (1) or not (0)
+% (9) ACTUATION:    model with actuation (1) or without (0)
 %
 % OUTPUTS:
-% (1) V:                    ROB    
-% (2) PROM_Assembly:        PROM assembly
-% (3) tensors_PROM:         (reduced) tensors for the internal forces 
-% (4) tensors_hydro_PROM:   (reduced) tensors for the hydrdynamic forces
-%     
+% (1) V:                        ROB    
+% (2) PROM_Assembly:            PROM assembly
+% (3) tensors_PROM:             (reduced) tensors for the internal forces 
+% (4) tensors_hydro_PROM:       (reduced) tensors for the hydrdynamic forces
+% (5) tensors_actu_top_PROM:    (reduced) tensors for actuation forces (only
+%                               computed if ACTUATION is set to 1. return 0
+%                               otherwise). Top muscle
+% (5) tensors_actu_bottom_PROM: (reduced) tensors for actuation forces (only
+%                               computed if ACTUATION is set to 1. return 0
+%                               otherwise). Bottom muscle
+%   
 %
-% Additional notes:
-%
-% Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 26/03/2023, Mathieu Dubied, ETH Zurich
 
-function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER)
+function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,tensors_actu_bottom_PROM] = ...
+    build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION)
     
     % ASSEMBLY ____________________________________________________________
     NominalAssembly = Assembly(MeshNominal);
@@ -84,7 +92,45 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNomi
     
     % HYDRODYNAMIC FORCES TENSORS _________________________________________
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    vwater = [1;0.1];
+    vwater = [2;0.5];
     rho = 1;
-tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
+    tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
+    
+    % ACTUATION FORCES TENSORS ____________________________________________
+    if ACTUATION
+        Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
+        Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of the nominal fish
+
+        nel = size(elements,1);
+        actuationDirection = [1;0;0];%[1;0]-->[1;0;0] (Voigt notation)
+        
+        % top muscle
+        topMuscle = zeros(nel,1);
+        for el=1:nel
+            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
+            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+            if elementCenterY>0.00 &&  elementCenterX > Lx*0.25
+                topMuscle(el) = 1;
+            end    
+        end
+        tensors_actu_top_PROM = reduced_tensors_actuation_PROM(NominalAssembly, V, U, topMuscle, actuationDirection);
+        
+        % bottom muscle
+        bottomMuscle = zeros(nel,1);
+        for el=1:nel
+            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
+            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+            if elementCenterY<0.00 &&  elementCenterX > Lx*0.25
+                bottomMuscle(el) = 1;
+            end    
+        end
+        tensors_actu_bottom_PROM = reduced_tensors_actuation_PROM(NominalAssembly, V, U, bottomMuscle, actuationDirection);
+    else
+        tensors_actu_top_PROM = 0;
+        tensors_actu_bottom_PROM = 0;
+    end
+
+
+
+
 end

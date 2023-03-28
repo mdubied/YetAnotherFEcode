@@ -28,26 +28,34 @@ function nablaLr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
     nConstraints = size(b);
-    barrierParam = 10000;
+    secondOrderDer = 0;
+    barrierParam = 400;
 
     for t=1:N 
         % part stemming from hydrodynamic forces
-        derivative_hydro = DpROM_hydro_derivatives(eta(:,t),etad(:,t),xi,tensors_hydro_PROM,FOURTHORDER);
+        derivative_hydro = DpROM_hydro_derivatives(eta(:,t),etad(:,t),xi,tensors_hydro_PROM,FOURTHORDER,secondOrderDer);
         dfhydrodeta = derivative_hydro.dfdq; 
         dfhydrodetad = derivative_hydro.dfdqd;
         dfhydrodxi = derivative_hydro.dfdp;
-        dfdxi_i = dfhydrodxi + dfhydrodeta*s(:,t) + dfhydrodetad*sd(:,t);
+        if size(xi,1)>1
+            s = double(s);
+            sd = double(sd);
+            dfdxi_i = dfhydrodxi + dfhydrodeta*s(:,:,t) + dfhydrodetad*sd(:,:,t);
+        else
+            dfdxi_i = dfhydrodxi + dfhydrodeta*s(:,t) + dfhydrodetad*sd(:,t);
+        end
+        
         
         % part stemming from log barrier functions
-        logBarrierDInTimeStep = 0;
+        logBarrierDInTimeStep = zeros(size(xi,1),1);
        
         for i = 1:nConstraints 
-            logBarrierDInTimeStep = logBarrierDInTimeStep - 1/barrierParam*1/(A(i,:)*xi-b(i))*A(i,:);
+            logBarrierDInTimeStep = logBarrierDInTimeStep - 1/barrierParam*1/(A(i,:)*xi-b(i))*A(i,:).';
         end
         
 
         % final gradient
-        nablaLr = nablaLr - dr.'*dfdxi_i + logBarrierDInTimeStep;
+        nablaLr = nablaLr - (dr.'*dfdxi_i).' + logBarrierDInTimeStep;
     end  
   
 end

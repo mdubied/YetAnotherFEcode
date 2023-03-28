@@ -124,7 +124,8 @@ classdef ReducedAssembly < Assembly
             % the full (unreduced) system
             
             m = size(self.V,2);
-            K = zeros(m,m);
+            md = size(U,2);
+            K = zeros(m,md);
             Elements = self.Mesh.Elements;
             V = self.V;
             % parsing element weights

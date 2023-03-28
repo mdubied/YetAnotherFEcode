@@ -151,12 +151,32 @@ classdef ImplicitNewmark < handle
                 R = [R epsilon];
                 disp(['time integration completed: ', num2str(100* t/tmax), '%'])
                 
-                q = [q q_new];
-                qd = [qd qd_new];
-                qdd = [qdd qdd_new];
-                q_old = q_new;
-                qd_old = qd_new;
-                qdd_old = qdd_new;
+                if obj.sens
+                    if size(q_new,2)>1
+                        q = cat(3,q,q_new);
+                        qd = cat(3,qd,qd_new);
+                        qdd = cat(3,qdd,qdd_new);
+                        q_old = q_new;
+                        qd_old = qd_new;
+                        qdd_old = qdd_new;
+                    else
+                        q = [q q_new];
+                        qd = [qd qd_new];
+                        qdd = [qdd qdd_new];
+                        q_old = q_new;
+                        qd_old = qd_new;
+                        qdd_old = qdd_new;
+                    end
+
+                else
+                    q = [q q_new];
+                    qd = [qd qd_new];
+                    qdd = [qdd qdd_new];
+                    q_old = q_new;
+                    qd_old = qd_new;
+                    qdd_old = qdd_new;
+                end
+
                 
             end
             soltime = toc;

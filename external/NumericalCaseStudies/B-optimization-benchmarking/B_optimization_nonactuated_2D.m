@@ -3,8 +3,6 @@
 % paper on a simple 2D (non-actuated) structure.
 %
 % Optimization obejective: reduce drag on the airfoil. 
-% Constraints: the airfoil thickness must be between 50% and 150% of its
-% initial value.
 % 
 % Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
 %
@@ -103,6 +101,14 @@ tStart = tic;
     nodes,elements,U,d,h,tmax,A,b,'maxIteration',200);
 tP3 = toc(tStart);
 fprintf('Computation time for P3: %.2fs\n',tP3)
+
+%% OPTIMIZATION PIPELINE P4 _______________________________________________
+
+tStart = tic;
+[xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor, ...
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',2);
+tP4 = toc(tStart);
+fprintf('Computation time for P3: %.2fs\n',tP4)
 
 %% VISUALIZATION __________________________________________________________
 

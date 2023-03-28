@@ -24,46 +24,64 @@
 % (14) VOLUME:      integration over defected (1) or nominal volume (0)
 % (15) USEJULIA:    use of JULIA (1) for the computation of internal forces
 %                   tensors
+% (16) ACTUATION:   describes cases with actuation. 0 is w/o actuation, 1
+%                   with actuation for the 2D case discussed in the paper
 %
 % OUTPUTS:
 % (1) xi_star:      optimal shape parameter(s) (scalar or vector)
 % (2) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 23/03/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,A,b,varargin)
     
     % parse input
-    [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER] = parse_inputs(varargin{:});
+    [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin{:});
     
     % STEP 1: set xi_0 = 0 ________________________________________________
     fprintf('____________________\n')
     fprintf('STEP 1\n')
 
-    xi_k = 0;
+    xi_k = zeros(size(U,2),1);
     xiEvo = xi_k;
 
     % STEP 2: mesh the structure and build a PROM _________________________
     fprintf('____________________\n')
     fprintf('STEP 2\n')
 
-    [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = ...
-        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER);
+    [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
+        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
+
+
         
     % STEP 3: solve EoMs to get nominal solution eta and dot{eta} _________
     fprintf('____________________\n')
     fprintf('STEP 3\n')
     
-    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
+    if ACTUATION
+        TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax,...
+            'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
+    else
+        TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
+    end
+    
 
     % STEP 4: solve sensitivity equation to get S _________________________
     fprintf('____________________\n')
     fprintf('STEP 4\n') 
+    
+    if ACTUATION
+        TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+            tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
+            TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER,...
+                'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
+    else
+         TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+            tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
+            TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
+    end
 
-    TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
-        tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
-        TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
     
     % STEP 5-13: OPTIMIZATION LOOP ________________________________________
     fprintf('____________________\n')
@@ -84,21 +102,36 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
     for k = 1:maxIteration
         fprintf('Optimization loop iteration: k= %d\n',k-1)
         % step 7
-        eta_k = eta_k + S*xi_k; 
+        if size(xi_k,1)>1
+            S=tensor(S);
+            eta_k = eta_k + double(ttv(S,xi_k,2));
+        else
+            eta_k = eta_k + S*xi_k;
+        end
+        
+
         % step 8
         nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S,Sd,A,b,tensors_hydro_PROM,FOURTHORDER);
         LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b)];
         % step 9 and 10
-        xi_k = xi_k - 0.8*nablaLr;
+        xi_k = xi_k - 0.05*nablaLr
         if k>40
             xi_k = xi_k - 0.3*nablaLr;
         end
         xiEvo = [xiEvo,xi_k];
-
-        if norm(xiEvo(end)-xiEvo(end-1))<0.001
-            fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
-            break
+        
+        if size(xi_k,1) >1
+            if norm(xiEvo(:,end)-xiEvo(:,end-1))<convCrit
+                fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
+                break
+            end
+        else
+            if norm(xiEvo(end)-xiEvo(end-1))<convCrit
+                fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
+                break
+            end
         end
+
         if k == maxIteration
             fprintf('Maximum number of %d iterations reached\n',maxIteration)
         end
@@ -109,14 +142,14 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
 end
 
 % parse input
-function [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER] = parse_inputs(varargin)
+function [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin)
 defaultMaxIteration = 50;
 defaultConvCrit = 0.001;
 defaultFORMULATION = 'N1';
 defaultVOLUME = 1;
 defaultUSEJULIA = 0; 
 defaultFOURTHORDER = 0;
-
+defaultACTUATION = 0;
 p = inputParser;
 addParameter(p,'maxIteration',defaultMaxIteration, @(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','integer','positive'}) );
@@ -130,6 +163,8 @@ addParameter(p,'USEJULIA',defaultUSEJULIA,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty'}) );
 addParameter(p,'FOURTHORDER',defaultFOURTHORDER,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','integer','positive'}) );
+addParameter(p,'ACTUATION',defaultACTUATION,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','integer','positive'}) );
 
 parse(p,varargin{:});
 
@@ -139,5 +174,6 @@ FORMULATION = p.Results.FORMULATION;
 VOLUME = p.Results.VOLUME;
 USEJULIA = p.Results.USEJULIA;
 FOURTHORDER = p.Results.FOURTHORDER;
+ACTUATION = p.Results.ACTUATION;
 
 end

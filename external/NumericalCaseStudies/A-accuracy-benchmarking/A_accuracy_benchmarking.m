@@ -270,7 +270,7 @@ end
 % Parameters' initialization for all models _______________________________
 % time step for integration
 h = 0.01;
-tmax = 2.0; 
+tmax = 4.0; 
 
 %% ROM-n __________________________________________________________________
 % initial condition: equilibrium
@@ -342,15 +342,18 @@ TI_NL_PROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_PROM.Solution.u = V * TI_NL_PROM.Solution.q; % get full order solution
 
 %% SENSITIVITY ANALYSIS (PROM) ____________________________________________
+
+% First order sensitivity _________________________________________________
 % initial conditions
-s0 = zeros(size(V,2),1);
-sd0 = zeros(size(V,2),1);
-sdd0 = zeros(size(V,2),1);
+s0 = zeros(size(V,2),m);
+sd0 = zeros(size(V,2),m);
+sdd0 = zeros(size(V,2),m);
 
 % evaluate partial derivatives along solution
-pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM,FOURTHORDER);
+secondOrderDer = 1; % set to 1 if you want to compute the 2nd order derivative to perform a second order sensitivity analysis
+pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM,FOURTHORDER,secondOrderDer);
 pd_fint_PROM = @(q)DpROM_derivatives(q,tensors_PROM); 
-
+%%
 % instantiate object for time integration
 TI_sens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true);
 
@@ -358,8 +361,28 @@ TI_sens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true);
 Residual_sens = @(s,sd,sdd,t,it)residual_linear_sens(s,sd,sdd,t,PROM_Assembly,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, TI_NL_PROM.Solution.qdd,pd_fext_PROM,pd_fint_PROM,h);
 
 % time integration (TI)
-TI_sens.Integrate(q0,qd0,qdd0,tmax,Residual_sens);
+TI_sens.Integrate(s0,sd0,sdd0,tmax,Residual_sens);
 TI_sens.Solution.s = V * TI_sens.Solution.q; % get full order solution
+
+%%
+% Second order sensitivity ________________________________________________
+if secondOrderDer == 1
+    % initial conditions
+    s20 = zeros(size(V,2),m,m);
+    s2d0 = zeros(size(V,2),m,m);
+    s2dd0 = zeros(size(V,2),m,m);
+    
+    
+    % instantiate object for time integration
+    TI_2ndSens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true);
+    
+    % residual function handle
+    Residual_2ndSens = @(s2,s2d,s2dd,t,it)residual_linear_2ndSens(s2,s2d,s2dd,t,PROM_Assembly,TI_NL_PROM.Solution, TI_sens.Solution,pd_fext_PROM,pd_fint_PROM,h);
+    
+    % time integration (TI)
+    TI_2ndSens.Integrate(s20,s2d0,s2dd0,tmax,Residual_2ndSens);
+    TI_2ndSens.Solution.s = V * TI_2ndSens.Solution.q; % get full order solution
+end
 
 %% FOM-n (nominal) ________________________________________________________
 % initial condition: equilibrium
@@ -455,7 +478,7 @@ figure('units','normalized','position',[.1 .1 .8 .6],'name','Vertical displaceme
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-tplot=linspace(0,tmax,tmax/h);
+tplot=linspace(0,tmax,tmax/h+1);
 plot(tplot,TI_NL_FOMfull.Solution.u(tailNodeDOF,1:end-1)*100, "--")
 hold on
 plot(tplot,TI_NL_FOMn.Solution.u(tailNodeDOF,1:end-1)*100, "--")
@@ -464,15 +487,24 @@ plot(tplot,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end-1)*100)
 plot(tplot,TI_NL_FOMsv.Solution.u(tailNodeDOF,1:end-1)*100, "--")
 plot(tplot,TI_NL_ROMsv.Solution.u(tailNodeDOF,1:end-1)*100)
 
-approx = V*(TI_NL_PROM.Solution.q(:,1:end-1)+TI_sens.Solution.q(:,1:end-1)*xi)*100;
+qSol = TI_NL_PROM.Solution.q(:,1:end-1);
+s1Sol = TI_sens.Solution.q(:,1:end-1);
+s2Sol = TI_2ndSens.Solution.q(:,1:end-1);
+approx = V*(qSol+s1Sol*xi)*100;
 plot(tplot,approx(tailNodeDOF,:), "-.")
+approx2 = approx;
+for t=1:size(approx,2)
+    approx2(:,t) = V*(qSol(:,t)+s1Sol(:,t)*xi+ 0.5*double(ttv(ttv(tensor(s2Sol(:,t),[size(s2Sol(:,t)) 1]),xi,3),xi,2)))*100;
+end
+plot(tplot,approx2(tailNodeDOF,:), "-.")
 
 ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
 xlabel('Time [s]')
 set(gca,'FontName','ComputerModern');
 grid on
 %legend({'ROM-n','ROM-d','PROM-n','PROM-d','Approximation of ROM-d using PROM sensitivities'}, 'Location', 'southoutside','Orientation','horizontal')
-legend({'FOM-n exact','FOM-n','ROM-n','FOM-sv','ROM-sv','Approximation of ROM-sv using PROM'}, 'Location', 'southoutside','Orientation','horizontal')
+legend({'FOM-n exact','FOM-n','ROM-n','FOM-sv','ROM-sv','Approx. 1st o. sens.','Approx. 2nd o. sens.'}, 'Location', 'southoutside','Orientation','horizontal')
+%legend({'FOM-n','ROM-n','FOM-sv','ROM-sv','Approximation of ROM-sv using PROM','2nd order'}, 'Location', 'southoutside','Orientation','horizontal')
 hold off
 
 

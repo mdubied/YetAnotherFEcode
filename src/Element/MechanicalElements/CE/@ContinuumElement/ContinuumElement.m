@@ -377,8 +377,8 @@ classdef ContinuumElement < Element
                 [G,~,~] = shape_function_derivatives(self, Xi); % shape function derivative
                 L=L_matrix(self);                               % quadratic strain tensor L 
                 
-                B2Ein = tensor(einsum('Ijk,kN,jM->INM',L,G,G)+2*einsum('Ijk,kl,jn->INL',L,G,G));
-                B3 = B3 + double(ttv(B2Ein,actuationDirection,1));
+                B3Ein = tensor(einsum('Ijk,kN,jM->INM',L,G,G)+2*einsum('Ijk,kl,jn->INL',L,G,G));
+                B3 = B3 + double(ttv(B3Ein,actuationDirection,1));
             end
              
         end
