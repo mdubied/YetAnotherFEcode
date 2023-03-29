@@ -92,7 +92,7 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     
     % HYDRODYNAMIC FORCES TENSORS _________________________________________
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    vwater = [2;0.5];
+    vwater = [1;0.1];
     rho = 1;
     tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
     

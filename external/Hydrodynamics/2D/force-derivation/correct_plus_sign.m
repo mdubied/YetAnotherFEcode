@@ -1,4 +1,4 @@
-txtFile = 'C:\Users\mathi\OneDrive\Bureau\make fishes swim\YetAnotherFEcode\external\Hydrodynamics\force-derivation\00_tensor_initial.txt'; 
+txtFile = 'C:\Users\mathi\OneDrive\Bureau\make fishes swim\YetAnotherFEcode\external\Hydrodynamics\2D\force-derivation\00_tensor_initial.txt'; 
 % Read file and store each line in a cell
 txt = fileread(txtFile);
 txtCell = strsplit(txt, newline);
@@ -17,7 +17,7 @@ txtCell(rowIdx)  = [];
 
 %txtCell = cellfun(@(x)sprintf('%s\n',x), txtCell, 'UniformOutput', false); %add 'newrow' char
 % Write text to new file (or you could overwrite the old one).
-newFile = 'C:\Users\mathi\OneDrive\Bureau\make fishes swim\YetAnotherFEcode\external\Hydrodynamics\force-derivation\01_tensor_plus_sign_corrected.txt'; 
+newFile = 'C:\Users\mathi\OneDrive\Bureau\make fishes swim\YetAnotherFEcode\external\Hydrodynamics\2D\force-derivation\01_tensor_plus_sign_corrected.txt'; 
 fid = fopen(newFile, 'wt'); 
 fprintf(fid,[txtCell{:}]);
 fclose(fid);

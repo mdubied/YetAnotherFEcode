@@ -259,7 +259,7 @@ tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, sk
 % ROM-d
 tensors_hydro_ROMd = reduced_tensors_hydro_ROM(DefectedAssembly, elements, Vd, skinElements, skinElementFaces, vwater, rho);
 % PROM
-FOURTHORDER = 1;
+FOURTHORDER = 0;
 tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
 
 %% TIME INTEGRATION
@@ -403,8 +403,8 @@ plot(tplot,TI_NL_ROMn.Solution.u(rNodeDOF,1:end-2)*100)
 hold on
 plot(tplot,TI_NL_ROMd.Solution.u(rNodeDOF,1:end-2)*100, "-.")
 plot(tplot,TI_NL_PROM.Solution.u(rNodeDOF,1:end-2)*100, "--")
-%plot(tplot,TI_NL_PROMd.Solution.u(rNodeDOF,1:end-2)*100, ":")
-%plot(tplot,(TI_NL_PROM.Solution.u(rNodeDOF,1:end-2)+TI_sens.Solution.s(rNodeDOF,1:end-2)*xi)*100,":")
+plot(tplot,TI_NL_PROMd.Solution.u(rNodeDOF,1:end-2)*100, ":")
+plot(tplot,(TI_NL_PROM.Solution.u(rNodeDOF,1:end-2)+TI_sens.Solution.s(rNodeDOF,1:end-2)*xi)*100,":")
 approx = V*(TI_NL_PROM.Solution.q(:,1:end-2)+TI_sens.Solution.q(:,1:end-2)*xi)*100;
 plot(tplot,approx(rNodeDOF,:))
 

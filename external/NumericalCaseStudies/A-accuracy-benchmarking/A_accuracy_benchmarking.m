@@ -1,10 +1,10 @@
 % ------------------------------------------------------------------------ 
 % Accuracy benchmarking.
-% Script to benchmark the accuracy of the ROM and PROM formulation in
-% comparison to the FOM solution for 2D structures under hydrodynamic
+% Script to benchmark the accuracy of the ROM and PROM formulations in
+% comparison to the FOM solutions for 2D structures under hydrodynamic
 % forces. Used element type: TRI3.
 % 
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 28/03/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -22,7 +22,7 @@ USEJULIA = 0;
 %% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
-E       = 0.6*263824;   % Young's modulus [Pa]
+E       = 2600000;%263824;   % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
 nu      = 0.499;        % Poisson's ratio 
 thickness = .1;         % [m] out-of-plane thickness
@@ -46,7 +46,7 @@ xi1 = 0.2;
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = 'naca0012TRI_medium_mesh';
+        filename = 'naca0012TRI_medium_mesh';%'naca0012TRI3_268Elements';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
 
@@ -56,11 +56,11 @@ MeshNominal.create_elements_table(elements,myElementConstructor);
 Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
 Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
 
-% plot nominal mesh
+%% plot nominal mesh
 elementPlot = elements(:,1:3); 
 figure('units','normalized','position',[.2 .1 .6 .4],'name','Nominal mesh with element and node indexes')
-PlotMesh(nodes, elementPlot, 1);
-
+PlotMesh(nodes, elementPlot, 0);
+%%
 % boundary conditions of nominal mesh
 nel = size(elements,1);
 nset = {};
@@ -247,10 +247,11 @@ PROM_Assembly.DATA.K = V.'*Kn*V;                        % reduced stiffness matr
 
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
 vwater = [1;0.3];   % water velocity vector
-rho = 1;
+rho = 997*0.03;
 
 % ROM-n
 tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
+%%
 % ROM-sv
 tensors_hydro_ROMsv = reduced_tensors_hydro_ROM(svAssembly, elements, Vsv, skinElements, skinElementFaces, vwater, rho);
 % PROM
@@ -270,10 +271,11 @@ end
 % Parameters' initialization for all models _______________________________
 % time step for integration
 h = 0.01;
-tmax = 4.0; 
+tmax = 1.0; 
 
 %% ROM-n __________________________________________________________________
 % initial condition: equilibrium
+tic
 q0 = zeros(size(Vn,2),1);
 qd0 = zeros(size(Vn,2),1);
 qdd0 = zeros(size(Vn,2),1);
@@ -286,7 +288,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
     double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
 % instantiate object for nonlinear time integration
-TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005);
+TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
@@ -294,6 +296,7 @@ Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_
 % nonlinear Time Integration
 TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
+toc
 
 %% ROM-sv _________________________________________________________________
 % initial condition: equilibrium
@@ -309,7 +312,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_ROMsv.Tr1) + ...
     double(ttv(ttv(tensors_hydro_ROMsv.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
 % instantiate object for nonlinear time integration (TI)
-TI_NL_ROMsv = ImplicitNewmark('timestep',h,'alpha',0.005);
+TI_NL_ROMsv = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
 
 % nonlinear residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMsv_Assembly,F_ext);
@@ -332,7 +335,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_PROM.Tr1) + ...
     double(ttv(ttv(tensors_hydro_PROM.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
 % instantiate object for nonlinear time integration
-TI_NL_PROM = ImplicitNewmark('timestep',h,'alpha',0.005);
+TI_NL_PROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,PROM_Assembly,F_ext);
@@ -355,7 +358,7 @@ pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM,FOURTHO
 pd_fint_PROM = @(q)DpROM_derivatives(q,tensors_PROM); 
 %%
 % instantiate object for time integration
-TI_sens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true);
+TI_sens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60,'RelTol',1e-6);
 
 % residual function handle
 Residual_sens = @(s,sd,sdd,t,it)residual_linear_sens(s,sd,sdd,t,PROM_Assembly,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, TI_NL_PROM.Solution.qdd,pd_fext_PROM,pd_fint_PROM,h);
@@ -390,7 +393,7 @@ nUncDOFs = size(MeshNominal.EBC.unconstrainedDOFs,2);
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
 qdd0 = zeros(nUncDOFs,1);
-
+tic
 % hydrodynamic forces
 T1 = NominalAssembly.constrain_vector(double(tensors_hydro_FOM.T1));
 Tu2 = NominalAssembly.constrain_matrix(double(tensors_hydro_FOM.Tu2));
@@ -413,7 +416,7 @@ TI_NL_FOMn.Solution.u = zeros(NominalAssembly.Mesh.nDOFs,size(TI_NL_FOMn.Solutio
 for t=1:size(TI_NL_FOMn.Solution.q,2)
     TI_NL_FOMn.Solution.u(:,t) = NominalAssembly.unconstrain_vector(TI_NL_FOMn.Solution.q(:,t));
 end
-
+toc
 %% FOM-sv _________________________________________________________________
 % initial condition: equilibrium
 nUncDOFs = size(svMesh.EBC.unconstrainedDOFs,2);
@@ -479,17 +482,17 @@ set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
 tplot=linspace(0,tmax,tmax/h+1);
-plot(tplot,TI_NL_FOMfull.Solution.u(tailNodeDOF,1:end-1)*100, "--")
+%plot(tplot,TI_NL_FOMfull.Solution.u(tailNodeDOF,1:end-1)*100, "--")
 hold on
-plot(tplot,TI_NL_FOMn.Solution.u(tailNodeDOF,1:end-1)*100, "--")
-plot(tplot,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end-1)*100)
+%plot(tplot,TI_NL_FOMn.Solution.u(tailNodeDOF,1:end-1)*100, "--")
+plot(tplot,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end)*100)
 
-plot(tplot,TI_NL_FOMsv.Solution.u(tailNodeDOF,1:end-1)*100, "--")
-plot(tplot,TI_NL_ROMsv.Solution.u(tailNodeDOF,1:end-1)*100)
+%plot(tplot,TI_NL_FOMsv.Solution.u(tailNodeDOF,1:end-1)*100, "--")
+plot(tplot,TI_NL_ROMsv.Solution.u(tailNodeDOF,1:end)*100)
 
-qSol = TI_NL_PROM.Solution.q(:,1:end-1);
-s1Sol = TI_sens.Solution.q(:,1:end-1);
-s2Sol = TI_2ndSens.Solution.q(:,1:end-1);
+qSol = TI_NL_PROM.Solution.q(:,1:end);
+s1Sol = TI_sens.Solution.q(:,1:end);
+s2Sol = TI_2ndSens.Solution.q(:,1:end);
 approx = V*(qSol+s1Sol*xi)*100;
 plot(tplot,approx(tailNodeDOF,:), "-.")
 approx2 = approx;

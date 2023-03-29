@@ -1,4 +1,4 @@
-function T = Tuu3_conf1(A,rho,vw1,vw2,r11,r12,r21,r22,x01,x02,x03,x04,x05,x06)
+function T = Tuu3_conf1(rho,vw1,vw2,inv,x01,x02,x03,x04,x05,x06)
 T(:,:,1) = [];
 
 

@@ -20,7 +20,8 @@ set(get(cbar,'title'),'string','disp [cm]');
 % get the color limits
 clim = caxis;
 ylim(cbar,[clim(1) clim(2)]);
-numpts = 24 ;    % Number of points to be displayed on colorbar
+numpts = 15;%24 ;    % Number of points to be displayed on colorbar
+cbar.Title.Interpreter = 'latex';
 kssv = linspace(clim(1),clim(2),numpts);
 set(cbar,'YtickMode','manual','YTick',kssv); % Set the tickmode to manual
 for i = 1:numpts
@@ -28,4 +29,6 @@ for i = 1:numpts
     imep = num2str(kssv(i)*100);
     vasu(i) = {imep} ;
 end
-set(cbar,'YTickLabel',vasu(1:numpts),'fontsize',9);
+set(cbar,'YTickLabel',vasu(1:numpts),'fontsize',9,'TickLabelInterpreter','latex');
+% a =  cbar.Position; %gets the positon and size of the color bar
+% set(cbar,'Position',[a(1)+0.1 a(2) 0.02 0.6])% To change size

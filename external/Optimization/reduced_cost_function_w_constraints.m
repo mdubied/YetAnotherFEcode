@@ -21,12 +21,13 @@
 % (1) Lr:   reduced cost function value    
 %     
 %
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 28/03/2023, Mathieu Dubied, ETH Zurich
 
 function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi,dr,A,b)
     Lr = 0;
     nConstraints = size(b);
-    barrierParam = 500;%1000;
+    barrierParam = 400;%1000;
+    LwoB = 0;
     
     for t=1:N-2
         eta_i = eta(:,t);
@@ -47,7 +48,11 @@ function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,
             end
         end
 
-        % final cost function
+        % final cost function at time step t
         Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
+        LwoB = LwoB -dr'*fhydro;
     end
+
+    % print cost function without part stemming from barrier functions
+    fprintf('Drag minimization: Lr = %.4f\n',LwoB)
 end

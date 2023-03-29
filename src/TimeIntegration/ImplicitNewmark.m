@@ -107,7 +107,7 @@ classdef ImplicitNewmark < handle
                             
                             %% Check convergence
                             epsilon = norm(r)/c0;
-                            if it>10
+                            if it>cast(0.9*obj.MaxNRit,'int16')
                                 disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
                             end
                             if (epsilon<obj.tol)  % Error < Tolerance : break

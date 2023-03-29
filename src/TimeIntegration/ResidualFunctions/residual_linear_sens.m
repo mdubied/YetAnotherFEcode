@@ -59,8 +59,8 @@ function [r, drdsdd, drdsd, drds] = residual_linear_sens(s,sd,sdd,t,ROMn_Assembl
     end
     % actuation forces
     if ACTUATION
-        a1=1+0.002*sin(t*2*pi/5);
-        a2=1-0.002*sin(t*2*pi/5);
+        a1=1+0.004*sin(t*2*pi/5);
+        a2=1-0.004*sin(t*2*pi/5);
         derivative_factTop_PROM = pd_factTop(a1);
         derivative_factBottom_PROM = pd_factBottom(a2);
         
