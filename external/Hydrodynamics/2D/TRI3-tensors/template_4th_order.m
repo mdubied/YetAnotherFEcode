@@ -1,4 +1,4 @@
-function T = Tuu4_conf1(A,rho,vw1,vw2,r11,r12,r21,r22,x01,x02,x03,x04,x05,x06)
+function T = Tuu4_conf1(rho,vw1,vw2,inv,x01,x02,x03,x04,x05,x06)
 T(:,:,1,1) = [];
 
 
@@ -105,4 +105,6 @@ T(:,:,5,6) = [];
 
 
 T(:,:,6,6) = [];
+
+T = 0.5*rho*T;
 end

@@ -88,7 +88,7 @@ if secondOrderDer
     % without 4th order tensors
     df3dqdq = Truu3 + permute(Truu3,[1 3 2]);
     df3dqdqd = Truudot3;
-    df3dqddq = Truudot3;
+    df3dqddq = permute(Truudot3,[1 3 2]);
     df3dqddqd = Trudotudot3 + permute(Trudotudot3,[1 3 2]);
 
     df2dqdp = Tru3;
@@ -100,13 +100,13 @@ if secondOrderDer
     if FOURTHORDER
         df3dqdq = df3dqdq + ttv(Truu4,xi,4) + permute(ttv(Truu4,xi,4),[1 3 2]);
         df3dqdqd = df3dqdqd + ttv(Truudot4,xi,4);
-        df3dqddq = df3dqddq + ttv(Truudot4,xi,4);
+        df3dqddq = df3dqddq + permute(ttv(Truudot4,xi,4),[1 3 2]);
         df3dqddqd = df3dqddqd + ttv(Trudotudot4,xi,4) + permute(ttv(Trudotudot4,xi,4),[1 3 2]);
 
         df3dqdp = ttv(Truu4,q,3) + ttv(Truu4,q,2) + ttv(Truudot4,qd,3);
-        df3dpdq = ttv(Truu4,q,3) + ttv(Truu4,q,2) + ttv(Truudot4,qd,3);
-        df3dqddp = ttv(Trudotudoot4,qd,3) + ttv(Trudotudot4,qd,2) + ttv(Truudot4,q,2);
-        df3dpdqd = ttv(Truudot4,q,2) + ttv(Trudotudot4,qd,3) + ttv(Trudotudot4,qd,2);
+        df3dpdq = permute(ttv(Truu4,q,3),[1 3 2]) + permute(ttv(Truu4,q,2),[1 3 2]) + permute(ttv(Truudot4,qd,3), [1 3 2]);
+        df3dqddp = ttv(Trudotudot4,qd,3) + ttv(Trudotudot4,qd,2) + ttv(Truudot4,q,2);
+        df3dpdqd = permute(ttv(Truudot4,q,2),[1 3 2]) + permute(ttv(Trudotudot4,qd,3),[1 3 2]) + permute(ttv(Trudotudot4,qd,2),[1 3 2]);
     end
 
     % assemble contributions of f1r,f2r,f3r
