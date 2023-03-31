@@ -4,13 +4,13 @@
 % comparison to the FOM solutions for 2D structures under hydrodynamic
 % forces. Used element type: TRI3.
 % 
-% Last modified: 28/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 29/03/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
 close all; 
 clc
-
+tic
 whichModel = 'ABAQUS';
 elementType = 'TRI3';
 
@@ -22,7 +22,7 @@ USEJULIA = 0;
 %% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
-E       = 2600000;%263824;   % Young's modulus [Pa]
+E       = 2600000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
 nu      = 0.499;        % Poisson's ratio 
 thickness = .1;         % [m] out-of-plane thickness
@@ -39,14 +39,14 @@ switch elementType
 end
 
 % PROM parameters
-xi1 = 0.2;
+xi1 = 0.1;
 
 % MESH ____________________________________________________________________
 
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = 'naca0012TRI_medium_mesh';%'naca0012TRI3_268Elements';
+        filename = 'naca0012TRI3_90Elements';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
 
@@ -135,14 +135,14 @@ NominalAssembly.DATA.D = Dn;
 NominalAssembly.DATA.C = Dn;
 Dc = NominalAssembly.constrain_matrix(Dn);
 
+
 % shape-varied
 Dsv = alfa*Msv + beta*Ksv; % Rayleigh damping 
 svAssembly.DATA.D = Dsv;
 svAssembly.DATA.C = Dsv;
 Dsvc = svAssembly.constrain_matrix(Dsv);
 
-%% EIGENMODES - VIBRATION MODES (VMs) _____________________________________
-
+% %% EIGENMODES - VIBRATION MODES (VMs) _____________________________________
 n_VMs = 4;  % number of vibration modes to include in the ROM
 
 % NOMINAL _________________________________________________________________
@@ -157,14 +157,14 @@ for ii = 1:n_VMs
 end
 VMn = NominalAssembly.unconstrain_vector(VMn);
 
-% plot
-mod = 1;
-elementPlot = elements(:,1:3); 
-figure('units','normalized','position',[.2 .1 .6 .4],'name','Vibration mode for nominal mesh')
-PlotMesh(nodes, elementPlot, 0);
-v1 = reshape(VMn(:,mod), 2, []).';
-PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
-title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0n(mod),3) ' Hz']);
+% % plot
+% mod = 1;
+% elementPlot = elements(:,1:3); 
+% figure('units','normalized','position',[.2 .1 .6 .4],'name','Vibration mode for nominal mesh')
+% PlotMesh(nodes, elementPlot, 0);
+% v1 = reshape(VMn(:,mod), 2, []).';
+% PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+% title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0n(mod),3) ' Hz']);
 
 % SHAPE-VARIED ____________________________________________________________
 % eigentvalue problem
@@ -178,14 +178,14 @@ for ii = 1:n_VMs
 end
 VMsv = svAssembly.unconstrain_vector(VMsv);
 
-% plot
-mod = 1;
-elementPlot = elements(:,1:3); 
-figure('units','normalized','position',[.2 .1 .6 .4],'name','Vibration mode for shape-varied mesh')
-PlotMesh(nodes, elementPlot, 0);
-v1 = reshape(VMsv(:,mod), 2, []).';
-PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
-title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0d(mod),3) ' Hz'])
+% % plot
+% mod = 1;
+% elementPlot = elements(:,1:3); 
+% figure('units','normalized','position',[.2 .1 .6 .4],'name','Vibration mode for shape-varied mesh')
+% PlotMesh(nodes, elementPlot, 0);
+% v1 = reshape(VMsv(:,mod), 2, []).';
+% PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+% title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0d(mod),3) ' Hz'])
 
 %% MODAL DERIVATIVES (MDs) ________________________________________________                   
 
@@ -210,11 +210,16 @@ Vsv = orth(Vsv);	% ROM-sv
 V  = orth(V);	% PROM
 
 % ROM-n: reduced order model for nominal mesh
+
 tensors_ROMn = reduced_tensors_ROM(NominalAssembly, elements, Vn, USEJULIA);
 
+% 
 % ROM-sv: reduced order model for shape-varied mesh
+
 tensors_ROMsv = reduced_tensors_ROM(svAssembly, elements, Vsv, USEJULIA);
+
 tensors_ROMsv.xi = xi; % save for which xi ROM-sv is computed
+
 
 % PROM: parametric formulation for shape variations
 tensors_PROM = reduced_tensors_DpROM(NominalAssembly, elements, ...
@@ -231,13 +236,14 @@ ROMn_Assembly.DATA.M = ROMn_Assembly.mass_matrix();     % reduced mass matrix
 ROMn_Assembly.DATA.C = Vn.'*Dn*Vn;                      % reduced damping matrix 
 ROMn_Assembly.DATA.K = Vn.'*Kn*Vn;                      % reduced stiffness matrix 
 
+
 % ROM-sv __________________________________________________________________
 ROMsv_Assembly = ReducedAssembly(svMesh, Vsv);
 ROMsv_Assembly.DATA.M = ROMsv_Assembly.mass_matrix();   % reduced mass matrix 
 ROMsv_Assembly.DATA.C = Vsv.'*Dsv*Vsv;                  % reduced damping matrix
 ROMsv_Assembly.DATA.K = Vsv.'*Ksv*Vsv;                  % reduced stiffness matrix 
 
-% PROM ____________________________________________________________________
+% % PROM ____________________________________________________________________
 PROM_Assembly = ReducedAssembly(MeshNominal, V);
 PROM_Assembly.DATA.M = PROM_Assembly.mass_matrix();     % reduced mass matrix 
 PROM_Assembly.DATA.C = V.'*Dn*V;                        % reduced damping matrix 
@@ -246,18 +252,21 @@ PROM_Assembly.DATA.K = V.'*Kn*V;                        % reduced stiffness matr
 %% ROM TENSORS - HYDRODYNAMIC FORCES ______________________________________
 
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
-vwater = [1;0.3];   % water velocity vector
-rho = 997*0.03;
-
+vwater = [0.7;0.21];%[1;0.3] %[0.7;0.21];   % water velocity vector
+rho = 997*0.01;%997*0.001;
+toc
 % ROM-n
 tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
+
 %%
 % ROM-sv
 tensors_hydro_ROMsv = reduced_tensors_hydro_ROM(svAssembly, elements, Vsv, skinElements, skinElementFaces, vwater, rho);
-% PROM
-FOURTHORDER = 1;
+% PROM w/o 4th order tensors
+FOURTHORDER = 0;
 tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
-
+%% PROM with 4th order tensors
+FOURTHORDER4 = 1;
+tensors_hydro_PROM4 = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER4, skinElements, skinElementFaces, vwater, rho);
 
 %% FOM TENSORS - HYDRODYNAMIC FORCES (optional) ___________________________
 
@@ -265,17 +274,18 @@ FOM = 1;    % FOM=1 for assembling the hydrodynamic tensors at the assembly leve
 
 if FOM == 1
     tensors_hydro_FOM = unreduced_tensors_hydro_FOM(NominalAssembly, elements, skinElements, skinElementFaces, vwater, rho);
-    tensors_hydro_FOMsv = unreduced_tensors_hydro_FOM(svAssembly, elements, skinElements, skinElementFaces, vwater, rho);
 end
+
 %% TIME INTEGRATION _______________________________________________________
 
 % Parameters' initialization for all models _______________________________
 % time step for integration
-h = 0.01;
+h1 = 0.01;
 tmax = 1.0; 
 
 %% ROM-n __________________________________________________________________
-% initial condition: equilibrium
+initial condition: equilibrium
+fprintf('solver')
 tic
 q0 = zeros(size(Vn,2),1);
 qd0 = zeros(size(Vn,2),1);
@@ -289,7 +299,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
     double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
 % instantiate object for nonlinear time integration
-TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
+TI_NL_ROMn = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
@@ -301,10 +311,12 @@ toc
 
 %% ROM-sv _________________________________________________________________
 % initial condition: equilibrium
+tic
+fprintf('solver\n')
 q0 = zeros(size(Vsv,2),1);
 qd0 = zeros(size(Vsv,2),1);
 qdd0 = zeros(size(Vsv,2),1);
-tic
+
 % hydrodynamic forces
 F_ext = @(t,q,qd) (double(tensors_hydro_ROMsv.Tr1) + ...
     double(tensors_hydro_ROMsv.Tru2*q) + double(tensors_hydro_ROMsv.Trudot2*qd) + ...
@@ -313,7 +325,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_ROMsv.Tr1) + ...
     double(ttv(ttv(tensors_hydro_ROMsv.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
 % instantiate object for nonlinear time integration (TI)
-TI_NL_ROMsv = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
+TI_NL_ROMsv = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
 
 % nonlinear residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMsv_Assembly,F_ext);
@@ -322,12 +334,14 @@ Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMsv
 TI_NL_ROMsv.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_ROMsv.Solution.u = Vsv * TI_NL_ROMsv.Solution.q; % get full order solution
 toc
-
-%% PROM - nominal (defect=0) ______________________________________________
+% 
+% %% PROM - nominal (defect=0) ______________________________________________
 % initial condition: equilibrium
 q0 = zeros(size(V,2),1);
 qd0 = zeros(size(V,2),1);
 qdd0 = zeros(size(V,2),1);
+
+fprintf('solver\n')
 tic
 % hydrodynamic forces
 F_ext = @(t,q,qd) (double(tensors_hydro_PROM.Tr1) + ...
@@ -337,7 +351,7 @@ F_ext = @(t,q,qd) (double(tensors_hydro_PROM.Tr1) + ...
     double(ttv(ttv(tensors_hydro_PROM.Trudotudot3,qd,3), qd,2))); % q, qd are reduced order DOFs
 
 % instantiate object for nonlinear time integration
-TI_NL_PROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
+TI_NL_PROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,PROM_Assembly,F_ext);
@@ -346,32 +360,33 @@ Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,PROM_
 TI_NL_PROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_PROM.Solution.u = V * TI_NL_PROM.Solution.q; % get full order solution
 toc
-%% SENSITIVITY ANALYSIS (PROM) ____________________________________________
-
+%% SENSITIVITY ANALYSIS (PROM w/o 4th order tensors) ______________________
+fprintf('sens')
+tic
 % First order sensitivity _________________________________________________
 % initial conditions
 s0 = zeros(size(V,2),m);
 sd0 = zeros(size(V,2),m);
 sdd0 = zeros(size(V,2),m);
 
-tic
+
 % evaluate partial derivatives along solution
 secondOrderDer = 1; % set to 1 if you want to compute the 2nd order derivative to perform a second order sensitivity analysis
 pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM,FOURTHORDER,secondOrderDer);
 pd_fint_PROM = @(q)DpROM_derivatives(q,tensors_PROM); 
 
 % instantiate object for time integration
-TI_sens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60,'RelTol',1e-6);
+TI_sens = ImplicitNewmark('timestep',h1,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60,'RelTol',1e-6);
 
 % residual function handle
-Residual_sens = @(s,sd,sdd,t,it)residual_linear_sens(s,sd,sdd,t,PROM_Assembly,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, TI_NL_PROM.Solution.qdd,pd_fext_PROM,pd_fint_PROM,h);
+Residual_sens = @(s,sd,sdd,t,it)residual_linear_sens(s,sd,sdd,t,PROM_Assembly,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, TI_NL_PROM.Solution.qdd,pd_fext_PROM,pd_fint_PROM,h1);
 
 % time integration (TI)
 TI_sens.Integrate(s0,sd0,sdd0,tmax,Residual_sens);
 TI_sens.Solution.s = V * TI_sens.Solution.q; % get full order solution
-toc
-tic
+
 % Second order sensitivity ________________________________________________
+tic
 if secondOrderDer == 1
     % initial conditions
     s20 = zeros(size(V,2),m,m);
@@ -380,18 +395,66 @@ if secondOrderDer == 1
     
     
     % instantiate object for time integration
-    TI_2ndSens = ImplicitNewmark('timestep',h,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60);
+    TI_2ndSens = ImplicitNewmark('timestep',h1,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60);
     
     % residual function handle
-    Residual_2ndSens = @(s2,s2d,s2dd,t,it)residual_linear_2ndSens(s2,s2d,s2dd,t,PROM_Assembly,TI_NL_PROM.Solution, TI_sens.Solution,pd_fext_PROM,pd_fint_PROM,h);
+    Residual_2ndSens = @(s2,s2d,s2dd,t,it)residual_linear_2ndSens(s2,s2d,s2dd,t,PROM_Assembly,TI_NL_PROM.Solution, TI_sens.Solution,pd_fext_PROM,pd_fint_PROM,h1);
     
     % time integration (TI)
     TI_2ndSens.Integrate(s20,s2d0,s2dd0,tmax,Residual_2ndSens);
     TI_2ndSens.Solution.s = V * TI_2ndSens.Solution.q; % get full order solution
 end
 toc
-%% FOM-n (nominal) ________________________________________________________
+
+%% SENSITIVITY ANALYSIS (PROM with 4th order tensors) _____________________
+tic
+% First order sensitivity _________________________________________________
+% initial conditions
+s0 = zeros(size(V,2),m);
+sd0 = zeros(size(V,2),m);
+sdd0 = zeros(size(V,2),m);
+
+
+% evaluate partial derivatives along solution
+secondOrderDer = 1; % set to 1 if you want to compute the 2nd order derivative to perform a second order sensitivity analysis
+pd_fext_PROM = @(q,qd)DpROM_hydro_derivatives(q,qd,xi,tensors_hydro_PROM4,FOURTHORDER4,secondOrderDer);
+pd_fint_PROM = @(q)DpROM_derivatives(q,tensors_PROM); 
+
+% instantiate object for time integration
+TI_sens4 = ImplicitNewmark('timestep',h1,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60,'RelTol',1e-6);
+
+% residual function handle
+Residual_sens = @(s,sd,sdd,t,it)residual_linear_sens(s,sd,sdd,t,PROM_Assembly,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, TI_NL_PROM.Solution.qdd,pd_fext_PROM,pd_fint_PROM,h1);
+
+% time integration (TI)
+TI_sens4.Integrate(s0,sd0,sdd0,tmax,Residual_sens);
+TI_sens4.Solution.s = V * TI_sens4.Solution.q; % get full order solution
+toc
+
+% Second order sensitivity ________________________________________________
+tic
+if secondOrderDer == 1
+    % initial conditions
+    s20 = zeros(size(V,2),m,m);
+    s2d0 = zeros(size(V,2),m,m);
+    s2dd0 = zeros(size(V,2),m,m);
+    
+    
+    % instantiate object for time integration
+    TI_2ndSens4 = ImplicitNewmark('timestep',h1,'alpha',0.005,'linear',true,'sens',true,'MaxNRit',60);
+    
+    % residual function handle
+    Residual_2ndSens = @(s2,s2d,s2dd,t,it)residual_linear_2ndSens(s2,s2d,s2dd,t,PROM_Assembly,TI_NL_PROM.Solution, TI_sens4.Solution,pd_fext_PROM,pd_fint_PROM,h1);
+    
+    % time integration (TI)
+    TI_2ndSens4.Integrate(s20,s2d0,s2dd0,tmax,Residual_2ndSens);
+    TI_2ndSens4.Solution.s = V * TI_2ndSens4.Solution.q; % get full order solution
+end
+toc
+%% FOM-II (nominal) _______________________________________________________
 % initial condition: equilibrium
+fprintf('solver \n')
+h2=0.005;
 nUncDOFs = size(MeshNominal.EBC.unconstrainedDOFs,2);
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
@@ -408,7 +471,7 @@ F_ext = @(t,q,qd) (T1 + Tu2*q + Tudot2*q + double(ttv(ttv(Tuu3,q,3), q,2)) + ...
                     double(ttv(ttv(Tuudot3,qd,3),q,2))+ double(ttv(ttv(Tudotudot3,qd,3), qd,2)));
 
 % instantiate object for nonlinear time integration
-TI_NL_FOMn = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8);
+TI_NL_FOMn = ImplicitNewmark('timestep',h2,'alpha',0.005,'MaxNRit',200,'RelTol',1e-6);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,NominalAssembly,F_ext);
@@ -420,51 +483,24 @@ for t=1:size(TI_NL_FOMn.Solution.q,2)
     TI_NL_FOMn.Solution.u(:,t) = NominalAssembly.unconstrain_vector(TI_NL_FOMn.Solution.q(:,t));
 end
 toc
-%% FOM-sv _________________________________________________________________
-% initial condition: equilibrium
-nUncDOFs = size(svMesh.EBC.unconstrainedDOFs,2);
-q0 = zeros(nUncDOFs,1);
-qd0 = zeros(nUncDOFs,1);
-qdd0 = zeros(nUncDOFs,1);
 
+
+%% FOM-I Sn (original nonlinear force, small time step needed) ____________
+% initial condition: equilibrium
+fprintf('solver \n')
 tic
-% hydrodynamic forces
-T1 = svAssembly.constrain_vector(double(tensors_hydro_FOMsv.T1));
-Tu2 = svAssembly.constrain_matrix(double(tensors_hydro_FOMsv.Tu2));
-Tudot2 = svAssembly.constrain_matrix(double(tensors_hydro_FOMsv.Tudot2));
-Tuu3 = tensor(svAssembly.constrain_tensor(double(tensors_hydro_FOMsv.Tuu3)));
-Tuudot3 = tensor(svAssembly.constrain_tensor(double(tensors_hydro_FOMsv.Tuudot3)));
-Tudotudot3 = tensor(svAssembly.constrain_tensor(double(tensors_hydro_FOMsv.Tudotudot3)));
-F_ext = @(t,q,qd) (T1 + Tu2*q + Tudot2*q + double(ttv(ttv(Tuu3,q,3), q,2)) + ...
-                    double(ttv(ttv(Tuudot3,qd,3),q,2))+ double(ttv(ttv(Tudotudot3,qd,3), qd,2)));
-
-% instantiate object for nonlinear time integration
-TI_NL_FOMsv = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-8');
-
-% modal nonlinear Residual evaluation function handle
-Residual_NL = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,svAssembly,F_ext);
-
-% nonlinear Time Integration
-TI_NL_FOMsv.Integrate(q0,qd0,qdd0,tmax,Residual_NL);
-TI_NL_FOMsv.Solution.u = zeros(svAssembly.Mesh.nDOFs,size(TI_NL_FOMsv.Solution.q,2));
-for t=1:size(TI_NL_FOMsv.Solution.q,2)
-    TI_NL_FOMsv.Solution.u(:,t) = svAssembly.unconstrain_vector(TI_NL_FOMsv.Solution.q(:,t));
-end
-toc
-
-%% FOM (original nonlinear force, small time step needed) _________________
-% initial condition: equilibrium
+h2=0.005;
 nUncDOFs = size(MeshNominal.EBC.unconstrainedDOFs,2);
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
 qdd0 = zeros(nUncDOFs,1);
 
-tic
+
 % hydrodynamic forces
 F_ext = @(t,q,qd) hydro_force_TRI3(NominalAssembly, skinElements, skinElementFaces, vwater, rho,q,qd);
 
 % instantiate object for nonlinear time integration
-TI_NL_FOMfull = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',200,'MaxNRit',60,'RelTol',1e-8);
+TI_NL_FOMfull = ImplicitNewmark('timestep',h2,'alpha',0.005,'MaxNRit',400,'MaxNRit',200,'RelTol',1e-6);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,NominalAssembly,F_ext);
@@ -472,60 +508,103 @@ Residual_NL = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,NominalAssembly,F
 % nonlinear Time Integration
 TI_NL_FOMfull.Integrate(q0,qd0,qdd0,tmax,Residual_NL);
 TI_NL_FOMfull.Solution.u = zeros(NominalAssembly.Mesh.nDOFs,size(TI_NL_FOMfull.Solution.q,2));
-for t=1:size(TI_NL_FOMsv.Solution.q,2)
+
+for t=1:size(TI_NL_FOMfull.Solution.q,2)
     TI_NL_FOMfull.Solution.u(:,t) = NominalAssembly.unconstrain_vector(TI_NL_FOMfull.Solution.q(:,t));
 end
 toc
 
-%% 1-DOF PLOT _____________________________________________________________
+
+%% PLOTs __________________________________________________________________
 
 % find a specific result node and corresponding DOF
 tailNodeDOFS = MeshNominal.get_DOF_from_location([Lx, 0]);
 tailNodeDOF = tailNodeDOFS(2); % y-direction
+% time axis
+tplot1=linspace(0,tmax,tmax/h1+1);
+tplot2=linspace(0,tmax,tmax/h2+1);
+% tplot3=linspace(0,tmax,tmax/h3+1);
 
-% plot
+%% Sn: nominal configuration ______________________________________________
 figure('units','normalized','position',[.1 .1 .8 .6],'name','Vertical displacement of the tail node')
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-tplot=linspace(0,tmax,tmax/h+1);
-%plot(tplot,TI_NL_FOMfull.Solution.u(tailNodeDOF,1:end-1)*100, "--")
+
+plot(tplot2,TI_NL_FOMfull.Solution.u(tailNodeDOF,1:end)*100, "--")
 hold on
-%plot(tplot,TI_NL_FOMn.Solution.u(tailNodeDOF,1:end-1)*100, "--")
-plot(tplot,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end)*100)
-
-%plot(tplot,TI_NL_FOMsv.Solution.u(tailNodeDOF,1:end-1)*100, "--")
-plot(tplot,TI_NL_ROMsv.Solution.u(tailNodeDOF,1:end)*100)
-
-qSol = TI_NL_PROM.Solution.q(:,1:end);
-s1Sol = TI_sens.Solution.q(:,1:end);
-s2Sol = TI_2ndSens.Solution.q(:,1:end);
-approx = V*(qSol+s1Sol*xi)*100;
-plot(tplot,approx(tailNodeDOF,:), "-.")
-approx2 = approx;
-for t=1:size(approx,2)
-    approx2(:,t) = V*(qSol(:,t)+s1Sol(:,t)*xi+ 0.5*double(ttv(ttv(tensor(s2Sol(:,t),[size(s2Sol(:,t)) 1]),xi,3),xi,2)))*100;
-end
-plot(tplot,approx2(tailNodeDOF,:), "-.")
+plot(tplot2,TI_NL_FOMn.Solution.u(tailNodeDOF,1:end)*100, "-.")
+plot(tplot1,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end)*100,"-")
+plot(tplot1,TI_NL_PROM.Solution.u(tailNodeDOF,1:end)*100,".", 'MarkerSize',3)
 
 ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
 xlabel('Time [s]')
 set(gca,'FontName','ComputerModern');
 grid on
-%legend({'ROM-n','ROM-d','PROM-n','PROM-d','Approximation of ROM-d using PROM sensitivities'}, 'Location', 'southoutside','Orientation','horizontal')
-legend({'FOM-n exact','FOM-n','ROM-n','FOM-sv','ROM-sv','Approx. 1st o. sens.','Approx. 2nd o. sens.'}, 'Location', 'southoutside','Orientation','horizontal')
-%legend({'FOM-n','ROM-n','FOM-sv','ROM-sv','Approximation of ROM-sv using PROM','2nd order'}, 'Location', 'southoutside','Orientation','horizontal')
+legend({'FOM','FOM-t','ROM','PROM'}, 'Location', 'eastoutside','Orientation','vertical')
+hold off
+
+%% Ssv90 and Ssv80: shape varied configurations ___________________________
+figure('units','normalized','position',[.1 .1 .8 .6],'name','Vertical displacement of the tail node')
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+
+plot(tplot1,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end)*100,'-.')
+hold on
+% plot(tplot3,TI_NL_FOMsv.Solution.u(tailNodeDOF,1:end)*100, "--")
+
+plot(tplot1,TI_NL_ROMsv.Solution.u(tailNodeDOF,1:end)*100,'--')
+
+% PROM w/o 4th order tensors
+qSol = TI_NL_PROM.Solution.q(:,1:end);
+s1Sol = TI_sens.Solution.q(:,1:end);
+s2Sol = TI_2ndSens.Solution.q(:,1:end);
+
+
+%1st order sens.
+approx = V*(qSol+s1Sol*xi)*100;
+plot(tplot1,approx(tailNodeDOF,:), "-")
+
+
+% 2nd order sens.
+approx2 = approx;
+for t=1:size(approx,2)
+    approx2(:,t) = V*(qSol(:,t)+s1Sol(:,t)*xi+ 0.5*double(ttv(ttv(tensor(s2Sol(:,t),[size(s2Sol(:,t)) 1]),xi,3),xi,2)))*100;
+end
+plot(tplot1,approx2(tailNodeDOF,:), "-")
+
+% PROM with 4th order tensors
+tic
+qSol = TI_NL_PROM.Solution.q(:,1:end);
+s1Sol = TI_sens4.Solution.q(:,1:end);
+s2Sol = TI_2ndSens4.Solution.q(:,1:end);
+
+%1st order sens.
+approx = V*(qSol+s1Sol*xi)*100;
+plot(tplot1,approx(tailNodeDOF,:), ".",'MarkerSize',3)
+
+% 2nd order sens.
+approx2 = approx;
+for t=1:size(approx,2)
+    approx2(:,t) = V*(qSol(:,t)+s1Sol(:,t)*xi+ 0.5*double(ttv(ttv(tensor(s2Sol(:,t),[size(s2Sol(:,t)) 1]),xi,3),xi,2)))*100;
+end
+plot(tplot1,approx2(tailNodeDOF,:), ".",'MarkerSize',3)
+
+
+ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
+xlabel('Time [s]')
+set(gca,'FontName','ComputerModern');
+grid on
+
+%legend({'ROM (Sn)','FOM-II (Ssv)','ROM (Ssv)','1st o. sens. (w/o 4th)','2nd o. sens. (w/o 4th)','1st o. sens. (with 4th)','2nd o. sens. (with 4th)'}, 'Location', 'eastoutside','Orientation','vertical')
+legend({'ROM (Sn)','ROM (Ssv)','1st o. sens. (w/o 4th)','2nd o. sens. (w/o 4th)','1st o. sens. (with 4th)','2nd o. sens. (with 4th)'}, 'Location', 'eastoutside','Orientation','vertical')
 hold off
 
 
+
+
 %% Animations _____________________________________________________________
-%% ROM-n __________________________________________________________________
-
-AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',1,'index',1:2,'filename','ROMn','framerate',1/h)
-
-%actuationValues = zeros(size(TI_NL_ROMn.Solution.u,2),1); % no
-%AnimateFieldonDeformedMeshActuation(nodes, elementPlot,actuationElements,actuationValues,TI_NL_ROMn.Solution.u,'factor',1,'index',1:2,'filename','result_video','framerate',1/h)
-
-%% ROM-d __________________________________________________________________
-AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMsv.Solution.u,'factor',100,'index',1:2,'filename','result_video')
-
+% % ROM-n
+% AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROMn.Solution.u,'factor',1,'index',1:2,'filename','ROMn','framerate',1/h1)
+% 
