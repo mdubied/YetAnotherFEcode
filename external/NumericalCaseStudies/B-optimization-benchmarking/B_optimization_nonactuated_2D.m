@@ -2,9 +2,11 @@
 % Script to test and compare the optimization pipeline presented in the
 % paper on a simple 2D (non-actuated) structure.
 %
-% Optimization obejective: reduce drag on the airfoil. 
+% Optimization objective: reduce drag on the airfoil, in the negative
+%                         x-direction (foward swimming direction)
+%
 % 
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 02/04/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -21,7 +23,7 @@ USEJULIA = 0;
 %% PREPARE (NOMINAL) MODEL AND SHAPE VARIATION                                                    
 
 % DATA ____________________________________________________________________
-E       = 0.6*263824;       %263824;       % Young's modulus [Pa]
+E       = 260000;       %263824;       % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
 nu      = 0.499;        % Poisson's ratio 
 thickness = .1;         % [m] beam's out-of-plane thickness
@@ -40,7 +42,7 @@ end
 % MESH_____________________________________________________________________
 
 % nominal mesh
-filename = 'naca0012TRI_medium_mesh';
+filename = 'naca0012TRI3_90Elements';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 
 MeshNominal = Mesh(nodes);
@@ -71,18 +73,18 @@ thinAirfoil(2:2:end) = yDif;                    % fill up all y-positions
 % shape variations basis
 U = thinAirfoil;    % shape variations basis
 
-%% OPTIMIZATION PARAMETERS
+%% OPTIMIZATION PARAMETERS ________________________________________________
 d = [-1;0];
 h = 0.05;
-tmax = 0.5;
+tmax = 1;
 A=[1;-1];
-b=[0.3;0.2];
+b=[0.3;0.3];
 
 %% OPTIMIZATION PIPELINE P1 _______________________________________________
 
 tStart = tic;
 [xiStar1,xiEvo1,LrEvo1] = optimization_pipeline_1(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',2);  
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1);  
 tP1 = toc(tStart);
 fprintf('Computation time for P1: %.2fs\n',tP1)
 
@@ -90,7 +92,7 @@ fprintf('Computation time for P1: %.2fs\n',tP1)
 
 tStart = tic;
 [xiStar2,xiEvo2,LrEvo2] = optimization_pipeline_2(MeshNominal, ...
-    nodes,elements,U,d,h,tmax,A,b,'maxIteration',3);
+    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1);
 tP2 = toc(tStart);
 fprintf('Computation time for P2: %.2fs\n',tP2)
 
@@ -98,7 +100,7 @@ fprintf('Computation time for P2: %.2fs\n',tP2)
 
 tStart = tic;
 [xiStar3,xiEvo3,LrEvo3] = optimization_pipeline_3(MeshNominal, ...
-    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200);
+    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1);
 tP3 = toc(tStart);
 fprintf('Computation time for P3: %.2fs\n',tP3)
 
@@ -106,14 +108,78 @@ fprintf('Computation time for P3: %.2fs\n',tP3)
 
 tStart = tic;
 [xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',2);
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1,'nRebuild',3);
 tP4 = toc(tStart);
-fprintf('Computation time for P3: %.2fs\n',tP4)
+fprintf('Computation time for P4: %.2fs\n',tP4)
+
+%% OPTIMIZATION PIPELINE P5 _______________________________________________
+% PFOM cannot be constructed. The memory will saturate wenn computing the
+% PFOM internal force tensors.
+% tStart = tic;
+% [xiStar5,xiEvo5,LrEvo5] = optimization_pipeline_5(myElementConstructor, ...
+%     nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',2);
+% tP5 = toc(tStart);
+% fprintf('Computation time for P5: %.2fs\n',tP5)
+
+%% COST COMPUTATION ON FINAL ROM __________________________________________
+xiFinal = xiStar4;
+
+% shape-varied mesh 
+df = U*xiFinal;                       % displacement field introduced by shape variations
+dd = [df(1:2:end) df(2:2:end)];   % rearrange as two columns matrix
+nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
+svMesh = Mesh(nodes_sv);
+svMesh.create_elements_table(elements,myElementConstructor);
+svMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
+
+% (P)ROM creation
+FORMULATION = 'N1';VOLUME = 1; USEJULIA = 0;FOURTHORDER = 0; ACTUATION = 0;
+[V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
+        build_PROM(svMesh,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
+        
+% solve EoMs
+TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
+eta = TI_NL_PROM.Solution.q;
+etad = TI_NL_PROM.Solution.qd;
+N = size(eta,2);
+
+% compute cost Lr without barrier functions (no constraints, to obtain the
+% the cost stemming from the hydrodynamic force only)
+dr = reduced_constant_vector(d,V);
+AFinal = [];     % no constraint
+bFinal= [];      % no constraint
+barrierParam = 3000;
+Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiFinal,dr,AFinal,b,Final,barrierParam);
+fprintf('The cost function w/o constraint is: %.4f\n',Lr)
+
+%% PLOT COST FUNCTION OVER ITERATIONS _____________________________________
+
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot(LrEvo4)
+grid on
+ylabel('$$L_r$$','Interpreter','latex')
+xlabel('Iterations')
+
+%% PLOT XI PARAMATER OVER ITERATIONS ______________________________________
+
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot(xiEvo4)
+grid on
+ylabel('$$\xi$$','Interpreter','latex')
+xlabel('Iterations')
+
+
 
 %% VISUALIZATION __________________________________________________________
 
 % defected mesh
-xi = xiStar3;       % parameter vector
+xi = xiFinal;       % parameter vector
 m = length(xi);     % number of parameters
 
 % update defected mesh nodes

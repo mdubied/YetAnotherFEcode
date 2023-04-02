@@ -26,18 +26,21 @@
 %                   tensors
 % (16) ACTUATION:   describes cases with actuation. 0 is w/o actuation, 1
 %                   with actuation for the 2D case discussed in the paper
+% (17) barrierParam:parameter to scale the barrier function for the 
+%                   constraints (1/barrierParam)
+% (18) gStepSize:   step size used in the gradient descent algorithm
 %
 % OUTPUTS:
 % (1) xi_star:      optimal shape parameter(s) (scalar or vector)
 % (2) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 23/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 31/03/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,A,b,varargin)
     
     % parse input
-    [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin{:});
+    [maxIteration,convCrit,barrierParam,gStepSize,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin{:});
     
     % STEP 1: set xi_0 = 0 ________________________________________________
     fprintf('____________________\n')
@@ -96,7 +99,7 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
 
     N = size(eta,2);
     dr = reduced_constant_vector(d,V);
-    Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi_k,dr,A,b);
+    Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi_k,dr,A,b,barrierParam);
     LrEvo = Lr;
 
     for k = 1:maxIteration
@@ -111,15 +114,14 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
         
 
         % step 8
-        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S,Sd,A,b,tensors_hydro_PROM,FOURTHORDER);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b)];
+        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S,Sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
+        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam)];
         % step 9 and 10
-        xi_k = xi_k - 0.05*nablaLr
-        if k>40
-            xi_k = xi_k - 0.3*nablaLr;
-        end
+        xi_k = xi_k - gStepSize*nablaLr
+
         xiEvo = [xiEvo,xi_k];
         
+        % possible exit conditions
         if size(xi_k,1) >1
             if norm(xiEvo(:,end)-xiEvo(:,end-1))<convCrit
                 fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
@@ -142,9 +144,11 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
 end
 
 % parse input
-function [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin)
+function [maxIteration,convCrit,barrierParam,gStepSize,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin)
 defaultMaxIteration = 50;
 defaultConvCrit = 0.001;
+defaultBarrierParam = 500;
+defaultGStepSize = 0.1;
 defaultFORMULATION = 'N1';
 defaultVOLUME = 1;
 defaultUSEJULIA = 0; 
@@ -154,6 +158,10 @@ p = inputParser;
 addParameter(p,'maxIteration',defaultMaxIteration, @(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','integer','positive'}) );
 addParameter(p,'convCrit',defaultConvCrit,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'FORMULATION',defaultFORMULATION,@(x)validateattributes(x, ...
                 {'char'},{'nonempty'}))
@@ -170,6 +178,8 @@ parse(p,varargin{:});
 
 maxIteration = p.Results.maxIteration;
 convCrit = p.Results.convCrit;
+barrierParam = p.Results.barrierParam;
+gStepSize = p.Results.gStepSize;
 FORMULATION = p.Results.FORMULATION;
 VOLUME = p.Results.VOLUME;
 USEJULIA = p.Results.USEJULIA;

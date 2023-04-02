@@ -217,10 +217,9 @@ classdef Assembly < handle
             % the full (unreduced) system
             
             n_e = self.Mesh.nElements;
-            md = size(U,2);
-
+           
             I = cell(n_e,1); % row indices
-            J = cell(md,1); % column indices
+            J = cell(n_e,1); % column indices
             K = cell(n_e,1); % values
             Elements = self.Mesh.Elements;
 
@@ -237,11 +236,11 @@ classdef Assembly < handle
                 index = thisElement.iDOFs;
                 d = length(index);
                 I{j} = kron(true(d,1), index);
-                J{j} = kron(index, md);
-                Ue = U(index,:);
+                J{j} = kron(index, true(d,1));
+                %Ue = U(index,:);
 
 
-                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3})*Ue;
+                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
                 K{j} = Ke(:);
             end
 
@@ -249,7 +248,8 @@ classdef Assembly < handle
             J = vertcat(J{:});
             K = vertcat(K{:});
 
-            K = sparse(I, J, K, self.Mesh.nDOFs, md);
+            K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
+            K = K*U;
 
         end
 
@@ -518,6 +518,48 @@ classdef Assembly < handle
             end
             T = vertcat(T{:});
             T = sptensor(subs, T, SIZE);
+
+        end
+
+        function [T] = tensor_skin_PFOM(self,elementMethodName,U,SIZE,sumDIMS,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.
+
+            n_e = self.Mesh.nElements;
+
+            subs = cell(n_e,1);
+            T = cell(n_e,1); % values
+            
+            Elements = self.Mesh.Elements;
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                
+                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                Te = tensor(Te);
+                [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, {}, sumDIMS);
+            end
+
+            subs = vertcat(subs{:});
+            if ~isempty(sumDIMS)
+                subs(:,sumDIMS) = sort(subs(:,sumDIMS),2);
+            end
+            T = vertcat(T{:});
+            T = sptensor(subs, T, SIZE);
+            T = ttm(T,U',3);
 
         end
 

@@ -24,38 +24,49 @@
 % (14) VOLUME:      integration over defected (1) or nominal volume (0)
 % (15) USEJULIA:    use of JULIA (1) for the computation of internal forces
 %                   tensors
+% (16) barrierParam:parameter to scale the barrier function for the 
+%                   constraints (1/barrierParam)
+% (17) gStepSize:   step size used in the gradient descent algorithm
+%
 %
 % OUTPUTS:
 % (1) xi_star:      optimal shape parameter(s) (scalar or vector)
 % (2) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 31/03/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,xiEvo,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,A,b,varargin)
     
-    % parse input
-    [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER] = parse_inputs(varargin{:});
+     % parse input
+    [maxIteration,convCrit,barrierParam,gStepSize,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin{:});
     
     % STEP 1: set xi_0 = 0 ________________________________________________
     fprintf('____________________\n')
     fprintf('STEP 1\n')
 
-    xi_k = 0;
+    xi_k = zeros(size(U,2),1);
     xiEvo = xi_k;
     
     % STEP 2: mesh the structure and build a PROM _________________________
     fprintf('____________________\n')
     fprintf('STEP 2\n')    
     
-    [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = ...
-        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER);
+    [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
+        build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
+
     
     % STEP 3: solve EoMs to get nominal solution eta_0 and dot{eta}_0 _____
     fprintf('____________________\n')
     fprintf('STEP 2\n')
 
-    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
+    if ACTUATION
+        TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax,...
+            'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
+    else
+        TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
+    end
+
     eta = TI_NL_PROM.Solution.q;
     etad = TI_NL_PROM.Solution.qd;
       
@@ -76,29 +87,46 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elemen
         eta_k = eta_k + S_k*xi_k; 
 
         % STEP 7: solve sensitivity equation to get S _____________________
-        TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
-        tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
-        TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
+        if ACTUATION
+            TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+                tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
+                TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER,...
+                    'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
+        else
+             TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+                tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
+                TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
+        end
+
 
         S_k = TI_sens.Solution.q;
         Sd_k = TI_sens.Solution.qd;
 
         % STEP 8: evaluate gradient _______________________________________
-        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S_k,Sd_k,A,b,tensors_hydro_PROM,FOURTHORDER);
+        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S_k,Sd_k,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
 
         % STEP 9-10: update xi_k __________________________________________
         if k==1
-            LrEvo = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b);
+            LrEvo = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam);
         else
-            LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b)];
+            LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam)];
         end
-        xi_k = xi_k - 0.8*nablaLr;
+        xi_k = xi_k - gStepSize*nablaLr
         xiEvo = [xiEvo,xi_k];
         
-        if norm(xiEvo(end)-xiEvo(end-1))<0.001
-            fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
-            break
+        % possible exit conditions
+        if size(xi_k,1) >1
+            if norm(xiEvo(:,end)-xiEvo(:,end-1))<convCrit
+                fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
+                break
+            end
+        else
+            if norm(xiEvo(end)-xiEvo(end-1))<convCrit
+                fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
+                break
+            end
         end
+
         if k == maxIteration
             fprintf('Maximum number of %d iterations reached\n',maxIteration)
         end
@@ -109,18 +137,24 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elemen
 end
 
 % parse input
-function [maxIteration,convCrit,FORMULATION,VOLUME,USEJULIA,FOURTHORDER] = parse_inputs(varargin)
+function [maxIteration,convCrit,barrierParam,gStepSize,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin)
 defaultMaxIteration = 50;
 defaultConvCrit = 0.001;
+defaultBarrierParam = 500;
+defaultGStepSize = 0.1;
 defaultFORMULATION = 'N1';
 defaultVOLUME = 1;
 defaultUSEJULIA = 0; 
 defaultFOURTHORDER = 0;
-
+defaultACTUATION = 0;
 p = inputParser;
 addParameter(p,'maxIteration',defaultMaxIteration, @(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','integer','positive'}) );
 addParameter(p,'convCrit',defaultConvCrit,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'FORMULATION',defaultFORMULATION,@(x)validateattributes(x, ...
                 {'char'},{'nonempty'}))
@@ -130,14 +164,19 @@ addParameter(p,'USEJULIA',defaultUSEJULIA,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty'}) );
 addParameter(p,'FOURTHORDER',defaultFOURTHORDER,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','integer','positive'}) );
+addParameter(p,'ACTUATION',defaultACTUATION,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','integer','positive'}) );
 
 parse(p,varargin{:});
 
 maxIteration = p.Results.maxIteration;
 convCrit = p.Results.convCrit;
+barrierParam = p.Results.barrierParam;
+gStepSize = p.Results.gStepSize;
 FORMULATION = p.Results.FORMULATION;
 VOLUME = p.Results.VOLUME;
 USEJULIA = p.Results.USEJULIA;
 FOURTHORDER = p.Results.FOURTHORDER;
+ACTUATION = p.Results.ACTUATION;
 
 end

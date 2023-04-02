@@ -1,4 +1,4 @@
-% tensors_hydro_FOM
+% unredecued_tensors_hydro_PFOM
 %
 % Synthax:
 % tensors = tensors_hydro_FOM(myAssembly, elements, skinElements, skinElementFaces, vwater, rho)
@@ -50,7 +50,7 @@ md = size(U,2);                         % size of the defect basis
 
 
 % compute FOM tensors
-disp(' FOM HYDRODYNAMIC TENSORS:')
+disp(' PFOM HYDRODYNAMIC TENSORS:')
 fprintf(' Assembling %d elements ...\n', nel)
 
 fprintf('   0th order in ud:\n')
@@ -77,9 +77,9 @@ tic;
 T2 = myAssembly.matrix_skin_PFOM('Te2', U,'weights', skinElements, skinElementFaces, vwater, rho);
 fprintf('       2nd order terms - Tr2: %.2f s\n',toc)
 
-tic;
-%Tu3 = myAssembly.tensor_skin('Teu3', U, [nDOFs nDOFs md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-%Tudot3 = myAssembly.tensor_skin('Teudot3', U, [nDOFs nDOFs md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+tic;                            
+Tu3 = myAssembly.tensor_skin_PFOM('Teu3', U, [nDOFs nDOFs nDOFs], [2 3], 'weights', skinElements, skinElementFaces, vwater, rho);
+Tudot3 = myAssembly.tensor_skin_PFOM('Teudot3', U, [nDOFs nDOFs nDOFs], [2 3], 'weights', skinElements, skinElementFaces, vwater, rho);
 time = toc(t0);
 
 fprintf(' %.2f s (%.2f s)\n',toc(t0),time)
@@ -90,9 +90,9 @@ fprintf(' SPEED: %.1f el/s\n',nel/time)
 tensors.T1 = T1;
 tensors.T2 = T2;
 tensors.Tu2 = Tu2;
-%tensors.Tu3 = Tu3;
+tensors.Tu3 = Tu3;
 tensors.Tudot2 = Tudot2;
-%tensors.Tudot3 = Tudot3;
+tensors.Tudot3 = Tudot3;
 tensors.Tuu3 = Tuu3;
 tensors.Tuudot3 = Tuudot3;
 tensors.Tudotudot3 = Tudotudot3; 

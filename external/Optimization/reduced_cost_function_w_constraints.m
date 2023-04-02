@@ -1,7 +1,7 @@
 % reduced_cost_function_w_constraints
 %
 % Synthax:
-% Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,dr,A,b)
+% Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,dr,A,b,barrierParam)
 %
 % Description:  Computes the cost function value in the ROB, considering
 %               constraints on the shape variation parameters xi. Upper and
@@ -14,19 +14,20 @@
 % (3) eta:              solution for the reduced state variables
 % (4) etad:             solution for the reduced state derivatives
 % (5) dr:               reduced forward swimming direction vector
-% (6)-(7) A, b:         constraints on xi of the form Axi<b    
+% (6)-(7) A, b:         constraints on xi of the form Axi<b  
+% (8) barrierParam:     parameter to scale (1/barrierParam) the barrier functions      
 %                   
 %
 % OUTPUTS:
 % (1) Lr:   reduced cost function value    
 %     
 %
-% Last modified: 28/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 31/03/2023, Mathieu Dubied, ETH Zurich
 
-function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi,dr,A,b)
+function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi,dr,A,b,barrierParam)
     Lr = 0;
     nConstraints = size(b);
-    barrierParam = 400;%1000;
+   
     LwoB = 0;
     
     for t=1:N-2

@@ -1,7 +1,7 @@
 % gradient_cost_function_w_constraints
 %
 % Synthax:
-% nabla_Lr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,tensors_hydro_PROM,FOURTHORDER)
+% nabla_Lr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER)
 %
 % Description:  gradient of the (reduced) cost function Lr. The gradient is
 %               analytical and based on the hydrodynamic tensors
@@ -15,7 +15,8 @@
 % (6) sd:                   solution for the sensitivity derivative
 % (7) tensors_hydro_PROM:   reduced tensors for the hydrodynamic forces
 % (8)-(9)                   constraints on xi of the form Axi<b 
-% (10) FOURTHORDER:         logical value for 4th order tensors (1), or not
+% (10) barrierParam:        parameter to scale (1/barrierParam) the barrier functions 
+% (11) FOURTHORDER:         logical value for 4th order tensors (1), or not
 %                           (0)
 %                       
 % OUTPUTS:
@@ -24,12 +25,12 @@
 %
 % Last modified: 15/03/2023, Mathieu Dubied, ETH Zürich
 
-function nablaLr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,tensors_hydro_PROM,FOURTHORDER)
+function nablaLr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER)
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
     nConstraints = size(b);
     secondOrderDer = 0;
-    barrierParam = 400;
+    %barrierParam = 14000;%400; for C:400
 
     for t=1:N 
         % part stemming from hydrodynamic forces
