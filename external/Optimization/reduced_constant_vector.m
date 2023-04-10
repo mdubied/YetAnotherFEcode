@@ -17,15 +17,17 @@
 % Additional notes:
 %   - specific implementation for TRI elements
 %
-% Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 02/04/2023, Mathieu Dubied, ETH Zürich
 
 function dr = reduced_constant_vector(d,V)
     n = size(V,1);
     m = size(V,2);
     dr = zeros(m,1);
-    for i=1:6:n
-        Ve = V(i:i+5,:);
-        de = [d;d;d];
-        dr = dr + Ve.'*de;  
-    end
+%     for i=1:6:n
+%         Ve = V(i:i+5,:);
+%         de = [d;d;d];
+%         dr = dr + Ve.'*de;  
+%     end
+    dFull = repmat(d',1,n/2)';
+    dr = V'*dFull;
 end

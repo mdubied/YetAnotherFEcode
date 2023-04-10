@@ -50,7 +50,8 @@ function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,
         end
 
         % final cost function at time step t
-        Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
+        %Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
+        Lr = [Lr, -dr'*fhydro + logBarrierInTimeStep];
         LwoB = LwoB -dr'*fhydro;
     end
 

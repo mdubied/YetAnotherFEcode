@@ -149,7 +149,7 @@ dr = reduced_constant_vector(d,V);
 AFinal = [];     % no constraint
 bFinal= [];      % no constraint
 barrierParam = 3000;
-Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiFinal,dr,AFinal,b,Final,barrierParam);
+Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiFinal,dr,AFinal,bFinal,barrierParam);
 fprintf('The cost function w/o constraint is: %.4f\n',Lr)
 
 %% PLOT COST FUNCTION OVER ITERATIONS _____________________________________

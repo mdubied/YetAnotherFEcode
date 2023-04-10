@@ -76,6 +76,9 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     FORMULATION);
     
     % ROB formulation
+    %VMn = NominalAssembly.unconstrain_vector(VMn);
+%     MDn = NominalAssembly.unconstrain_vector(MDn);
+%     DS = NominalAssembly.unconstrain_vector(DS);
     V  = [VMn MDn DS];
     V  = orth(V);
 
@@ -92,8 +95,12 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     
     % HYDRODYNAMIC FORCES TENSORS _________________________________________
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
+    % used in B
     vwater = [1;0.1];
-    rho = 1;
+    rho = 997*0.01;
+    % used in C
+    vwater = [0.05;0.00001];%[1;0.01];
+     rho = 997*0.005;
     tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
     
     % ACTUATION FORCES TENSORS ____________________________________________
