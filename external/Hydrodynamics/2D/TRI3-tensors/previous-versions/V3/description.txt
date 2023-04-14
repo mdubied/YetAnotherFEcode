@@ -1,0 +1,6 @@
+Hydrodynamic tensors V3
+
+- thrust coefficient Ct in the wrong direction (used -alpha instead of alpha)
+- scaling of thrust force
+
+A more correct behaviour can be achieved if the scaling is negative, to correct for the wrong Ct.

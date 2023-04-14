@@ -1,0 +1,7 @@
+Hydrodynamic tensors V2
+
+- area not kept constant
+- thrust coefficient Ct in the wrong direction (used -alpha instead of alpha)
+- no scaling of thrust force
+
+Case studies 1 and 2 in the semester thesis performed with this version (stand: 14/04/2023)

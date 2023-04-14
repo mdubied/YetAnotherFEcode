@@ -357,6 +357,7 @@ hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
 axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 
 %% COST COMPUTATION ON FINAL ROM __________________________________________
+%xiStar4 = [0.2;0.1;0.5;0.2;0.1]
 xiFinal = xiStar4;
 
 % shape-varied mesh 
@@ -384,6 +385,7 @@ FORMULATION = 'N1';VOLUME = 1; USEJULIA = 0;FOURTHORDER = 0; ACTUATION = 1;
 
 %%        
 % solve EoMs
+tmax=2.5
 TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax, ...
      'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
 % TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
@@ -405,7 +407,7 @@ Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiFinal,d
 
 % find a specific result node and corresponding DOF
 tailNodeDOFS = MeshNominal.get_DOF_from_location([Lx, 0]);
-tailNodeDOF = tailNodeDOFS(2); % y-direction
+tailNodeDOF = tailNodeDOFS(1); % y-direction
 % time axis
 tplot=linspace(0,tmax,tmax/h+1);
 
@@ -428,7 +430,122 @@ hold off
 figure
 plot(Lr)
 
+%% FOM-I __________________________________________________________________
 
+% ASSEMBLY ____________________________________________________________
+NominalAssembly = Assembly(svMesh);
+Mn = NominalAssembly.mass_matrix();
+nNodes = size(nodes,1);
+u0 = zeros( svMesh.nDOFs, 1);
+[Kn,~] = NominalAssembly.tangent_stiffness_and_force(u0);
+% store matrices
+NominalAssembly.DATA.K = Kn;
+NominalAssembly.DATA.M = Mn;
+
+% DAMPING _____________________________________________________________ 
+alfa = 3.1;
+beta = 6.3*1e-6;
+Dn = alfa*Mn + beta*Kn; % Rayleigh damping 
+NominalAssembly.DATA.D = Dn;
+Dc = NominalAssembly.constrain_matrix(Dn);
+NominalAssembly.DATA.C = Dn;
+Cc = NominalAssembly.constrain_matrix(Dn);
+
+% ACTUATION _______________________________________________________________
+
+V = ones(size(Mn));
+Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
+Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of the nominal fish
+
+nel = size(elements,1);
+actuationDirection = [1;0;0];%[1;0]-->[1;0;0] (Voigt notation)
+
+% top muscle
+topMuscle = zeros(nel,1);
+for el=1:nel
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+    if elementCenterY>0.00 &&  elementCenterX > Lx*0.25
+        topMuscle(el) = 1;
+    end    
+end
+tensors_topMuscle_FOM = reduced_tensors_actuation_ROM(NominalAssembly, V, topMuscle, actuationDirection);
+
+% bottom muscle
+bottomMuscle = zeros(nel,1);
+for el=1:nel
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+    if elementCenterY<0.00 &&  elementCenterX > Lx*0.25
+        bottomMuscle(el) = 1;
+    end    
+end
+tensors_bottomMuscle_FOM = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
+
+%%
+
+% TIME INTEGRATION ________________________________________________________
+h2=0.005;
+nUncDOFs = size(svMesh.EBC.unconstrainedDOFs,2);
+q0 = zeros(nUncDOFs,1);
+qd0 = zeros(nUncDOFs,1);
+qdd0 = zeros(nUncDOFs,1);
+
+
+% hydrodynamic and actuation forces
+[~,~,skinElements, skinElementFaces] = getSkin2D(elements);
+
+% used in C
+vwater = [0.05;0.00001];%[1;0.01];
+rho = 997*0.005;
+
+
+B1TopMuscle = NominalAssembly.constrain_vector(tensors_topMuscle_FOM.B1);
+B2TopMuscle = NominalAssembly.constrain_matrix(tensors_topMuscle_FOM.B2);
+B1BottomMuscle = NominalAssembly.constrain_vector(tensors_bottomMuscle_FOM.B1);
+B2BottomMuscle = NominalAssembly.constrain_matrix(tensors_bottomMuscle_FOM.B2);
+F_ext = @(t,q,qd) hydro_force_TRI3(NominalAssembly, skinElements, skinElementFaces, vwater, rho,q,qd) + ...
+    (1/2*(1-(1+0.04*sin(t*2*pi)))*(B1TopMuscle+B2TopMuscle*q) + ...
+                                1/2*(1-(1-0.04*sin(t*2*pi)))*(B1BottomMuscle+B2BottomMuscle*q));
+
+%
+
+% instantiate object for nonlinear time integration
+TI_NL_FOMfull = ImplicitNewmark('timestep',h2,'alpha',0.005,'MaxNRit',400,'MaxNRit',200,'RelTol',1e-6);
+
+% modal nonlinear Residual evaluation function handle
+Residual_NL = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,NominalAssembly,F_ext);
+
+% nonlinear Time Integration
+TI_NL_FOMfull.Integrate(q0,qd0,qdd0,tmax,Residual_NL);
+TI_NL_FOMfull.Solution.u = zeros(NominalAssembly.Mesh.nDOFs,size(TI_NL_FOMfull.Solution.q,2));
+
+for t=1:size(TI_NL_FOMfull.Solution.q,2)
+    TI_NL_FOMfull.Solution.u(:,t) = NominalAssembly.unconstrain_vector(TI_NL_FOMfull.Solution.q(:,t));
+end
+
+%% PLOTs FOM-I ____________________________________________________________
+
+% find a specific result node and corresponding DOF
+tailNodeDOFS = MeshNominal.get_DOF_from_location([Lx, 0]);
+tailNodeDOF = tailNodeDOFS(2); % y-direction
+% time axis
+tplot=linspace(0,tmax,tmax/h2+1);
+
+% plot
+figure('units','normalized','position',[.1 .1 .8 .6],'name','Vertical displacement of the tail node')
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+
+plot(tplot,TI_NL_FOMfull.Solution.u(tailNodeDOF,1:end-1)*100, "--")
+
+ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
+xlabel('Time [s]')
+set(gca,'FontName','ComputerModern');
+grid on
+%legend({'FOM','FOM-t','ROM','PROM'}, 'Location', 'eastoutside','Orientation','vertical')
+hold off
 %%
 headnode = MeshNominal.get_DOF_from_location([0, 0]);
 headnodeY = headnode(2);

@@ -78,8 +78,14 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     % ROB formulation
     %VMn = NominalAssembly.unconstrain_vector(VMn);
 %     MDn = NominalAssembly.unconstrain_vector(MDn);
-%     DS = NominalAssembly.unconstrain_vector(DS);
+%     DS = NominalAssembly.unconstrain_vector(DS)
     V  = [VMn MDn DS];
+    V  = orth(V);
+
+    %with rigid body mode
+    mSingle = [1 0]; % horizontal displacement
+    m1 = repmat(mSingle,1,nNodes)';
+    V  = [m1 VMn MDn DS];
     V  = orth(V);
 
     % reduced assembly

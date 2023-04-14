@@ -644,7 +644,7 @@ classdef Tri3Element < ContinuumElement
         end
 
         
-        % Tensors for hydrodynamic forces - PREVIOUS VERSION
+        % Tensors for hydrodynamic forces - c=1 VERSION
         function T = Te1(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns the 1st order tensor (i.e., a vector) stemming from 
@@ -656,11 +656,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                T = T1_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';      
+                %T = T1_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).'; 
+                T = T1_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
             elseif specificFace(1) == 2
-                T = T1_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                %T = T1_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                T = T1_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
             else
-                T = T1_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                %T = T1_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                T = T1_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
             end
             
             if specificFace(2) ~= 0
@@ -668,11 +671,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = T1_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';      
+                    %T = T1_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                    T = T1_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
                 elseif specificFace(2) == 2
-                    T = T1_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                    %T = T1_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                    T = T1_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
                 else
-                    T = T1_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                    %T = T1_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
+                    T = T1_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
                 end
             end
 
@@ -689,11 +695,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                T = T2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = T2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                T = T2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = T2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = T2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = T2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = T2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = T2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = T2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -701,11 +710,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = T2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = T2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                    T = T2_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = T2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = T2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                    T = T2_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = T2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = T2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = T2_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -723,11 +735,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                T = Tu2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tu2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tu2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tu2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                T = Tu2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tu2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tu2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tu2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -735,11 +750,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tu2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tu2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                    T = Tu2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tu2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tu2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tu2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tu2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tu2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tu2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -756,11 +774,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                T = Tu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu3_conf1_c(rho,-10.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                T = Tu3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -768,11 +789,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu3_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tu3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -791,11 +815,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                T = Tudot2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tudot2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tudot2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tudot2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                T = Tudot2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tudot2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tudot2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tudot2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -803,11 +830,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tudot2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tudot2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tudot2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tudot2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudot2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tudot2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tudot2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudot2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -824,11 +854,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                T = Tudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot3_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                T = Tudot3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tudot3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -836,11 +869,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                    T = Tudot3_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudot3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudot3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -858,11 +894,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                T = Tuu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tuu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuu3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tuu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tuu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuu3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tuu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tuu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tuu3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -870,11 +909,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tuu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tuu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tuu3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tuu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tuu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuu3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tuu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tuu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuu3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -926,11 +968,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                T = Tuudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tuudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tuudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tuudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tuudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tuudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tuudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -938,11 +983,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tuudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tuudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tuudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tuudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tuudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tuudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tuudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -993,11 +1041,14 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                T = Tudotudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                %T = Tudotudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudotudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tudotudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tudotudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
+                T = Tudotudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tudotudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                %T = Tudotudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tudotudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -1005,11 +1056,14 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tudotudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    %T = Tudotudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));  
+                    T = Tudotudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tudotudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tudotudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudotudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tudotudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    %T = Tudotudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudotudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
