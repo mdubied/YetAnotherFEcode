@@ -84,7 +84,7 @@ b=[0.3;0.3];
 
 tStart = tic;
 [xiStar1,xiEvo1,LrEvo1] = optimization_pipeline_1(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',1e9,'gStepSize',0.5);  
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.002,'barrierParam',1e4,'gStepSize',0.1);  
 tP1 = toc(tStart);
 fprintf('Computation time for P1: %.2fs\n',tP1)
 
@@ -92,7 +92,7 @@ fprintf('Computation time for P1: %.2fs\n',tP1)
 
 tStart = tic;
 [xiStar2,xiEvo2,LrEvo2] = optimization_pipeline_2(MeshNominal, ...
-    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1);
+    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.002,'barrierParam',1e4,'gStepSize',0.1);
 tP2 = toc(tStart);
 fprintf('Computation time for P2: %.2fs\n',tP2)
 
@@ -100,7 +100,7 @@ fprintf('Computation time for P2: %.2fs\n',tP2)
 
 tStart = tic;
 [xiStar3,xiEvo3,LrEvo3] = optimization_pipeline_3(MeshNominal, ...
-    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1);
+    nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.002,'barrierParam',1e4,'gStepSize',0.1);
 tP3 = toc(tStart);
 fprintf('Computation time for P3: %.2fs\n',tP3)
 
@@ -108,7 +108,7 @@ fprintf('Computation time for P3: %.2fs\n',tP3)
 
 tStart = tic;
 [xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',400,'convCrit',0.0001,'barrierParam',1e9,'gStepSize',0.5,'nRebuild',200);
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.002,'barrierParam',1e4,'gStepSize',0.1,'nRebuild',4);
 tP4 = toc(tStart);% nRebuild 20
 fprintf('Computation time for P4: %.2fs\n',tP4)
 
@@ -122,7 +122,7 @@ fprintf('Computation time for P4: %.2fs\n',tP4)
 % fprintf('Computation time for P5: %.2fs\n',tP5)
 
 %% COST COMPUTATION ON FINAL ROM __________________________________________
-xiFinal = xiStar4;
+xiFinal = xiStar4;%xiStar4;
 
 
 % shape-varied mesh 

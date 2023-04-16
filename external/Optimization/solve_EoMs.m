@@ -63,7 +63,7 @@ function TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax,varar
     TI_NL_PROM = ImplicitNewmark('timestep',h,'alpha',0.005);
     
     % modal nonlinear Residual evaluation function handle
-    Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_hydro(eta,etad,etadd,t,PROM_Assembly,F_ext);
+    Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_hydro(eta,etad,etadd,t,PROM_Assembly,F_ext,tensors_hydro_PROM);
     
     % time integration
     

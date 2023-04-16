@@ -100,10 +100,10 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     
     % HYDRODYNAMIC FORCES TENSORS _________________________________________
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    % used in B
-    vwater = [0.5;0.05];
-    rho = 997*0.005;
-    c = 0.5; % scaling factor for the thrust force
+    % used in case study B
+    vwater = [0.5;0.001];
+    rho = 997*0.01;
+    c = 0.2; % scaling factor for the thrust force
 %     % used in C
 %     vwater = [0.05;0.00001];%[1;0.01];
 %      rho = 997*0.01;
