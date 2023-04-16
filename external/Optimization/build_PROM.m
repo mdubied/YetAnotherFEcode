@@ -75,18 +75,17 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     [DS, names] = defect_sensitivities(NominalAssembly, elements, VMn, U, ...
     FORMULATION);
     
-    % ROB formulation
-    %VMn = NominalAssembly.unconstrain_vector(VMn);
-%     MDn = NominalAssembly.unconstrain_vector(MDn);
-%     DS = NominalAssembly.unconstrain_vector(DS)
+    % ROB formulation, case studies 1 and 2 (no rigid body mode)
     V  = [VMn MDn DS];
     V  = orth(V);
 
-    %with rigid body mode
-    mSingle = [1 0]; % horizontal displacement
-    m1 = repmat(mSingle,1,nNodes)';
-    V  = [m1 VMn MDn DS];
-    V  = orth(V);
+    % ROB formulation case study 3 (rigid body mode included)
+%     mSingle = [1 0]; % horizontal displacement
+%     m1 = repmat(mSingle,1,nNodes)';
+% %     mSingle = [0 1]; % horizontal displacement
+% %     m2 = repmat(mSingle,1,nNodes)';
+%     V  = [m1 VMn MDn DS];
+%     V  = orth(V);
 
     % reduced assembly
     PROM_Assembly = ReducedAssembly(MeshNominal, V);
@@ -102,12 +101,14 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     % HYDRODYNAMIC FORCES TENSORS _________________________________________
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
     % used in B
-    vwater = [1;0.1];
-    rho = 997*0.01;
-    % used in C
-    vwater = [0.05;0.00001];%[1;0.01];
-     rho = 997*0.005;
-    tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
+    vwater = [0.5;0.05];
+    rho = 997*0.005;
+    c = 0.5; % scaling factor for the thrust force
+%     % used in C
+%     vwater = [0.05;0.00001];%[1;0.01];
+%      rho = 997*0.01;
+%      c = 1.0; % scaling factor for the thrust force
+    tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho, c);
     
     % ACTUATION FORCES TENSORS ____________________________________________
     if ACTUATION

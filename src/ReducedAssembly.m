@@ -173,7 +173,7 @@ classdef ReducedAssembly < Assembly
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
-                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 K = K + elementWeights(j) * (Ve.' * Ke * Ve);
             end
         end
@@ -208,7 +208,7 @@ classdef ReducedAssembly < Assembly
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
                 Ue = U(index,:);
-                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 K = K + elementWeights(j) * (Ve.' * Ke * Ue);
             end
         end
@@ -309,7 +309,7 @@ classdef ReducedAssembly < Assembly
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
-                fe = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                fe = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 f = f + elementWeights(j) * (Ve.' * fe);
             end
         end
@@ -425,7 +425,7 @@ classdef ReducedAssembly < Assembly
                 index = thisElement.iDOFs;          
                 Ve = V(index,:); %#ok<*PFBNS>
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
-                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                     Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ve);
                     T = T + Ter;
                 else
@@ -473,7 +473,7 @@ classdef ReducedAssembly < Assembly
                 Ve = V(index,:); 
                 Ue = U(index,:);
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
-                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                     Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ue);
                     TDouble = TDouble + Ter;
                 else
@@ -528,7 +528,7 @@ classdef ReducedAssembly < Assembly
                 Ve = V(index,:); 
                 Ue = U(index,:);
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
-                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                     Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ue);
                     TDouble = TDouble + Ter;
                 else

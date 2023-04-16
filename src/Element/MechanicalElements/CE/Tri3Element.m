@@ -218,434 +218,8 @@ classdef Tri3Element < ContinuumElement
             size(T)
         end
 
-        % Tensors for hydrodynamic forces - PREVIOUS VERSION
-        function T = Te1_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns the 1st order tensor (i.e., a vector) stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
-            if specificFace(1) == 1
-                T = T1_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';      
-            elseif specificFace(1) == 2
-                T = T1_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-            else
-                T = T1_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = T1_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';      
-                elseif specificFace(1) == 2
-                    T = T1_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-                else
-                    T = T1_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-                end
-            end
-
-        end
-
-        function T = Te2_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
-            if specificFace(1) == 1
-                T = T2_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = T2_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = T2_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = T2_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = T2_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = T2_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-        end
-
-        
-        function T = Teu2_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
-            if specificFace(1) == 1
-                T = Tu2_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tu2_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tu2_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tu2_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tu2_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tu2_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-        end
-
-        function T = Teu3_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
-            if specificFace(1) == 1
-                T = Tu3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tu3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tu3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tu3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tu3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tu3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-
-        end
-
-        function T = Teudot2_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
-            if specificFace(1) == 1
-                T = Tudot2_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tudot2_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tudot2_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tudot2_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tudot2_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tudot2_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-        end
-
-        function T = Teudot3_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
-            if specificFace(1) == 1
-                T = Tudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-        end
-        
-        
-        function T = Teuu3_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tuu3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tuu3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tuu3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tuu3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tuu3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tuu3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-        end
-
-        function T = Teuu4_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 4th order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tuu4_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tuu4_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tuu4_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tuu4_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tuu4_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tuu4_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-    
-            T = permute(T,[4 3 1 2]);
-        end
-
-        function T = Teuudot3_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tuudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tuudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tuudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tuudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tuudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tuudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-        end
-
-        function T = Teuudot4_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 4th order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tuudot4_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tuudot4_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tuudot4_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tuudot4_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tuudot4_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tuudot4_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[4 3 1 2]);
-        end
-
-        function T = Teudotudot3_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tudotudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tudotudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tudotudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tudotudot3_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tudotudot3_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tudotudot3_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-        end
-
-        function T = Teudotudot4_old(self, specificFace, vwater, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-            [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tudotudot4_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tudotudot4_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tudotudot4_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
-                [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tudotudot4_conf1(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(1) == 2
-                    T = Tudotudot4_conf2(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tudotudot4_conf3(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[4 3 1 2]);
-        end
-
-        
-        % Tensors for hydrodynamic forces - c=1 VERSION
-        function T = Te1(self, specificFace, vwater, rho)
+        % Tensors for hydrodynamic forces
+        function T = Te1(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns the 1st order tensor (i.e., a vector) stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -656,14 +230,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                %T = T1_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).'; 
-                T = T1_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                T = T1_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
             elseif specificFace(1) == 2
-                %T = T1_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
-                T = T1_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                T = T1_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
             else
-                %T = T1_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-                T = T1_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                T = T1_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
             end
             
             if specificFace(2) ~= 0
@@ -671,20 +242,17 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = T1_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
-                    T = T1_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                    T = T1_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
                 elseif specificFace(2) == 2
-                    %T = T1_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-                    T = T1_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                    T = T1_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
                 else
-                    %T = T1_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';   
-                    T = T1_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
+                    T = T1_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)).';
                 end
             end
 
         end
 
-        function T = Te2(self, specificFace, vwater, rho)
+        function T = Te2(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -695,14 +263,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                %T = T2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                T = T2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T2_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = T2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = T2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T2_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = T2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = T2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T2_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -710,21 +275,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = T2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                    T = T2_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T2_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = T2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                    T = T2_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T2_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = T2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = T2_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T2_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
         end
 
         
-        function T = Teu2(self, specificFace, vwater, rho)
+        function T = Teu2(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -735,14 +297,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                %T = Tu2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tu2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu2_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tu2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                T = Tu2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu2_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tu2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = Tu2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu2_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -750,20 +309,17 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tu2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                    T = Tu2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu2_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tu2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tu2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu2_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tu2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tu2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu2_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
         end
 
-        function T = Teu3(self, specificFace, vwater, rho)
+        function T = Teu3(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -774,14 +330,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                %T = Tu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tu3_conf1_c(rho,-10.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tu3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                T = Tu3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tu3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -789,14 +342,11 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                    T = Tu3_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                    T = Tu3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tu3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tu3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
@@ -804,7 +354,7 @@ classdef Tri3Element < ContinuumElement
 
         end
 
-        function T = Teudot2(self, specificFace, vwater, rho)
+        function T = Teudot2(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -815,14 +365,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                %T = Tudot2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tudot2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot2_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tudot2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                T = Tudot2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot2_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tudot2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = Tudot2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot2_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -830,20 +377,17 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tudot2_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                    T = Tudot2_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot2_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tudot2_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tudot2_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot2_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tudot2_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tudot2_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot2_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
         end
 
-        function T = Teudot3(self, specificFace, vwater, rho)
+        function T = Teudot3(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -854,14 +398,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                %T = Tudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tudot3_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                T = Tudot3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = Tudot3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -869,21 +410,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                    T = Tudot3_conf1_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tudot3_conf2_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tudot3_conf3_c(rho,3.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
         end
         
         
-        function T = Teuu3(self, specificFace, vwater, rho)
+        function T = Teuu3(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -894,14 +432,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                %T = Tuu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tuu3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuu3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tuu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tuu3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuu3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tuu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = Tuu3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuu3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -909,21 +444,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tuu3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                    T = Tuu3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tuu3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tuu3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tuu3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tuu3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tuu3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tuu3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tuu3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
             T = permute(T,[3 1 2]);
         end
 
-        function T = Teuu4(self, specificFace, vwater, rho)
+        function T = Teuu4(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 4th order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -934,11 +466,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                T = Tuu4_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                T = Tuu4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
             elseif specificFace(1) == 2
-                T = Tuu4_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tuu4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
             else
-                T = Tuu4_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tuu4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
             end
             
             if specificFace(2) ~= 0
@@ -946,18 +478,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tuu4_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    T = Tuu4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
                 elseif specificFace(2) == 2
-                    T = Tuu4_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuu4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
                 else
-                    T = Tuu4_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuu4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
                 end
             end
     
             T = permute(T,[4 3 1 2]);
         end
 
-        function T = Teuudot3(self, specificFace, vwater, rho)
+        function T = Teuudot3(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -968,14 +500,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
 
             if specificFace(1) == 1
-                %T = Tuudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tuudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tuudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tuudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tuudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = Tuudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tuudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -983,21 +512,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tuudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                    T = Tuudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tuudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tuudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tuudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                   T = Tuudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tuudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tuudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                   T = Tuudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
             T = permute(T,[3 1 2]);
         end
 
-        function T = Teuudot4(self, specificFace, vwater, rho)
+        function T = Teuudot4(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 4th order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -1007,11 +533,11 @@ classdef Tri3Element < ContinuumElement
             [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             if specificFace(1) == 1
-                T = Tuudot4_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                T = Tuudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
             elseif specificFace(1) == 2
-                T = Tuudot4_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tuudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
             else
-                T = Tuudot4_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tuudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
             end
             
             if specificFace(2) ~= 0
@@ -1019,18 +545,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tuudot4_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    T = Tuudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
                 elseif specificFace(2) == 2
-                    T = Tuudot4_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
                 else
-                    T = Tuudot4_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tuudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
                 end
             end
 
             T = permute(T,[4 3 1 2]);
         end
 
-        function T = Teudotudot3(self, specificFace, vwater, rho)
+        function T = Teudotudot3(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -1041,14 +567,11 @@ classdef Tri3Element < ContinuumElement
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             
             if specificFace(1) == 1
-                %T = Tudotudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                T = Tudotudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudotudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                %T = Tudotudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2)); 
-                T = Tudotudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudotudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                %T = Tudotudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                T = Tudotudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = Tudotudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
@@ -1056,21 +579,18 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    %T = Tudotudot3_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));  
-                    T = Tudotudot3_conf1_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudotudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    %T = Tudotudot3_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tudotudot3_conf2_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudotudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    %T = Tudotudot3_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                    T = Tudotudot3_conf3_c(rho,-40.0,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = Tudotudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
             T = permute(T,[3 1 2]);
         end
 
-        function T = Teudotudot4(self, specificFace, vwater, rho)
+        function T = Teudotudot4(self, specificFace, vwater, rho, c)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
@@ -1080,11 +600,11 @@ classdef Tri3Element < ContinuumElement
             [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
             inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
             if specificFace(1) == 1
-                T = Tudotudot4_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                T = Tudotudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
             elseif specificFace(1) == 2
-                T = Tudotudot4_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tudotudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
             else
-                T = Tudotudot4_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                T = Tudotudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
             end
             
             if specificFace(2) ~= 0
@@ -1092,11 +612,11 @@ classdef Tri3Element < ContinuumElement
                 inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
                 
                 if specificFace(2) == 1
-                    T = Tudotudot4_conf1(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
+                    T = Tudotudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
                 elseif specificFace(2) == 2
-                    T = Tudotudot4_conf2(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudotudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
                 else
-                    T = Tudotudot4_conf3(rho,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
+                    T = Tudotudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
                 end
             end
 
@@ -1107,7 +627,7 @@ classdef Tri3Element < ContinuumElement
         % related functions
 
 
-        function F = drag_force_full(self, specificFace, vwater, rho, u, ud)
+        function F = drag_force_full(self, specificFace, vwater, rho, c, u, ud)
             % _____________________________________________________________
             % Returns the drag force F_drag acting the face
             % ``specificFace'' of an element. The force is divided by 2 and
@@ -1149,7 +669,7 @@ classdef Tri3Element < ContinuumElement
             
         end
 
-        function F = thrust_force_full(self, specificFace, vwater, rho, u, ud)
+        function F = thrust_force_full(self, specificFace, vwater, rho, c, u, ud)
             % _____________________________________________________________
             % Returns the thrust force F_drag acting the face
             % ``specificFace'' of an element. The force is divided by 2 and
@@ -1159,7 +679,7 @@ classdef Tri3Element < ContinuumElement
             [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
 
             % Computes thrust force
-            Fthrust = compute_thrust_force(startNode, endNode, nextNode);
+            Fthrust = c*compute_thrust_force(startNode, endNode, nextNode);
             % Applies thrust force on nodes
             F = apply_force(self, F, Fthrust, startNode, endNode);
 
@@ -1167,7 +687,7 @@ classdef Tri3Element < ContinuumElement
                 [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
 
                 % Computes thrust force
-                Fthrust = compute_thrust_force(startNode, endNode, nextNode);
+                Fthrust = c*compute_thrust_force(startNode, endNode, nextNode);
                 % Apply thrust force on nodes
                 F = apply_force(self, F, Fthrust, startNode, endNode);
 
@@ -1184,7 +704,7 @@ classdef Tri3Element < ContinuumElement
                 ns = 2; % 2D surfaces of TRI3 are composed of 2 elements
                 vrel = vwater - 1/ns*(ud(startNode,:)+ud(endNode,:)); 
                 d = vrel/norm(vrel);
-                Ct = 1/3*((acos(n.'*d))^2-pi^2/4);
+                Ct = 1/3*((pi-acos(n.'*d))^2-pi^2/4);
                 
                 % Thrust force
                 Fthrust = -1/2*A*rho*Ct*norm(vrel)^2*n;
@@ -1306,6 +826,7 @@ classdef Tri3Element < ContinuumElement
             
             
         end
+        
         % Useful helper functions
         function [r11, r12, r21, r22] = normal_vec_rot_matrix(~, startNodePos, endNodePos, nextNodePos)
             n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise

@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_nonlinear_hydro( q, qd, qdd, t, Assembly, Fext)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_nonlinear_hydro( q, qd, qdd, t, Assembly, Fext, Tu2,Tudot2,Tuu3,Tuudot3,Tudotudot3)
 %  RESIDUAL_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -65,9 +65,14 @@ F_external =  Fext(t,q,qd);
 F_inertial = M_red * qdd;
 F_damping = C_red * qd;
 r = F_inertial + F_damping + F_elastic - F_external ;
+
+derivative_hydro = FOM_hydro_derivatives(q,qd,Tu2,Tudot2,Tuu3,Tuudot3,Tudotudot3);
+dfhydrodq = derivative_hydro.dfdq; 
+dfhydrodqd = derivative_hydro.dfdqd;
+
 drdqdd = M_red;
-drdqd = C_red;
-drdq = K_red;
+drdqd = C_red - dfhydrodqd;
+drdq = K_red - dfhydrodq;
 %% 
 % We use the following measure to comapre the norm of the residual $\mathbf{r}$
 % 

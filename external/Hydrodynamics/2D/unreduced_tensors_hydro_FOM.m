@@ -16,6 +16,7 @@
 %   - skinElementFaces
 %   - vwater
 %   - rho:
+%   - c: scaling factor for thrust force
 %
 % OUTPUT:
 %   tensors: a struct variable with the following fields*:
@@ -35,9 +36,9 @@
 %   - List of currently supported elements: 
 %     TRI3
 %
-% Last modified: 14/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 16/04/2023, Mathieu Dubied, ETH Zurich
 
-function tensors = unreduced_tensors_hydro_FOM(myAssembly, elements, skinElements, skinElementFaces, vwater, rho)
+function tensors = unreduced_tensors_hydro_FOM(myAssembly, elements, skinElements, skinElementFaces, vwater, rho,c)
 
 t0=tic;
 % data from myAssembly
@@ -56,19 +57,19 @@ disp(' FOM HYDRODYNAMIC TENSORS:')
 fprintf(' Assembling %d elements ...\n', nel)
 
 tic
-T1 = myAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho);
+T1 = myAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho,c);
 fprintf('   1st order terms - T1: %.2f s\n',toc)
 
 tic
-Tu2 = myAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho);
-Tudot2 = myAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tu2 = myAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho,c);
+Tudot2 = myAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho,c);
 fprintf('   2nd order terms - Tu2, Tudot2: %.2f s\n',toc)
 
 
 tic;
-Tuu3 = 0.5*myAssembly.tensor_skin('Teuu3',[nDOFs nDOFs nDOFs],[2 3],'weights', skinElements, skinElementFaces, vwater, rho);
-Tuudot3 = myAssembly.tensor_skin('Teuudot3',[nDOFs nDOFs nDOFs],[2 3], 'weights', skinElements, skinElementFaces, vwater, rho);
-Tudotudot3 = 0.5*myAssembly.tensor_skin('Teudotudot3',[nDOFs nDOFs nDOFs],[2 3], 'weights', skinElements, skinElementFaces, vwater, rho);
+Tuu3 = 0.5*myAssembly.tensor_skin('Teuu3',[nDOFs nDOFs nDOFs],[2 3],'weights', skinElements, skinElementFaces, vwater, rho,c);
+Tuudot3 = myAssembly.tensor_skin('Teuudot3',[nDOFs nDOFs nDOFs],[2 3], 'weights', skinElements, skinElementFaces, vwater, rho,c);
+Tudotudot3 = 0.5*myAssembly.tensor_skin('Teudotudot3',[nDOFs nDOFs nDOFs],[2 3], 'weights', skinElements, skinElementFaces, vwater, rho,c);
 fprintf('   3rd order terms - Truu3, Truudot3, Turudotudot3: %.2f s\n',toc)
 
 

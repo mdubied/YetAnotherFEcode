@@ -1,7 +1,7 @@
 % reduced_tensors_hydro_PROM
 %
 % Synthax:
-% tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho)
+% tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho, c)
 %
 % Description: This function computes the reduced order hydrodynamic
 % tensors at the Assembly level, by combining (i.e., summing), the
@@ -18,6 +18,7 @@
 %   - skinElementFaces
 %   - vwater
 %   - rho:
+%   - c: scaling factor for the hydrodynamic thrust force
 % OUTPUT:
 %   tensors: a struct variable with the following fields*:
 %       .Tr1
@@ -40,10 +41,11 @@
 %     of MATERIAL and QUADRATURE rules.
 %   - List of currently supported elements: 
 %     TRI3
+%   - 4th order tensors not using the scaling factor c for now
 %
-% Last modified: 12/12/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 14/04/2022, Mathieu Dubied, ETH Zurich
 
-function tensors = reduced_tensors_hydro_PROM(myAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho)
+function tensors = reduced_tensors_hydro_PROM(myAssembly, elements, V, U, fourthOrder, skinElements, skinElementFaces, vwater, rho, c)
 
 t0=tic;
 
@@ -63,37 +65,37 @@ fprintf(' Assembling %d elements ...\n', nel)
 fprintf('   0th order in ud:\n')
 
 tic;
-Tr1 = RomAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tr1 = RomAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('       1st order terms - Tr1: %.2f s\n',toc)
 
 tic;
-Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('       2nd order terms - Tru2, Trudot2: %.2f s\n',toc)
 
 tic;
-Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Truudot3 = RomAssembly.tensor_skin('Teuudot3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Truudot3 = RomAssembly.tensor_skin('Teuudot3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3', [m m m], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('       3rd order terms - Truu3, Truudot3, Trudotudot3: %.2f s\n',toc)
 
 
 fprintf('   1st order in ud:\n')
 
 tic;
-Tr2 = RomAssembly.matrix_skin_PROM('Te2', U,'weights', skinElements, skinElementFaces, vwater, rho);
+Tr2 = RomAssembly.matrix_skin_PROM('Te2', U,'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('       2nd order terms - Tr2: %.2f s\n',toc)
 
 tic;
-Tru3 = RomAssembly.tensor_skin_PROM('Teu3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudot3 = RomAssembly.tensor_skin_PROM('Teudot3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+Tru3 = RomAssembly.tensor_skin_PROM('Teu3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Trudot3 = RomAssembly.tensor_skin_PROM('Teudot3', U, [m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('       3rd order terms - Tru3, Trudot3: %.2f s\n',toc)
 
 if fourthOrder
     tic;
-    Truu4 = 0.5*RomAssembly.tensor4_skin_PROM('Teuu4', U, [m m m md], [2 3 4], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-    Truudot4 = RomAssembly.tensor4_skin_PROM('Teuudot4', U,  [m m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-    Trudotudot4 = 0.5*RomAssembly.tensor4_skin_PROM('Teudotudot4', U, [m m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+    Truu4 = 0.5*RomAssembly.tensor4_skin_PROM('Teuu4', U, [m m m md], [2 3 4], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+    Truudot4 = RomAssembly.tensor4_skin_PROM('Teuudot4', U,  [m m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+    Trudotudot4 = 0.5*RomAssembly.tensor4_skin_PROM('Teudotudot4', U, [m m m md], [2 3], mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
     fprintf('       4th order terms - Truu4, Truudot4, Trudotudot4: %.2f s\n',toc)
 else
     fprintf('       4th order terms - not computed \n')

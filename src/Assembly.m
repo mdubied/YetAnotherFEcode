@@ -191,7 +191,7 @@ classdef Assembly < handle
                 I{j} = kron(true(d,1), index);
                 J{j} = kron(index, true(d,1));
 
-                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 K{j} = Ke(:);
             end
 
@@ -240,7 +240,7 @@ classdef Assembly < handle
                 %Ue = U(index,:);
 
 
-                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 K{j} = Ke(:);
             end
 
@@ -318,7 +318,7 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;
-                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
             end
             
             % assembling
@@ -356,7 +356,7 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;
-                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4}, inputs{5});
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4}, inputs{5},  inputs{6});
             end
             
             % assembling
@@ -507,7 +507,7 @@ classdef Assembly < handle
             for j = elementSet
                 thisElement = Elements(j).Object;
                 
-                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 Te = tensor(Te);
                 [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, {}, sumDIMS);
             end
@@ -548,7 +548,7 @@ classdef Assembly < handle
             for j = elementSet
                 thisElement = Elements(j).Object;
                 
-                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3});
+                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
                 Te = tensor(Te);
                 [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, {}, sumDIMS);
             end

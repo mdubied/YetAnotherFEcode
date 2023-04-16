@@ -6,7 +6,7 @@
 %                         x-direction (foward swimming direction)
 %
 % 
-% Last modified: 02/04/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 16/04/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -84,7 +84,7 @@ b=[0.3;0.3];
 
 tStart = tic;
 [xiStar1,xiEvo1,LrEvo1] = optimization_pipeline_1(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1);  
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',1e9,'gStepSize',0.5);  
 tP1 = toc(tStart);
 fprintf('Computation time for P1: %.2fs\n',tP1)
 
@@ -108,8 +108,8 @@ fprintf('Computation time for P3: %.2fs\n',tP3)
 
 tStart = tic;
 [xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.0001,'barrierParam',3000,'gStepSize',0.1,'nRebuild',3);
-tP4 = toc(tStart);
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',400,'convCrit',0.0001,'barrierParam',1e9,'gStepSize',0.5,'nRebuild',200);
+tP4 = toc(tStart);% nRebuild 20
 fprintf('Computation time for P4: %.2fs\n',tP4)
 
 %% OPTIMIZATION PIPELINE P5 _______________________________________________
@@ -123,6 +123,7 @@ fprintf('Computation time for P4: %.2fs\n',tP4)
 
 %% COST COMPUTATION ON FINAL ROM __________________________________________
 xiFinal = xiStar4;
+
 
 % shape-varied mesh 
 df = U*xiFinal;                       % displacement field introduced by shape variations

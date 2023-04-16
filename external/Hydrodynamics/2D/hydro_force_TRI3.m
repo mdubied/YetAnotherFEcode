@@ -28,12 +28,12 @@
 %   - List of currently supported elements: 
 %     TRI3
 %
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zurich
-function force = hydro_force_TRI3(Assembly, skinElements, skinElementFaces, vwater, rho, q, qd)
+% Last modified: 16/04/2023, Mathieu Dubied, ETH Zurich
+function force = hydro_force_TRI3(Assembly, skinElements, skinElementFaces, vwater, rho, c, q, qd)
     u = Assembly.unconstrain_vector(q);
     ud = Assembly.unconstrain_vector(qd);
-    force = Assembly.vector_hydro('drag_force_full', 'weights', skinElements, skinElementFaces, vwater, rho,u,ud) + ...
-            Assembly.vector_hydro('thrust_force_full', 'weights', skinElements, skinElementFaces, vwater, rho,u,ud);
+    force = Assembly.vector_hydro('drag_force_full', 'weights', skinElements, skinElementFaces, vwater, rho,c,u,ud) + ...
+            Assembly.vector_hydro('thrust_force_full', 'weights', skinElements, skinElementFaces, vwater, rho,c,u,ud);
     force = Assembly.constrain_vector(force);
 end
 

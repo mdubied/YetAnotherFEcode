@@ -16,6 +16,7 @@
 %   - skinElementFaces
 %   - vwater
 %   - rho:
+%   - c: scaling factor for the thrust force
 % OUTPUT:
 %   tensors: a struct variable with the following fields*:
 %       .Tr1             
@@ -33,9 +34,9 @@
 %   - List of currently supported elements: 
 %     TRI3, TET4
 %
-% Last modified: 12/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 16/04/2023, Mathieu Dubied, ETH Zurich
 
-function tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, skinElements, skinElementFaces, vwater, rho)
+function tensors = reduced_tensors_hydro_ROM(myAssembly, elements, V, skinElements, skinElementFaces, vwater, rho, c)
 
 t0=tic;
 
@@ -53,18 +54,18 @@ disp(' REDUCED HYDRODYNAMIC TENSORS:')
 fprintf(' Assembling %d elements ...\n', nel)
 
 tic;
-Tr1 = RomAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tr1 = RomAssembly.vector_skin('Te1', 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('   1st order terms - Tr1: %.2f s\n',toc)
 
 tic;
-Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho);
+Tru2 = RomAssembly.matrix_skin('Teu2', 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Trudot2 = RomAssembly.matrix_skin('Teudot2', 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('   2nd order terms - Tru2, Trudot2: %.2f s\n',toc)
 
 tic;
-Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Truudot3 = RomAssembly.tensor_skin('Teuudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
-Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho);
+Truu3 = 0.5*RomAssembly.tensor_skin('Teuu3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Truudot3 = RomAssembly.tensor_skin('Teuudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
+Trudotudot3 = 0.5*RomAssembly.tensor_skin('Teudotudot3',[m m m],[2 3],mode, 'weights', skinElements, skinElementFaces, vwater, rho, c);
 fprintf('   3rd order terms - Truu3, Truudot3, Turudotudot3: %.2f s\n',toc)
 
 % display time needed for computation

@@ -50,11 +50,12 @@ function Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,
         end
 
         % final cost function at time step t
-        %Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
-        Lr = [Lr, -dr'*fhydro + logBarrierInTimeStep];
+        Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
+        %Lr = [Lr, -dr'*fhydro + logBarrierInTimeStep];
         LwoB = LwoB -dr'*fhydro;
     end
 
     % print cost function without part stemming from barrier functions
-    fprintf('Drag minimization: Lr = %.4f\n',LwoB)
+    fprintf('Drag minimization: %.4f\n',LwoB)
+    fprintf('Full cost (with barrier): %.4f\n',Lr)
 end
