@@ -25,7 +25,7 @@
 %
 % Last modified: 15/03/2023, Mathieu Dubied, ETH Zürich
 
-function nablaLr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER)
+function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,eta,etad,s,sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER)
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
     nConstraints = size(b);
@@ -34,7 +34,7 @@ function nablaLr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,
 
     for t=1:N 
         % part stemming from hydrodynamic forces
-        derivative_hydro = DpROM_hydro_derivatives(eta(:,t),etad(:,t),xi,tensors_hydro_PROM,FOURTHORDER,secondOrderDer);
+        derivative_hydro = DpROM_hydro_derivatives(eta(:,t),etad(:,t),xiRebuild,tensors_hydro_PROM,FOURTHORDER,secondOrderDer);
         dfhydrodeta = derivative_hydro.dfdq; 
         dfhydrodetad = derivative_hydro.dfdqd;
         dfhydrodxi = derivative_hydro.dfdp;

@@ -120,10 +120,10 @@ elseif dimension == 2           % For 2D plots
         defoX = X + factor*UX ;
         defoY = Y + factor*UY ;
         
-        h{1} = patch(defoX,defoY,profile,'EdgeColor',meshcolor);
-        h{2} = plot(defoX(:),defoY(:),'.','Color', meshcolor, 'Markersize',10); %5
+        h{1} = patch(defoX,defoY,profile,'EdgeColor',meshcolor,'EdgeAlpha',0.5);
+        h{2} = plot(defoX(:),defoY(:),'.','Color', meshcolor, 'Markersize',5); %5 %10 
     else
-        h = plot(Nodes(:,1)+factor*ux,Nodes(:,2)+factor*uy,'.-','Color', meshcolor, 'Markersize',10);
+        h = plot(Nodes(:,1)+factor*ux,Nodes(:,2)+factor*uy,'.-','Color', meshcolor, 'Markersize',5); %10
         c = [];
     end
     

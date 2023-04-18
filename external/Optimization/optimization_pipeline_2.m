@@ -34,7 +34,7 @@
 % (2) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 31/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 18/04/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,xiEvo,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elements,U,d,h,tmax,A,b,varargin)
     
@@ -103,13 +103,13 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_2(MeshNominal,nodes,elemen
         Sd_k = TI_sens.Solution.qd;
 
         % STEP 8: evaluate gradient _______________________________________
-        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S_k,Sd_k,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
+        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,xi_k,eta_k,etad_k,S_k,Sd_k,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
 
         % STEP 9-10: update xi_k __________________________________________
         if k==1
-            LrEvo = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam);
+            LrEvo = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,xi_k,dr,A,b,barrierParam);
         else
-            LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam)];
+            LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,xi_k,dr,A,b,barrierParam)];
         end
         xi_k = xi_k - gStepSize*nablaLr
         xiEvo = [xiEvo,xi_k];

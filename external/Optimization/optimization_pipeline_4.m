@@ -49,6 +49,7 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
     fprintf('STEP 1\n')
 
     xi_k = zeros(size(U,2),1);
+    xiRebuild_k = zeros(size(U,2),1);
     xiEvo = xi_k;
 
     % STEP 2: mesh the structure and build a PROM _________________________
@@ -82,12 +83,12 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
     fprintf('STEP 4\n') 
     
     if ACTUATION
-        TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+        TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly,tensors_PROM, ...
             tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
             TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER,...
                 'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
     else
-         TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+         TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly,tensors_PROM, ...
             tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
             TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
     end
@@ -106,7 +107,7 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
 
     N = size(eta,2);
     dr = reduced_constant_vector(d,V);
-    Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi_k,dr,A,b,barrierParam);
+    Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiRebuild_k,xi_k,dr,A,b,barrierParam);
     LrEvo = Lr;
 
     for k = 1:maxIteration
@@ -116,7 +117,7 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
         % possible rebuilding of a PROM
         if mod(k,nRebuild) == 0
              
-            fprintf('PROM Rebuild ... n')
+            fprintf('PROM Rebuild ... \n')
             % update defected mesh nodes
             df = U*xi_k;                       % displacement fields introduced by defects
             ddf = [df(1:2:end) df(2:2:end)]; 
@@ -127,7 +128,8 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
     
             [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
             build_PROM(svMesh,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
-    
+            
+            xiRebuild_k = zeros(size(U,2),1);   % reset local xi to 0 as we rebuild the ROM
             
             dr = reduced_constant_vector(d,V);
     
@@ -146,12 +148,12 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
             
             % solve sensitivity equation to get S
             if ACTUATION
-                TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+                TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly,tensors_PROM, ...
                     tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
                     TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER,...
                         'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
             else
-                 TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM, ...
+                 TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly,tensors_PROM, ...
                     tensors_hydro_PROM,TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd, ...
                     TI_NL_PROM.Solution.qdd,h,tmax,FOURTHORDER);
             end
@@ -163,17 +165,18 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
             % step 7
             if size(xi_k,1)>1
                 S=tensor(S);
-                eta_k = eta_k + double(ttv(S,xi_k,2));
+                eta_k = eta_k + double(ttv(S,xiRebuild_k,2));
             else
-                eta_k = eta_k + S*xi_k;
+                eta_k = eta_k + S*xiRebuild_k;
             end
         end 
 
         % step 8
-        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S,Sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam)];
+        nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild_k,xi_k,eta_k,etad_k,S,Sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
+        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xiRebuild_k,xi_k,dr,A,b,barrierParam)];
         % step 9 and 10
         xi_k = xi_k - gStepSize*nablaLr
+        xiRebuild_k = xiRebuild_k - gStepSize*nablaLr;
 
         xiEvo = [xiEvo,xi_k];
         

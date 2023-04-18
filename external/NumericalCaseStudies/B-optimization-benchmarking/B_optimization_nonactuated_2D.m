@@ -108,7 +108,7 @@ fprintf('Computation time for P3: %.2fs\n',tP3)
 
 tStart = tic;
 [xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor, ...
-    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.002,'barrierParam',1e4,'gStepSize',0.1,'nRebuild',4);
+    nset,nodes,elements,U,d,h,tmax,A,b,'maxIteration',200,'convCrit',0.002,'barrierParam',1e4,'gStepSize',0.1,'nRebuild',8);
 tP4 = toc(tStart);% nRebuild 20
 fprintf('Computation time for P4: %.2fs\n',tP4)
 
@@ -159,7 +159,7 @@ figure
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot(LrEvo4)
+plot(LrEvo2)
 grid on
 ylabel('$$L_r$$','Interpreter','latex')
 xlabel('Iterations')
@@ -170,7 +170,7 @@ figure
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot(xiEvo4)
+plot(xiEvo2)
 grid on
 ylabel('$$\xi$$','Interpreter','latex')
 xlabel('Iterations')

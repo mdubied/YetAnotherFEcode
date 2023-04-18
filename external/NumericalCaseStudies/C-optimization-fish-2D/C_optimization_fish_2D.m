@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
 % 2D optimization of a fish.
 % 
-% Last modified: 02/04/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 16/04/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -35,38 +35,13 @@ switch elementType
         myElementConstructor = @()Tri3Element(thickness, myMaterial);
 end
 
-% PROM parameters
-xi1 = 0.1;  % thinning fish
-xi2 = -0.2; % shortening fish
-xi3 = 0.6;  % linear tail thinning
-xi4 = 0.3;  % long ellipse tail thinning
-xi5 = -0.1;  % short ellipse tail thinning
-xi6 = 0;    % linear head thinning 
-xi7 = 0.0;  % long ellipse head thinning
-xi8 = 0.5;  % short ellipse head thinning
-xi9 = 0.1;  % tail smoothening
-xi10 = 0.3; % head smoothening
-
-% xi1 = 0.2;  % thinning fish
-% xi2 = 0.2; % shortening fish
-% xi3 = -0.2;  % linear tail thinning
-% xi4 = 0.4;  % long ellipse tail thinning
-% xi5 = -0.5;  % short ellipse tail thinning
-% xi6 = -0.2;    % linear head thinning 
-% xi7 = 0.3;  % long ellipse head thinning
-% xi8 = 0.1;  % short ellipse head thinning
-% xi9 = -0.2;  % tail smoothening
-% xi10 = 0.1; % head smoothening
-
-
-
 
 % MESH ____________________________________________________________________
 
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = 'rectangle192Elements';%'fishNominalTRI3';%'fishNominalTRI3_420El';
+        filename = 'fishNominalTRI3_420El';%'rectangle192Elements';%'fishNominalTRI3';%'fishNominalTRI3_420El';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
 
@@ -95,218 +70,16 @@ for l=1:length(nset)
     MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0)
 end
 
+
 % shape variations 
 [thinFish,shortFish,linearTail,longTail,shortTail,linearHead,longHead,shortHead,smoothTail,smoothHead] = shape_variations_2D(nodes,Lx,Ly);
-
-% shape variations basis
-U = [thinFish,shortFish,linearTail,longTail,shortTail,linearHead,longHead,shortHead,smoothTail,smoothHead];   % shape variations basis
-xi = [xi1;xi2;xi3;xi4;xi5;xi6;xi7;xi8;xi9;xi10];            % shape variations parameters
-%U = [thinFish,shortFish];   % shape variations basis
-%xi = [xi1;xi2];            % shape variations parameters
-m = length(xi);             % number of shape variations parameters
-
-
-% shape-varied mesh 
-d = U*xi;                       % displacement field introduced by shape variations
-dd = [d(1:2:end) d(2:2:end)];   % rearrange as two columns matrix
-nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
-svMesh = Mesh(nodes_sv);
-svMesh.create_elements_table(elements,myElementConstructor);
-svMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
-
-% plot the two meshes
-figure('units','normalized','position',[.2 .3 .6 .4],'name','Shape-varied mesh');
-elementPlot = elements(:,1:3); hold on 
-PlotMesh(nodes_sv, elementPlot, 0); 
-PlotMesh(nodes,elementPlot,0);
-v1 = reshape(U*xi, 2, []).';
-S = 1;
-hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
-axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
-
-%% FORWARD SIMULATION ON NOMINAL MESH FOR VISUALIZATION PURPOSES __________
-
-% ASSEMBLY ________________________________________________________________
-NominalAssembly = Assembly(MeshNominal);
-Mn = NominalAssembly.mass_matrix();
-nNodes = size(nodes,1);
-u0 = zeros( MeshNominal.nDOFs, 1);
-[Kn,~] = NominalAssembly.tangent_stiffness_and_force(u0);
-    % store matrices
-    NominalAssembly.DATA.K = Kn;
-    NominalAssembly.DATA.M = Mn;
-
-% DAMPING _________________________________________________________________
-alfa = 0.912;
-beta = 0.002;
-
-Dn = alfa*Mn + beta*Kn; % Rayleigh damping 
-NominalAssembly.DATA.D = Dn;
-NominalAssembly.DATA.C = Dn;
-Dc = NominalAssembly.constrain_matrix(Dn);
-
-% EIGENMODES - VIBRATION MODES (VMs) ______________________________________
-
-n_VMs = 4;  % number of vibration modes to include in the ROM
-
-% eigenvalue problem
-Kc = NominalAssembly.constrain_matrix(Kn);
-Mc = NominalAssembly.constrain_matrix(Mn);
-[VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
-[f0n,ind] = sort(sqrt(diag(om))/2/pi);
-VMn = VMn(:,ind);
-for ii = 1:n_VMs
-    VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
-end
-VMn = NominalAssembly.unconstrain_vector(VMn);
-
-% plot
-mod = 1;
-elementPlot = elements(:,1:3); 
-figure('units','normalized','position',[.2 .1 .6 .4],'name','Vibration mode for nominal mesh')
-PlotMesh(nodes, elementPlot, 0);
-v1 = reshape(VMn(:,mod), 2, []).';
-PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
-title(['\Phi_' num2str(mod) ' - Frequency = ' num2str(f0n(mod),3) ' Hz']);
-
-% MODAL DERIVATIVES (MDs) _________________________________________________                   
-
-[MDn, MDname] = modal_derivatives(NominalAssembly, elements, VMn);
-
-% ROM TENSORS (INTERNAL FORCES) ___________________________________________                       
-% define reduced order basis
-Vn = [VMn MDn];     % reduced order basis (ROM-n) 
-
-% orthonormalize reduction basis
-Vn = orth(Vn);	% ROM-n
-
-% ROM-n: reduced order model for nominal mesh
-tensors_ROMn = reduced_tensors_ROM(NominalAssembly, elements, Vn, USEJULIA);
-
-% REDUCED ASSEMBLIES ______________________________________________________
-
-ROMn_Assembly = ReducedAssembly(MeshNominal, Vn);
-ROMn_Assembly.DATA.M = ROMn_Assembly.mass_matrix();     % reduced mass matrix 
-ROMn_Assembly.DATA.C = Vn.'*Dn*Vn;                      % reduced damping matrix 
-ROMn_Assembly.DATA.K = Vn.'*Kn*Vn;                      % reduced stiffness matrix 
-
-% ROM TENSORS - HYDRODYNAMIC FORCES _______________________________________
-
-[~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-vwater = [0.7;0.21];%[1;0.3] %[0.7;0.21];   % water velocity vector
-rho = 997*0.01;%997*0.001;
-tensors_hydro_ROMn = reduced_tensors_hydro_ROM(NominalAssembly, elements, Vn, skinElements, skinElementFaces, vwater, rho);
-
-% ROM TENSORS - ACTUATION FORCES __________________________________________
-
-nel = size(elements,1);
-actuationDirection = [1;0;0];%[1;0]-->[1;0;0] (Voigt notation)
-
-% top muscle
-topMuscle = zeros(nel,1);
-for el=1:nel
-    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
-    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
-    if elementCenterY>0.00 &&  elementCenterX > Lx*0.25
-        topMuscle(el) = 1;
-    end    
-end
-tensors_topMuscle_ROMn = reduced_tensors_actuation_ROM(NominalAssembly, Vn, topMuscle, actuationDirection);
-
-% bottom muscle
-bottomMuscle = zeros(nel,1);
-for el=1:nel
-    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
-    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
-    if elementCenterY<0.00 &&  elementCenterX > Lx*0.25
-        bottomMuscle(el) = 1;
-    end    
-end
-tensors_bottomMuscle_ROMn = reduced_tensors_actuation_ROM(NominalAssembly, Vn, bottomMuscle, actuationDirection);
-
-
-%% TIME INTEGRATION ________________________________________________________
-
-% parameters' initialization 
-h = 0.1;
-tmax = 20.0; 
-
-% initial condition: equilibrium
-q0 = zeros(size(Vn,2),1);
-qd0 = zeros(size(Vn,2),1);
-qdd0 = zeros(size(Vn,2),1);
-
-k=1;
-B1TopMuscle = tensors_topMuscle_ROMn.B1;
-B2TopMuscle = tensors_topMuscle_ROMn.B2;
-B1BottomMuscle = tensors_bottomMuscle_ROMn.B1;
-B2BottomMuscle = tensors_bottomMuscle_ROMn.B2;
-% hydrodynamic and actuation forces
-F_ext = @(t,q,qd) (double(tensors_hydro_ROMn.Tr1) + ...
-    double(tensors_hydro_ROMn.Tru2*q) + double(tensors_hydro_ROMn.Trudot2*qd) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Truu3,q,3), q,2)) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Truudot3,qd,3), q,2)) + ...
-    double(ttv(ttv(tensors_hydro_ROMn.Trudotudot3,qd,3), qd,2)) + ...
-    k/2*(1-(1+0.002*sin(t*2*pi/5)))*(B1TopMuscle+B2TopMuscle*q) + ...
-    k/2*(1-(1-0.002*sin(t*2*pi/5)))*(B1BottomMuscle+B2BottomMuscle*q)); % q, qd are reduced order DOFs
-
-% instantiate object for nonlinear time integration
-TI_NL_ROMn = ImplicitNewmark('timestep',h,'alpha',0.005);
-
-% modal nonlinear Residual evaluation function handle
-Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_hydro(q,qd,qdd,t,ROMn_Assembly,F_ext);
-
-% nonlinear Time Integration
-TI_NL_ROMn.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
-TI_NL_ROMn.Solution.u = Vn * TI_NL_ROMn.Solution.q; % get full order solution
-
-% 1-DOF PLOT ______________________________________________________________
-
-% find a specific result node and corresponding DOF
-tailNodeDOFS = MeshNominal.get_DOF_from_location([Lx, 0]);
-tailNodeDOF = tailNodeDOFS(2); % y-direction
-
-% plot
-figure('units','normalized','position',[.1 .1 .8 .6],'name','Vertical displacement of the tail node')
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-tplot=linspace(0,tmax,size(TI_NL_ROMn.Solution.u,2));
-plot(tplot,TI_NL_ROMn.Solution.u(tailNodeDOF,1:end)*100)
-ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
-xlabel('Time [s]')
-set(gca,'FontName','ComputerModern');
-grid on
-legend({'ROM-n'}, 'Location', 'southoutside','Orientation','horizontal')
-hold off
-
-
-% Animation _______________________________________________________________
-
-actuationValues = zeros(size(TI_NL_ROMn.Solution.u,2),1);
-for t=1:size(TI_NL_ROMn.Solution.u,2)
-    actuationValues(t) = 1+0.002*sin(t*h*2*pi/5);
-end
-
-actuationValues2 = zeros(size(TI_NL_ROMn.Solution.u,2),1);
-for t=1:size(TI_NL_ROMn.Solution.u,2)
-    actuationValues2(t) = 1-0.002*sin(t*h*2*pi/5);
-end
-
-AnimateFieldonDeformedMeshActuation2Muscles(nodes, elementPlot,topMuscle,actuationValues,...
-    bottomMuscle,actuationValues2,TI_NL_ROMn.Solution.u, ...
-    'factor',1,'index',1:2,'filename','result_video','framerate',1/h)
-
-
-
 
 
 %% OPTIMIZATION PARAMETERS
 dSwim = [-1;0]; %swimming direction
 h = 0.05;
 tmax = 3.0;
-A=[1 0;-1 0;0 1;0 -1];
-b=[0.3;0.3;0.3;0.3];
+
 
 %% OPTIMIZATION PIPELINE P4 _______________________________________________
 % U = [thinFish,shortFish,linearTail,longTail];
@@ -328,20 +101,36 @@ b=[0.3;0.3;0.3;0.3];
 % A=[1;-1]
 % b=[0.3,0.3]
 
+%% Case A1
+A= [1 0;
+    -1 0;
+    0 1;
+    0 -1];
+b = [0.6;0.6;0.6;0.6];
+U = [shortTail, shortHead];
+
+
+tStart = tic;
+[xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor,nset, ...
+    nodes,elements,U,dSwim,h,tmax,A,b,'ACTUATION',1,'maxIteration',25,'convCrit',0.002,'barrierParam',5000,'gStepSize',0.002,'nRebuild',5);
+tP4 = toc(tStart);
+fprintf('Computation time: %.2fs\n',tP4)
+
+
+
+%%
 A= [1 0;
     -1 0;
     0 1;
     0 -1];
 b = [0.3;0.3;0.3;0.3];
-U = [linearTail, shortHead];
-% A =[1;-1];
-% b = [0.4;0.4];
-% U = [linearTail]; %'maxIteration',60,'convCrit',0.00001,'barrierParam',1000,'gStepSize',0.002,'nRebuild',10
+U = [shortTail, thinFish];
 tStart = tic;
 [xiStar4,xiEvo4,LrEvo4] = optimization_pipeline_4(myElementConstructor,nset, ...
-    nodes,elements,U,dSwim,h,tmax,A,b,'ACTUATION',1,'maxIteration',60,'convCrit',0.00001,'barrierParam',1000,'gStepSize',0.002,'nRebuild',10);
+    nodes,elements,U,dSwim,h,tmax,A,b,'ACTUATION',1,'maxIteration',60,'convCrit',0.002,'barrierParam',1000,'gStepSize',0.001,'nRebuild',8);
 tP4 = toc(tStart);
 fprintf('Computation time: %.2fs\n',tP4)
+
 
 
 %% VISUALIZATION __________________________________________________________
@@ -364,9 +153,48 @@ S = 1;
 hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
 axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 
+%% PLOT COST FUNCTION OVER ITERATIONS _____________________________________
+
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot(LrEvo4)
+grid on
+ylabel('$$L_r$$','Interpreter','latex')
+xlabel('Iterations')
+
+%% PLOT XI PARAMATER OVER ITERATIONS ______________________________________
+
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot3(xiEvo4(1,:),xiEvo4(2,:),linspace(1,size(xiEvo4,2),size(xiEvo4,2)));
+grid on
+xlabel('$$\xi_1$$','Interpreter','latex')
+ylabel('$$\xi_2$$','Interpreter','latex')
+zlabel('Iterations')
+
+%%
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot(xiEvo4(1,:));
+grid on
+xlabel('$$\xi_1$$','Interpreter','latex')
+ylabel('Iterations')
+
+
+
+
 %% COST COMPUTATION ON FINAL ROM __________________________________________
 %xiStar4 = [0.2;0.1;0.5;0.2;0.1]
 xiFinal = xiStar4;
+
+% tmax=4;
+% h=0.0025
 
 % shape-varied mesh 
 df = U*xiFinal;                       % displacement field introduced by shape variations
@@ -429,6 +257,7 @@ TI_NL_PROM.Solution.u = V * TI_NL_PROM.Solution.q; % get full order solution
 
 % ROM TENSORS - ACTUATION FORCES __________________________________________
 
+elementPlot = elements(:,1:3); 
 nel = size(elements,1);
 actuationDirection = [1;0;0];%[1;0]-->[1;0;0] (Voigt notation)
 

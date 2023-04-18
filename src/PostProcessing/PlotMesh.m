@@ -54,9 +54,9 @@ elseif dimension == 2           % For 2D plots
     if elementdim == 2
         X = Nodes(Elements',1); X = reshape(X, nnel, nel);
         Y = Nodes(Elements',2); Y = reshape(Y, nnel, nel);
-        p = patch(X,Y,'w','DisplayName','Mesh');
+        p = patch(X,Y,'w','DisplayName','Mesh','LineWidth',0.01,'EdgeAlpha',0.2); 
     else % line
-        p=plot(Nodes(:,1),Nodes(:,2),'.-k', 'Markersize',10);
+        p=plot(Nodes(:,1),Nodes(:,2),'.-k', 'Markersize',10);% no linewidth
     end
     
 end

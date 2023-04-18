@@ -82,8 +82,8 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     % ROB formulation case study 3 (rigid body mode included)
 %     mSingle = [1 0]; % horizontal displacement
 %     m1 = repmat(mSingle,1,nNodes)';
-% %     mSingle = [0 1]; % horizontal displacement
-% %     m2 = repmat(mSingle,1,nNodes)';
+% % %     mSingle = [0 1]; % horizontal displacement
+% % %     m2 = repmat(mSingle,1,nNodes)';
 %     V  = [m1 VMn MDn DS];
 %     V  = orth(V);
 
@@ -100,14 +100,17 @@ function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM,tensors_actu_top_PROM,
     
     % HYDRODYNAMIC FORCES TENSORS _________________________________________
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
+
     % used in case study B
     vwater = [0.5;0.001];
     rho = 997*0.01;
     c = 0.2; % scaling factor for the thrust force
+
 %     % used in C
-%     vwater = [0.05;0.00001];%[1;0.01];
-%      rho = 997*0.01;
-%      c = 1.0; % scaling factor for the thrust force
+%     vwater = [0.5;0.001];%[1;0.01];
+%     rho = 997*0.01;
+%     c = 1.0; % scaling factor for the thrust force
+
     tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho, c);
     
     % ACTUATION FORCES TENSORS ____________________________________________

@@ -35,7 +35,7 @@
 % (2) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 31/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 18/04/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elements,U,d,h,tmax,A,b,varargin)
     
@@ -99,7 +99,7 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
 
     N = size(eta,2);
     dr = reduced_constant_vector(d,V);
-    Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi_k,dr,A,b,barrierParam);
+    Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xi_k,xi_k,dr,A,b,barrierParam);
     LrEvo = Lr;
 
     for k = 1:maxIteration
@@ -114,8 +114,8 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_3(MeshNominal,nodes,elemen
         
 
         % step 8
-        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,eta_k,etad_k,S,Sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,dr,A,b,barrierParam)];
+        nablaLr = gradient_cost_function_w_constraints(dr,xi_k,xi_k,eta_k,etad_k,S,Sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER);
+        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta_k,etad_k,xi_k,xi_k,dr,A,b,barrierParam)];
         % step 9 and 10
         xi_k = xi_k - gStepSize*nablaLr
 
