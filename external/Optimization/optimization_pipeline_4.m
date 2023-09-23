@@ -39,8 +39,8 @@
 %
 % Last modified: 02/04/2023, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
-    
+function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin):
+
     % parse input
     [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin{:});
     
@@ -64,8 +64,7 @@ function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nse
     [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
         build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
 
-
-        
+    
     % STEP 3: solve EoMs to get nominal solution eta and dot{eta} _________
     fprintf('____________________\n')
     fprintf('STEP 3\n')

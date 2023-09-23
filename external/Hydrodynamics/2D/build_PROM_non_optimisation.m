@@ -23,11 +23,12 @@
 % (4) tensors_hydro_PROM:   (reduced) tensors for the hydrdynamic forces
 %     
 %
-% Additional notes:
+% Additional notes: previous version of "build_PROM" not the one used in 
+%                   the optimisation pipeline
 %
-% Last modified: 17/12/2022, Mathieu Dubied, ETH Zürich
+% Last modified: 23/09/2022, Mathieu Dubied, ETH Zürich
 
-function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER)
+function [V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM] = build_PROM_non_optimisation(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER)
     
     % ASSEMBLY ____________________________________________________________
     NominalAssembly = Assembly(MeshNominal);
