@@ -214,7 +214,7 @@ fclose(fid2);
 fclose('all');
 
 [nodes, elements, nset, elset, nset_name, elset_name] = fun_abaqus2matlab_mesh();
-delete('fun_abaqus2matlab_mesh.m')
+% delete('fun_abaqus2matlab_mesh.m')
 
 nodes = nodes(:,2:end);
 elements = elements(:,2:end);

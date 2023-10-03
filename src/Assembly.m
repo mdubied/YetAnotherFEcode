@@ -364,6 +364,35 @@ classdef Assembly < handle
             v = vertcat(v{:});
             v = sparse(index, ones(length(index),1), v, self.Mesh.nDOFs, 1);
         end
+
+        function [v] = vector_hydro2(self,elementMethodName,varargin)
+            % To add
+            
+            n_e = self.Mesh.nElements;            
+            index = cell(n_e,1); % indices
+            v = cell(n_e,1); % values
+            Elements = self.Mesh.Elements; % Elements array
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                
+                index{j} = thisElement.iDOFs;
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1},inputs{2}, inputs{3}, inputs{4});
+            end
+            
+            % assembling
+            index = vertcat(index{:});
+            v = vertcat(v{:});
+            v = sparse(index, ones(length(index),1), v, self.Mesh.nDOFs, 1);
+        end
+        
         function [S] = scalar(self,elementMethodName,varargin)
             % This function assembles a generic finite element scalar from
             % its element level. 

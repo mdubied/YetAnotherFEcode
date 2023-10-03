@@ -39,7 +39,7 @@
 %
 % Last modified: 02/04/2023, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin):
+function [xiStar,xiEvo,LrEvo] = optimization_pipeline_4(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION] = parse_inputs(varargin{:});

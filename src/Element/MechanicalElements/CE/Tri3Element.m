@@ -56,7 +56,7 @@ classdef Tri3Element < ContinuumElement
             G(3:4,2:2:end) = dH;
         end
         
-        % ADDITIONAL FUNCTIONS ____________________________________________
+        % HYDRODYNAMIC FUNCTIONS __________________________________________
 
         % Tensors as a function of ud (early-stage version)
         function T = T1e_func_ud(self, specificFace, vwater, rho)
@@ -69,7 +69,7 @@ classdef Tri3Element < ContinuumElement
             [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
             length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
             [r11,r12,r21,r22] = normal_vec_rot_matrix(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-  
+
             if specificFace(1) == 1
                 T = Te_conf_1_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
                     +Te_conf_1_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
@@ -80,7 +80,7 @@ classdef Tri3Element < ContinuumElement
                 T = Te_conf_3_drag(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).'...
                     +Te_conf_3_thrust(length,rho,vwater(1),vwater(2),r11,r12,r21,r22,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2),0,0,0,0,0,0).';
             end
-            
+
             if specificFace(2) ~= 0
                 [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
                 length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
@@ -726,11 +726,11 @@ classdef Tri3Element < ContinuumElement
             length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
             Force = length*n;
             F = apply_force(self, F, Force, startNode, endNode);
-        
+
             if specificFace(2) ~= 0
                 [startNode, endNode, nextNode] = get_node_from_face(self, specificFace(2));
                 n = normal_vector(self,self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
+
                 length = norm(self.nodes(endNode,:)-self.nodes(startNode,:));
                 Force = length*n;
                 F = apply_force(self, F, Force, startNode, endNode);
@@ -748,8 +748,7 @@ classdef Tri3Element < ContinuumElement
             F(endNode*2-1) = Fbase(endNode*2-1) + FtoApply(1)/2;        % x-coordinate
             F(endNode*2) = Fbase(endNode*2) + FtoApply(2)/2;            % y-coordinate
         end 
-                
-
+               
         function F = drag_force(self, specificFace, vwater, rho)
             % _____________________________________________________________
             % Returns the drag force F_drag acting the face
@@ -827,7 +826,38 @@ classdef Tri3Element < ContinuumElement
             
         end
         
-        % Useful helper functions
+        function F = reactive_force_full(self, tailNodeIndexInElement, mTilde, u, ud)
+            % F = sparse(self.nelDOFs,0);
+            F = zeros(self.nelDOFs, 1);
+            u2Columns = Tri3Element.vector_to_matrix(u); 
+            ud2Columns = Tri3Element.vector_to_matrix(ud);
+            uElement = u2Columns(self.nodeIDs,:);
+            udElement = ud2Columns(self.nodeIDs,:);
+            nodesPos = self.nodes + uElement; % position = base node position + displacement
+            
+            % get tangential and perpendicular (to spine) vectors
+            if tailNodeIndexInElement == 1
+                nodesPosReordered = nodesPos;    
+            elseif tailNodeIndexInElement == 2
+                nodesPosReordered = circshift(nodesPos, -1);
+            else
+                nodesPosReordered = circshift(nodesPos, -2);
+            end
+            pVector = Tri3Element.create_tail_p_vector(nodesPosReordered);
+            tVector = Tri3Element.create_tail_t_vector(nodesPosReordered);
+
+            % compute v_perp
+            vPerpNorm = abs(udElement(tailNodeIndexInElement,:)*pVector');
+
+            % compute force magnitude
+            forceMag = 0.5*mTilde*vPerpNorm^2;
+
+            % apply force
+            F(tailNodeIndexInElement*2-1:tailNodeIndexInElement*2) = forceMag*tVector;
+           
+        end
+       
+        % HELPER FUNCTIONS ________________________________________________
         function [r11, r12, r21, r22] = normal_vec_rot_matrix(~, startNodePos, endNodePos, nextNodePos)
             n = [0 1; -1 0]*[endNodePos(1)-startNodePos(1); endNodePos(2)-startNodePos(2)];  % 90° rotation clockwise
             n = n/norm(n); % normalizing n
@@ -861,6 +891,7 @@ classdef Tri3Element < ContinuumElement
                 inv = 1;
             end
         end
+        
         function n = normal_vector(~, startNodePos, endNodePos, nextNodePos)
             % _____________________________________________________________
             % Returns a vector of unit length normal to the surface
@@ -894,10 +925,7 @@ classdef Tri3Element < ContinuumElement
                 nextNode = 1;
             end
         end 
-
-        
-
-
+          
     end 
         
     
@@ -918,6 +946,54 @@ classdef Tri3Element < ContinuumElement
             X = [0  0       % node 1
                  1  0       % node 2
                  0  1];     % node 3
+        end
+
+        function tVector = create_tail_t_vector(nodes)
+            % _____________________________________________________________
+            % Creates a vector tangential to the tail, pointing toward the
+            % head of the fish. The "nodes" matrix should contain the tail
+            % node in the first row (the two other nodes being in the
+            % element but not excatly at the tail).
+            % _____________________________________________________________
+            % midpoint nodes 2 and 3
+            midpoint = 0.5*(nodes(2,:) + nodes(3,:));
+
+            % tail to midpoint normalised vector
+            tVector = (midpoint - nodes(1,:))/norm(midpoint - nodes(1,:));
+        end
+
+        function pVector = create_tail_p_vector(nodes)
+            % _____________________________________________________________
+            % Creates a vector perpendicular to the tail, with a x
+            % component pointing toward the head of the fish.
+            % The "nodes" matrix should contain the tail node in the first 
+            % row (the two other nodes being in the element but not excatly
+            % at the tail). 
+            % _____________________________________________________________            
+            % midpoint nodes 2 and 3
+            midpoint = 0.5*(nodes(2,:) + nodes(3,:));
+        
+            % tail to midpoint normalised vector
+            tVector = (midpoint - nodes(1,:))/norm(midpoint - nodes(1,:));
+        
+            % perpendicular vector, with x component pointing toward the head
+            if tVector(2)<=0
+                pVector = [tVector(2), -tVector(1)];
+            else
+                pVector = [-tVector(2), tVector(1)];
+            end
+        end   
+
+        function M = vector_to_matrix(v)
+            % _____________________________________________________________
+            % Converts a vector with elements corresponding to x and y
+            % directions ([x1; y1; x2; y2, x3; y3 ...]) to a matrix
+            % separating the x and y elements into 2 columns ([x1 y1; x2
+            % y2; x3 y3];
+            % _____________________________________________________________
+            xComponents = v(1:2:end);
+            yComponents = v(2:2:end);
+            M = [xComponents, yComponents];
         end
         
     end
