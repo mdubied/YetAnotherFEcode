@@ -1,45 +1,57 @@
 % find_tail_TRI3
 %
 % Synthax:
-% tailElement = find_tail_TRI3(elements, nodes)
+% [tailNodeOfTailElement, tailElementIdx, tailElementWeights] = find_tail_TRI3(elements, nodes, spineElements,nodeIdxPosInElements)
 %
 % Description: 
-% Returns the tail element, i.e., an array of 3 element numbers situated at
-% the tail of the fish.
+% Find the tail node and element, return related weights vector
 %
 % INPUTS
 %   - elements: a 2D array in which each row contains the nodes' indexes of
 %               an element
 %   - nodes:    a 2D array containing the x and y positions of each node
 %
-% OUTPUT:
-%   - tailElement:  array of 3 node numbers situated in the element at the 
-%                   tail of the fish
-%   - tailIndexInElement: 
-%   - tailElementBinVec
+%   - spineElements         array containing the indexes of the spine elements.
+%                           In case there are two elements are sharing a face 
+%                           on the spine, only the upper element is considered.
+%                           This allows to avoid applying the force twice.
+%   - nodeIdxPosInElements: matrix of size nElements x 2. For the row
+%                           corresponding to spine elements, it gives the
+%                           column index (1 to 3) in the element of the 
+%                           node close to the tail (1st column) and the 
+%                           node close to the head (2nd column).
+% OUTPUTS
+%   - tailNodeOfTailElement:tail node of the tail element, so the tail the
+%                           node at the tail of the fish
+%   - tailElementIdx:       index of the element being in the spine and at
+%                           the tail of the fish
+%   - tailElementWeights:   array of length nElements, with 1 if element is
+%                           the tail element, 0 else 
 %
-% Additional notes: only work if the tail ends with a single elements
+% Additional notes: -
 %
-% Last modified: 23/09/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 06/10/2023, Mathieu Dubied, ETH Zurich
 
-function [tailElement, tailIndexInElement, tailElementBinVec] = find_tail_TRI3(elements, nodes)
-    % find tail element
-    [~,xMaxIndex] = max(nodes(:,1));
-    [row,~] = find(elements==xMaxIndex);
-    tailElement = elements(row,:);
+function [tailNodeOfTailElement, tailElementIdx, tailElementWeights] = find_tail_TRI3(elements, nodes, spineElements,nodeIdxPosInElements)
+    nElements = length(elements(:,1));
+    tailElementWeights = zeros(nElements,1);
+
+    % get useful variables
+    nodesOfSpineElements = elements(spineElements,:);
+    tailNodesInSpineElements = nodeIdxPosInElements(spineElements,1);
+    % linear indexing to get tail nodes
+    I = (1:size(nodesOfSpineElements, 1)).';
+    k = sub2ind(size(nodesOfSpineElements), I, tailNodesInSpineElements);
+    tailNodes = nodesOfSpineElements(k);
     
-    % find tail node index in the tail element (i.e., the position/index of
-    % the node at the very end of the tail in the tail element)
-    if elements(row,1)==xMaxIndex
-        tailIndexInElement = 1;
-    elseif elements(row,2)==xMaxIndex
-        tailIndexInElement = 2;
-    else
-        tailIndexInElement = 3;
-    end
+    % find nodes with lowest x position among tail nodes
+    [~,xMinIndex] = min(nodes(tailNodes,1));
+    
+    % find tail element
+    tailElementIdx = spineElements(xMinIndex);
+    tailNodeOfTailElement = elements(tailElementIdx,tailNodesInSpineElements(xMinIndex));
+    
+    % weigth output
+    tailElementWeights(tailElementIdx) = 1;
 
-    % Create binary vector of length nElement, with a one at the index
-    % corresponding to the tail element
-    tailElementBinVec = zeros(length(elements(:,1)),1);
-    tailElementBinVec(row) = 1;
 end

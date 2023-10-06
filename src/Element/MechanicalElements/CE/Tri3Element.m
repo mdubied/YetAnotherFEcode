@@ -826,8 +826,7 @@ classdef Tri3Element < ContinuumElement
             
         end
         
-        function F = reactive_force_full(self, tailNodeIndexInElement, mTilde, u, ud)
-            % F = sparse(self.nelDOFs,0);
+        function F = reactive_force_full(self, tailNodeIndexInElement, normalisation, mTilde, u, ud)
             F = zeros(self.nelDOFs, 1);
             u2Columns = Tri3Element.vector_to_matrix(u); 
             ud2Columns = Tri3Element.vector_to_matrix(ud);
@@ -835,26 +834,77 @@ classdef Tri3Element < ContinuumElement
             udElement = ud2Columns(self.nodeIDs,:);
             nodesPos = self.nodes + uElement; % position = base node position + displacement
             
-            % get tangential and perpendicular (to spine) vectors
-            if tailNodeIndexInElement == 1
-                nodesPosReordered = nodesPos;    
-            elseif tailNodeIndexInElement == 2
-                nodesPosReordered = circshift(nodesPos, -1);
-            else
-                nodesPosReordered = circshift(nodesPos, -2);
-            end
-            pVector = Tri3Element.create_tail_p_vector(nodesPosReordered);
-            tVector = Tri3Element.create_tail_t_vector(nodesPosReordered);
+            % get vector tangential to spine
+            tailNodePos = nodesPos(tailNodeIndexInElement(1),:);     % spine node closer to tail
+            headNodePos = nodesPos(tailNodeIndexInElement(2),:);    % spine node closer to head
+            tVector = (headNodePos - tailNodePos)*normalisation;
 
-            % compute v_perp
-            vPerpNorm = abs(udElement(tailNodeIndexInElement,:)*pVector');
-
-            % compute force magnitude
-            forceMag = 0.5*mTilde*vPerpNorm^2;
+            % % get normanl vector to spine
+            % 
+            % % compute v_perp
+            % vPerpNorm = abs(udElement(tailNodeIndexInElement,:)*pVector');
+            % 
+            % % compute force magnitude
+            % forceMag = 0.5*mTilde*vPerpNorm^2;
 
             % apply force
-            F(tailNodeIndexInElement*2-1:tailNodeIndexInElement*2) = forceMag*tVector;
+            F(tailNodeIndexInElement(1)*2-1:tailNodeIndexInElement(1)*2) = tVector;
            
+        end
+
+        function F = tail_pressure_force(self, tailNodeIndexInElement, normalisation, mTilde, u, ud)
+            % _____________________________________________________________ 
+            % Compute the pressure force at the tail f=0.5*m*v_perp^2*n
+            % _____________________________________________________________
+            F = zeros(self.nelDOFs, 1);
+            
+            % get node deformation u and its velocity ud (size 3 x 2)
+            u2Columns = Tri3Element.vector_to_matrix(u); 
+            ud2Columns = Tri3Element.vector_to_matrix(ud);
+            uElement = u2Columns(self.nodeIDs,:);
+            udElement = ud2Columns(self.nodeIDs,:);
+            nodesPos = self.nodes + uElement; % position = base node position + displacement
+            
+            % convert back to 6 x 1 (x y x y x y)
+            nodesPos = reshape(nodesPos',[],1);     
+            udElement = reshape(udElement',[],1);
+
+            % get matrix corresponding to the configuration
+            if tailNodeIndexInElement(1)==1         % conf 1-2 and 1-3
+                A = A_conf1;
+                if tailNodeIndexInElement(2)==2
+                    B = B_conf1_2;
+                else
+                    B = B_conf1_3;
+                end
+            elseif tailNodeIndexInElement(1)==2     % conf 2-1 and 2-3
+                A = A_conf2;
+                if tailNodeIndexInElement(2)==1
+                    B = B_conf2_1;
+                else
+                    B = B_conf2_3;
+                end
+            else                                    % conf 3-1 and 3-2
+                A = A_conf3;
+                if tailNodeIndexInElement(2)==1
+                    B = B_conf3_1;
+                else
+                    B = B_conf3_2;
+                end
+            end
+            
+            % compute and apply force to tail node
+            R = [0 -1 0 0 0 0;
+                 1 0 0 0 0 0;
+                 0 0 0 -1 0 0;
+                 0 0 1 0 0 0;
+                 0 0 0 0 0 1;
+                 0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+            t = B*nodesPos;
+            n = R*t;
+            v_perp = dot(A*udElement,n);
+            F = 0.5*mTilde*v_perp.^2*normalisation*t;
+
         end
        
         % HELPER FUNCTIONS ________________________________________________

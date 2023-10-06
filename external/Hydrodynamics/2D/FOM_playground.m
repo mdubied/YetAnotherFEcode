@@ -41,9 +41,11 @@ xi1 = 0.2;
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = 'naca0012TRI3_90Elements';
+        filename = 'naca0012_76el';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
+
+nodes(:,1) = -nodes(:,1);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -57,7 +59,7 @@ nel = size(elements,1);
 nset = {};
 for el=1:nel   
     for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)<Lx*0.15 && ~any(cat(2, nset{:}) == elements(el,n))
+        if  nodes(elements(el,n),1)>-Lx*0.01 && ~any(cat(2, nset{:}) == elements(el,n))
             nset{end+1} = elements(el,n);
         end
     end   
@@ -95,26 +97,42 @@ elementPlot = elements(:,1:3);
 figure('units','normalized','position',[.2 .1 .6 .4],'name','Nominal mesh')
 PlotMesh(nodes, elementPlot, 1);
 
-%% TAIL OPERATIONS ________________________________________________________
-% get tail elements and tail nodes
-[tailElement, tailNodeIndexInElement, tailElementBinVec] = find_tail_TRI3(elements, nodes);
+%% SPINE AND TAIL OPERATIONS ______________________________________________
+% get nodes of the spine
+[spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
+
+% get nodes of the tail
+[tailNode, tailElement, tailElementWeights] = find_tail_TRI3(elements,nodes,spineElements,nodeIdxPosInElements);
+
+% get normalisation factors, i.e., the inverse of the distance between each consecutive spine node
+normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
 
 % compute force for a hypothetical position u and ud
 q = NominalAssembly.constrain_vector(reshape(nodes.',[],1));
-q = zeros(size(q));
 qd = zeros(size(q));
-qd(2:2:end) = 1;
+qd(2:2:end) = 4;
 mTilde = 2;
 
-fReactive = reactive_force_TRI3(NominalAssembly, tailElementBinVec, tailNodeIndexInElement, mTilde, q, qd);
-disp(NominalAssembly.unconstrain_vector(fReactive))
+% compute force
+% fReactive = reactive_force_TRI3(NominalAssembly, spineElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
+fTailPressure = tail_pressure_force_TRI3(NominalAssembly, tailElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
+disp(NominalAssembly.unconstrain_vector(fTailPressure));
 
+
+
+%% PLOT
+
+PlotMeshandForce(nodes,elements,0,NominalAssembly.unconstrain_vector(fTailPressure)/30)
+%% TAIL OPERATIONS ________________________________________________________
+% get tail elements and tail nodes
+[tailElement, tailNodeIndexInElement, tailElementBinVec] = find_tail_TRI3(elements, nodes);
 
 
 %% ROM TENSORS - HYDRODYNAMIC FORCES ______________________________________
 
 [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
 vwater = [0.5;0.5];   % water velocity vector
+
 rho = 997*0.01;
 c = 0.2;
 

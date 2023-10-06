@@ -366,7 +366,13 @@ classdef Assembly < handle
         end
 
         function [v] = vector_hydro2(self,elementMethodName,varargin)
-            % To add
+            % This function assembles a finite element vector from
+            % its element level counterpart. The method allows to pass
+            % extra arguments specific to the "elementMethodName"
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
             
             n_e = self.Mesh.nElements;            
             index = cell(n_e,1); % indices
@@ -384,7 +390,8 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;
-                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1},inputs{2}, inputs{3}, inputs{4});
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:), inputs{2}(j), inputs{3}, inputs{4}, inputs{5});
+               
             end
             
             % assembling

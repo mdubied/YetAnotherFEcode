@@ -1,15 +1,16 @@
-% reactive_force_TRI3
+% tail_pressure_force_TRI3
 %
 % Synthax:
-% force = reactive_force_TRI3(myAssembly, elements, skinElements, skinElementFaces, vwater, rho)
+% force = force = tail_pressure_force_TRI3(Assembly, tailElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde, q, qd)
 %
 % Description: 
-% This function computes the reactive force at the Assembly level.
+% This function computes the tail pressure force at the Assembly level,
+% using the original nonlinear formulation (not in form of a polynomial).
 %
 % INPUTS
 %   - Assembly:             Assembly from YetAnotherFEcode.
-%   - spineElementWeights:  array of length nElements, with 1 if element is
-%                           part of spine, 0 else
+%   - tailElementWeights:   array of length nElements, with 1 if element is
+%                           the tail element, 0 else
 %   - normalisationFactors: array of size nElements with zeros everywhere,
 %                           except at the indexes of the spine elements.
 %                           For these indexes, the inverse of the distance
@@ -28,14 +29,14 @@
 %   force: a struct variable with the following fields:
 %       .f              reactive force at the Assembly level        
 %      	.time           computational time
-%     
+%       
 %
-% Additional notes: -
+% Additional notes:
 %
 % Last modified: 06/10/2023, Mathieu Dubied, ETH Zurich
-function force = reactive_force_TRI3(Assembly, spineElementWeights,normalisationFactors, nodeIdxPosInElements, mTilde, q, qd)
+function force = tail_pressure_force_TRI3(Assembly, tailElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde, q, qd)
     u = Assembly.unconstrain_vector(q);
     ud = Assembly.unconstrain_vector(qd);
-    force = Assembly.vector_hydro2('reactive_force_full', 'weights', spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde,u,ud); 
+    force = Assembly.vector_hydro2('tail_pressure_force', 'weights', tailElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde,u,ud); 
     force = Assembly.constrain_vector(force);
 end
