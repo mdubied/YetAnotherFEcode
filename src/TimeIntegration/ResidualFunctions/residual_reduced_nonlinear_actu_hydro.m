@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actuation( q, qd, qdd, t, Assembly, Fext, actuTop, actuBottom,actuSignalTop,actuSignalBottom)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fActu,fHydro, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fHydroProp,R,mTilde,x0)
 %  RESIDUAL_REDUCED_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -69,15 +69,27 @@ u = V*q; %q is the reduced variable
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
-F_ext_V =  Fext(t,q);
+F_ext_V =  fActu(t,q) + fHydro(q,qd);
 r = F_inertial + F_damping + F_V - F_ext_V ;
+
+% Derivatives
+A = fHydroProp.A;
+B = fHydroProp.B;
+w = fHydroProp.w;
+VTail = fHydroProp.V;
+
+der_tail_pressure = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0,VTail);
+
 drdqdd = M_V;
-drdqd = C_V ;
-drdq = K_V - 0.5*actuSignalTop(t)*actuTop.B2 -0.5*actuSignalBottom(t)*actuBottom.B2;
+drdqd = C_V - der_tail_pressure.dfdqd ;
+drdq = K_V  - actuSignalTop(t)*actuTop.B2 ....
+            -actuSignalBottom(t)*actuBottom.B2 ...
+            - der_tail_pressure.dfdq;
+
 %% 
 % We use the following measure to comapre the norm of the residual $\mathbf{r}$
 % 
 % $$\texttt{c0} = \|\mathbf{M_V}\ddot{\mathbf{q}}\| + \|\mathbf{C_V}\dot{\mathbf{q}}\| 
 % + \|\mathbf{F_V}(\mathbf{q})\| + \|\mathbf{V}^{\top}\mathbf{F}_{ext}(t)\|$$
-c0 = norm(F_inertial) + norm(F_damping) + norm(F_V) + norm(F_ext_V);
+c0 = norm(F_inertial) + norm(F_damping) + norm(F_V) + norm(fActu(t,q)) + norm(fHydro(q,qd));
 end

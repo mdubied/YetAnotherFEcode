@@ -38,5 +38,5 @@ function force = tail_pressure_force_TRI3(Assembly, tailElementWeights, normalis
     u = Assembly.unconstrain_vector(q);
     ud = Assembly.unconstrain_vector(qd);
     force = Assembly.vector_hydro2('tail_pressure_force', 'weights', tailElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde,u,ud); 
-    force = Assembly.constrain_vector(force);
+    % force = Assembly.constrain_vector(force);
 end

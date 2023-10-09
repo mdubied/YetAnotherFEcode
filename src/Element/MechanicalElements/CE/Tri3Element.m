@@ -866,7 +866,8 @@ classdef Tri3Element < ContinuumElement
             nodesPos = self.nodes + uElement; % position = base node position + displacement
             
             % convert back to 6 x 1 (x y x y x y)
-            nodesPos = reshape(nodesPos',[],1);     
+            nodesPos = reshape(nodesPos',[],1);  
+            uElement = reshape(uElement.',[],1);
             udElement = reshape(udElement',[],1);
 
             % get matrix corresponding to the configuration
@@ -904,7 +905,12 @@ classdef Tri3Element < ContinuumElement
             n = R*t;
             v_perp = dot(A*udElement,n);
             F = 0.5*mTilde*v_perp.^2*normalisation*t;
+            F = [0;1;0;1;0;1];
 
+            % % test of the derivatives
+            % x0 = reshape(self.nodes',[],1);
+            % ud = zeros(length(x0),1);
+            % der = FOM_tail_pressure_derivatives(uElement,udElement,A,B,normalisation, x0,ud);
         end
        
         % HELPER FUNCTIONS ________________________________________________

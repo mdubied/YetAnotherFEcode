@@ -59,7 +59,7 @@ M_red = Assembly.constrain_matrix(M);
 C_red = Assembly.constrain_matrix(C);
 K_red = Assembly.constrain_matrix(K);
 F_elastic = Assembly.constrain_vector(F);
-F_external =  Assembly.constrain_vector(Fext(t));
+F_external =  Assembly.constrain_vector(Fext(t,q,qd));
 %% 
 % Residual is computed according to the formula above:
 F_inertial = M_red * qdd;

@@ -185,7 +185,7 @@ elseif dimension == 2           % For 2D plots
         defoY = Y + factor*UY ;
         
         h{1} = patch(defoX,defoY,profile,'EdgeColor',meshcolor);
-        h{2} = plot(defoX(:),defoY(:),'.','Color', meshcolor, 'Markersize',10);
+        h{2} = plot(defoX(:),defoY(:),'.','Color', meshcolor, 'Markersize',5);
         plotIndex = 2;
         for idx=1:size(ActuationElements,1)
             if ActuationElements(idx) == 1

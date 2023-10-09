@@ -36,7 +36,7 @@ df3dq = double(ttv(Tuu3,q,3) + ttv(Tuu3,q,2) + ttv(Tuudot3,qd,3));
 df3dqd = double(ttv(Tudotudot3,qd,3) + ttv(Tudotudot3,qd,2) + ttv(Tuudot3,q,2));
 
 dfdq = df1dq + df2dq + df3dq;
-dfdqd = df1dqd + df2dqd + df3dqd;
+dfdqd = df1dqd + df2dqd + df3dqd;a
 
 % store results in output struct
 der.dfdq = double(dfdq);

@@ -2,7 +2,7 @@
 % Playground to test fish locomotion forces
 % Used element type: TRI3.
 % 
-% Last modified: 23/09/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 09/10/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -41,11 +41,11 @@ xi1 = 0.2;
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = 'naca0012_76el';
+        filename = 'naca0012_76el_2';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
 
-nodes(:,1) = -nodes(:,1);
+% nodes(:,1) = -nodes(:,1);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -59,17 +59,17 @@ nel = size(elements,1);
 nset = {};
 for el=1:nel   
     for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)>-Lx*0.01 && ~any(cat(2, nset{:}) == elements(el,n))
+        % if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
+        if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
             nset{end+1} = elements(el,n);
         end
     end   
 end
 for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0)
+    MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0);
 end
 
-
-% ASSEMBLY ________________________________________________________________
+%% ASSEMBLY ________________________________________________________________
 
 % nominal
 NominalAssembly = Assembly(MeshNominal);
@@ -104,6 +104,8 @@ PlotMesh(nodes, elementPlot, 1);
 % get nodes of the tail
 [tailNode, tailElement, tailElementWeights] = find_tail_TRI3(elements,nodes,spineElements,nodeIdxPosInElements);
 
+tailElementWeights = sparse(tailElementWeights);
+
 % get normalisation factors, i.e., the inverse of the distance between each consecutive spine node
 normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
 
@@ -111,32 +113,31 @@ normalisationFactors = compute_normalisation_factors(nodes, elements, spineEleme
 q = NominalAssembly.constrain_vector(reshape(nodes.',[],1));
 qd = zeros(size(q));
 qd(2:2:end) = 4;
-mTilde = 2;
+mTilde = 1000;
 
 % compute force
 % fReactive = reactive_force_TRI3(NominalAssembly, spineElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
 fTailPressure = tail_pressure_force_TRI3(NominalAssembly, tailElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
-disp(NominalAssembly.unconstrain_vector(fTailPressure));
+% disp(NominalAssembly.unconstrain_vector(fTailPressure));
+disp(fTailPressure)
 
 
 
-%% PLOT
-
-PlotMeshandForce(nodes,elements,0,NominalAssembly.unconstrain_vector(fTailPressure)/30)
+%% PLOT FORCE _____________________________________________________________
+% PlotMeshandForce(nodes,elements,0,NominalAssembly.unconstrain_vector(fTailPressure)/30)
+PlotMeshandForce(nodes,elements,0,fTailPressure/30)
 %% TAIL OPERATIONS ________________________________________________________
 % get tail elements and tail nodes
 [tailElement, tailNodeIndexInElement, tailElementBinVec] = find_tail_TRI3(elements, nodes);
 
-
 %% ROM TENSORS - HYDRODYNAMIC FORCES ______________________________________
-
-[skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
-vwater = [0.5;0.5];   % water velocity vector
-
-rho = 997*0.01;
-c = 0.2;
-
-fTest = hydro_force_TRI3(NominalAssembly, skinElements, skinElementFaces, vwater, rho, c, u, ud)
+% [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
+% vwater = [0.5;0.5];   % water velocity vector
+% 
+% rho = 997*0.01;
+% c = 0.2;
+% 
+% fTest = hydro_force_TRI3(NominalAssembly, skinElements, skinElementFaces, vwater, rho, c, u, ud)
 
 %% FOM TENSORS - HYDRODYNAMIC FORCES (optional) ___________________________
 
@@ -156,28 +157,46 @@ FOM = 1;    % FOM=1 for assembling the hydrodynamic tensors at the assembly leve
 % 
 % toc
 
+%% ACTUATION ELEMENTS _____________________________________________________
+% get skin elements
+% [skin,allfaces,skinElements, skinElementFaces] = getSkin2D(elements);
+
+% compute actuation tensors
+tensors_actu = create_actuation_tensors(NominalAssembly, elements, nodes);
+
 %% TIME INTEGRATION _______________________________________________________
 
 % FOM-I Sn (original nonlinear force, small time step needed) _____________
 % initial condition: equilibrium
 fprintf('solver \n')
 tic
-h2=0.005;
-tmax = 1.0; 
+h2=0.01;
+tmax = 0.8; 
 nUncDOFs = size(MeshNominal.EBC.unconstrainedDOFs,2);
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
+qd0(2:2:end) = 0.5;
 qdd0 = zeros(nUncDOFs,1);
 
+% external forces: tail pressure force and actuation
+% k=0.01;
+B1TopMuscle = tensors_actu.B1_top;
+B2TopMuscle = tensors_actu.B2_top;
+B1BottomMuscle =tensors_actu.B1_bottom;
+B2BottomMuscle = tensors_actu.B2_bottom;
+F_ext = @(t,q,qd) tail_pressure_force_TRI3(NominalAssembly, tailElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
+%     + k/2*(1-(1+0.04*sin(t*2*pi)))*(B1TopMuscle+B2TopMuscle*q) + ...
+%             k/2*(1-(1-0.04*sin(t*2*pi)))*(B1BottomMuscle+B2BottomMuscle*q);
 
-% hydrodynamic forces
-F_ext = @(t,q,qd) hydro_force_TRI3(NominalAssembly, skinElements, skinElementFaces, vwater, rho,c,q,qd);
+% F_ext = @(t,q,qd) k/2*(1-(1+0.06*1*t/10))*(B1TopMuscle+B2TopMuscle*NominalAssembly.unconstrain_vector(q)) ;
 
+% F_ext = @(t,q,qd) k/2*(1-(1+0.06*sin(t*2*pi)))*(B1TopMuscle+B2TopMuscle*NominalAssembly.unconstrain_vector(q)) + ...
+%             k/2*(1-(1-0.06*sin(t*2*pi)))*(B1BottomMuscle+B2BottomMuscle*NominalAssembly.unconstrain_vector(q));
 % instantiate object for nonlinear time integration
 TI_NL_FOMfull = ImplicitNewmark('timestep',h2,'alpha',0.005,'MaxNRit',400,'MaxNRit',200,'RelTol',1e-6);
 
 % modal nonlinear Residual evaluation function handle
-Residual_NL = @(q,qd,qdd,t)residual_nonlinear_hydro(q,qd,qdd,t,NominalAssembly,F_ext,Tu2,Tudot2,Tuu3,Tuudot3,Tudotudot3);
+Residual_NL = @(q,qd,qdd,t)residual_nonlinear(q,qd,qdd,t,NominalAssembly,F_ext);
 
 % nonlinear Time Integration
 TI_NL_FOMfull.Integrate(q0,qd0,qdd0,tmax,Residual_NL);
@@ -188,4 +207,19 @@ for t=1:size(TI_NL_FOMfull.Solution.q,2)
 end
 toc
 
+%% PLOT
+plot(TI_NL_FOMfull.Solution.q(tailNode*2,:))
 
+%% CHECK TAIL PRESSURE FORCE ___________________________________________
+timeStep = 40;
+qTest = TI_NL_FOMfull.Solution.q(:,timeStep);
+qdTest = TI_NL_FOMfull.Solution.qd(:,timeStep);
+
+%%
+elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_FOMfull.Solution.u, ...
+    'factor',1,'index',1:2,'filename','result_video','framerate',1/h2)
+
+%%
+fTailPressure = tail_pressure_force_TRI3(NominalAssembly, tailElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, qTest, qdTest);
+disp(NominalAssembly.unconstrain_vector(fTailPressure));

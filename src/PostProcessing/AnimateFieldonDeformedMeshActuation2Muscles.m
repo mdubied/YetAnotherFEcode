@@ -17,6 +17,7 @@ function AnimateFieldonDeformedMeshActuation2Muscles(Nodes,Elements,ActuationEle
 %
 % Last modified: 22/03/2023, Mathieu Dubied, ETH Zurich
 figure
+set(gcf, 'Position',  [100, 100, 1200, 500])
 [scalefactor,index,cameraPos,upVec,filename,framerate] = parse_inputs(varargin{:});
 
 %% video object
@@ -96,7 +97,7 @@ for j = 1:nt
             xlim = get(gca,'xlim');
             ylim = get(gca,'ylim');
         end
-        set(gca,'xlim',[-xlim(2)*0.2, xlim(2)*1.2],'ylim',ylim*1.5)
+        set(gca,'xlim',[xlim(1)*1.00, -xlim(1)*1.5],'ylim',ylim*1.5)
     end
     % gif movie
     frame = getframe(gcf);
