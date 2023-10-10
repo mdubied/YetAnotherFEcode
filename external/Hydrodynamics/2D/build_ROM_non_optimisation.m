@@ -1,34 +1,41 @@
 % build_ROM_non_optimisation
 %
 % Synthax:
-% [V,ROM_Assembly,tensors_ROM,tensors_hydro_ROM] = build_ROM_non_optimisation(MeshNominal,nodes,elements,U,FORMULATION,VOLUME,USEJULIA)
+% [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actuBottom] = ...
+%    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
 %
-% Description: Builds a PROM based on the nominal mesh and shape variation
-% basis.
+% Description: Builds a ROM based on the nominal mesh
 %
 % INPUTS: 
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
 % (2) nodes:        nodes and their coordinates
 % (3) elements:     elements and corresponding nodes
-% (4) U:            shape variation basis
-% (5) FORMULATION:  order of the Neumann approximation (N0/N1/N1t)
-% (6) VOLUME:       integration over defected (1) or nominal volume (0)
-% (7) USEJULIA:     use of JULIA (1) for the computation of internal forces
-%                   tensors
+% (4) mTilde:       virtual mass linear density of the fish + water
+% (5) USEJULIA:     use of JULIA (1) for the computation of internal forces
+%                   tensors - not tested, but was present as parameter in
+%                   the DpROM branch
+% (6) ACTUATION:    1 if actuation forces are considered, 0 else
 %
 % OUTPUTS:
 % (1) V:                    ROB    
 % (2) ROM_Assembly:         ROM assembly
 % (3) tensors_ROM:          (reduced) tensors for the internal forces 
-% (4) tensors_hydro_ROM:    (reduced) tensors for the hydrdynamic forces
+% (4) tailProperties:       properties of the tail pressure force
+%                           (matrices, tail elements etc.)
+% (5) spineProperties:      properties of the spine change in momentum
+%                           (tensor, spine elements etc.)
+% (6) actuTop:              vectors and matrices related to the actuation
+%                           muscle at the top
+% (7) actuBottom:           vectors and matrices related to the actuation
+%                           muscle at the bottom
 %     
 %
 % Additional notes: -
 %
-% Last modified: 09/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 10/10/2023, Mathieu Dubied, ETH Zürich
 
-function [V,ROM_Assembly,tensors_ROM,tailProperties,actuTop,actuBottom] = ...
-    build_ROM_non_optimisation(MeshNominal,nodes,elements,USEJULIA,ACTUATION)
+function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actuBottom] = ...
+    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
     
     % ASSEMBLY ____________________________________________________________
     NominalAssembly = Assembly(MeshNominal);
@@ -74,7 +81,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,actuTop,actuBottom] = ...
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [m1 VMn MDn];
+    V  = [m1 m2 VMn MDn];
     % V = [VMn MDn]
     V  = orth(V);
 
@@ -87,7 +94,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,actuTop,actuBottom] = ...
     % INTERNAL FORCES TENSORS _____________________________________________
     tensors_ROM = reduced_tensors_ROM(NominalAssembly, elements, V, USEJULIA);  
     
-    % HYDRODYNAMIC FORCES TENSORS _________________________________________
+    % HYDRODYNAMIC FORCES _________________________________________________
     % [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
     % vwater = [1;0.1];
     % rho = 1;
@@ -101,7 +108,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,actuTop,actuBottom] = ...
     normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
     wTail = normalisationFactors(tailElement);
 
-    % get matrices for tail pressure force
+    % tail pressure force: get matrices
     [A,B] = compute_AB_tail_pressure(nodeIdxPosInElements(tailElement,:));
     nodesTailEl = elements(tailElement,:);
     iDOFs = [nodesTailEl(1)*2-1,nodesTailEl(1)*2,...
@@ -109,11 +116,20 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,actuTop,actuBottom] = ...
              nodesTailEl(3)*2-1,nodesTailEl(3)*2];
     VTail = V(iDOFs,:);
 
-    % group tail quantities in a struct
+    % tail pressure force: group tail quantities in a struct
     tailProperties.A = A;
     tailProperties.B = B;
     tailProperties.w = wTail;
     tailProperties.V = VTail;
+    tailProperties.tailNode = tailNode;
+    tailProperties.tailElement = tailElement;
+
+    % spine momentum change tensor (reduced order)
+    Tr = compute_spine_momentum_tensor(ROM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,mTilde);
+    spineProperties.Tr = Tr;
+    spineProperties.spineNodes = spineNodes;
+    spineProperties.spineElements = spineElements;
+    
 
     % ACTUATION FORCES MATRICES ___________________________________________
     if ACTUATION
@@ -148,7 +164,5 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,actuTop,actuBottom] = ...
         actuTop = 0;
         actuBottom = 0;
     end
-
-
 
 end 

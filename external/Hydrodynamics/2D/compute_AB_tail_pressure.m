@@ -1,7 +1,7 @@
 % compute_AB_tail_pressure
 %
 % Synthax:
-% force = force = compute_AB_tail_pressure(nodeIdxPosInTailElement)
+% force = compute_AB_tail_pressure(nodeIdxPosInTailElement)
 %
 % Description: 
 % Computes the A and B matrices needed to express the tail pressure force.
@@ -19,9 +19,9 @@
 %                               force
 %       
 %
-% Additional notes:
+% Additional notes: -
 %
-% Last modified: 09/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 10/10/2023, Mathieu Dubied, ETH Zurich
 function [A,B] = compute_AB_tail_pressure(nodeIdxPosInTailElement)
     % get matrix corresponding to the configuration
     if nodeIdxPosInTailElement(1)==1         % conf 1-2 and 1-3

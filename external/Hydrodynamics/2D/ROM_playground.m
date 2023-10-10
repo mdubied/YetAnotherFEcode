@@ -2,7 +2,7 @@
 % Playground to test fish locomotion forces in ROM
 % Used element type: TRI3.
 % 
-% Last modified: 09/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 10/10/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -77,8 +77,24 @@ PlotMesh(nodes, elementPlot, 1);
 
 %% ROM CONSTRUCTION _______________________________________________________
 ACTUATION =1;
-[V,ROM_Assembly,tensors_ROM,tailProp,actuTop,actuBottom] = build_ROM_non_optimisation( ...
-    MeshNominal,nodes,elements,USEJULIA,ACTUATION);
+mTilde = 10;
+[V,ROM_Assembly,tensors_ROM,tailProp,spineProp,actuTop,actuBottom] = build_ROM_non_optimisation( ...
+    MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION);
+
+%% CHECK spine momentum force _____________________________________________
+q = reshape(nodes.',[],1);
+qd = zeros(size(q));
+qd(2:2:end) = 4;
+qd(1:2:end) = 0;
+qdd = zeros(size(q));
+qdd(2:2:end) = -4;
+
+q = V.'*q;
+qd = V.'*qd;
+qdd = V.'*qdd;
+T = spineProp.Tr;
+
+spineForce = V*double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
 
 %% TIME INTEGRATION _______________________________________________________
 
@@ -111,7 +127,6 @@ R = [0 -1 0 0 0 0;
      0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
 wTail = tailProp.w;
 VTail = tailProp.V;
-mTilde = 3;
 nodesInPos = V.'*reshape(nodes.',[],1);     % initial node position expressed in the ROM
 
 % external forces: actuation and hydrodynamic reactive force
@@ -122,8 +137,11 @@ actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
 fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
                 k/2*(1-(1-0.02*sin(t*2*pi)))*(B1B+B2B*q);
                    
-fHydro = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
+fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
                     B*VTail*(nodesInPos+q));
+
+fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
+
 
 % fHydro = @(q,qd)  VTail.'*[0;-1;0;-1;0;-1]*0.2;
 
@@ -132,7 +150,7 @@ TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,fActu,fHydro,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,R,mTilde,nodesInPos);
+    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,mTilde,nodesInPos);
 
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
@@ -143,7 +161,7 @@ toc
 tailNode = 1;
 hold on
 initialPosFOM = reshape(nodes.',[],1);
-plot(initialPosFOM(tailNode*2-1)+TI_NL_ROM.Solution.u(tailNode*2-1,:))
+plot(initialPosFOM(tailNode*2)+TI_NL_ROM.Solution.u(tailNode*2,:))
 
 %% CHECK TAIL FORCE _______________________________________________________
 upTo = 200;

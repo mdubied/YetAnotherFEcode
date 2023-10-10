@@ -26,9 +26,7 @@
 %                           vector
 %
 % OUTPUTS
-%   force: a struct variable with the following fields:
-%       .f              reactive force at the Assembly level        
-%      	.time           computational time
+%   force:                  reactive force at the Assembly level   
 %       
 %
 % Additional notes:

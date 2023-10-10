@@ -1,5 +1,5 @@
 % ------------------------------------------------------------------------ 
-% Playground to test fish locomotion forces
+% Playground to test fish locomotion forces using a FOM formulation
 % Used element type: TRI3.
 % 
 % Last modified: 09/10/2023, Mathieu Dubied, ETH Zurich
@@ -66,7 +66,7 @@ for el=1:nel
     end   
 end
 for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0);
+    MeshNominal.set_essential_boundary_condition([nset{l}],2,0);
 end
 
 %% ASSEMBLY ________________________________________________________________
@@ -113,6 +113,7 @@ normalisationFactors = compute_normalisation_factors(nodes, elements, spineEleme
 q = NominalAssembly.constrain_vector(reshape(nodes.',[],1));
 qd = zeros(size(q));
 qd(2:2:end) = 4;
+qdd = zeros(size(q));
 mTilde = 1000;
 
 % compute force
@@ -120,6 +121,19 @@ mTilde = 1000;
 fTailPressure = tail_pressure_force_TRI3(NominalAssembly, tailElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
 % disp(NominalAssembly.unconstrain_vector(fTailPressure));
 disp(fTailPressure)
+
+%% SPINE CHANGE OF MOMENTUM TENSOR ________________________________________
+T = spine_momentum_tensor_TRI(NominalAssembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,mTilde);
+
+q = reshape(nodes.',[],1);
+qd = zeros(size(q));
+qd(2:2:end) = 4;
+qd(1:2:end) = 0;
+qdd = zeros(size(q));
+qdd(2:2:end) = -4;
+mTilde = 3;
+spineForceDirect = spine_momentum_force_TRI(NominalAssembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,mTilde,q,qd,qdd)
+spineForce = ttv(ttv(ttv(T,qdd,2),q,2),q,2)+ttv(ttv(ttv(T,qd,2),qd,2),q,2)+ttv(ttv(ttv(T,qd,2),q,2),qd,2)
 
 
 

@@ -905,12 +905,140 @@ classdef Tri3Element < ContinuumElement
             n = R*t;
             v_perp = dot(A*udElement,n);
             F = 0.5*mTilde*v_perp.^2*normalisation*t;
-            F = [0;1;0;1;0;1];
+        end
 
-            % % test of the derivatives
-            % x0 = reshape(self.nodes',[],1);
-            % ud = zeros(length(x0),1);
-            % der = FOM_tail_pressure_derivatives(uElement,udElement,A,B,normalisation, x0,ud);
+
+        function F = spine_momentum_force(self, spineNodeIndexInElement, normalisation, mTilde, u, ud, udd)
+            % _____________________________________________________________ 
+            % Compute the pressure force at the tail f=0.5*m*v_perp^2*n
+            % _____________________________________________________________
+            F = zeros(self.nelDOFs, 1);
+
+            % get node deformation u and its velocity ud (size 3 x 2)
+            u2Columns = Tri3Element.vector_to_matrix(u); 
+            ud2Columns = Tri3Element.vector_to_matrix(ud);
+            udd2Columns = Tri3Element.vector_to_matrix(udd);
+            uElement = u2Columns(self.nodeIDs,:);
+            udElement = ud2Columns(self.nodeIDs,:);
+            uddElement = udd2Columns(self.nodeIDs,:);
+            nodesPos = self.nodes + uElement; % position = base node position + displacement
+
+            % convert back to 6 x 1 (x y x y x y)
+            nodesPos = reshape(nodesPos',[],1);  
+            uElement = reshape(uElement.',[],1);
+            udElement = reshape(udElement',[],1);
+            uddElement = reshape(uddElement',[],1);
+
+            % get matrix corresponding to the configuration
+            if spineNodeIndexInElement(1)==1         % conf 1-2 and 1-3
+                A = A_conf1;
+                if spineNodeIndexInElement(2)==2
+                    B = B_conf1_2;
+                else
+                    B = B_conf1_3;
+                end
+            elseif spineNodeIndexInElement(1)==2     % conf 2-1 and 2-3
+                A = A_conf2;
+                if spineNodeIndexInElement(2)==1
+                    B = B_conf2_1;
+                else
+                    B = B_conf2_3;
+                end
+            else                                    % conf 3-1 and 3-2
+                A = A_conf3;
+                if spineNodeIndexInElement(2)==1
+                    B = B_conf3_1;
+                else
+                    B = B_conf3_2;
+                end
+            end
+
+            % compute and apply force to tail node
+            R = [0 -1 0 0 0 0;
+                 1 0 0 0 0 0;
+                 0 0 0 -1 0 0;
+                 0 0 1 0 0 0;
+                 0 0 0 0 0 1;
+                 0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+
+            F = ((A*uddElement).'*R*B*nodesPos + (A*udElement).'*R*B*udElement)*R*B*nodesPos + (A*udElement).'*R*B*nodesPos*R*B*udElement;
+            % F = ((A*uddElement).'*R*B*nodesPos)*R*B*nodesPos ;
+
+            F = mTilde*normalisation*F;
+
+            T = tensor(mTilde*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B));
+
+            F = double(ttv(ttv(ttv(T,uddElement,2),nodesPos,2),nodesPos,2) + ttv(ttv(ttv(T,udElement,2),udElement,2),nodesPos,2)+ ttv(ttv(ttv(T,udElement,2),nodesPos,2),udElement,2));
+        end
+
+
+        function T = spine_momentum_tensor(self, tailNodeIndexInElement, normalisation, mTilde,nodes)
+            % _____________________________________________________________ 
+            % Compute the spine momentum change tensor needed to compute 
+            % d/dt \int_0^l mTilde(a) v_\perp n da
+            % _____________________________________________________________
+
+            % get matrix corresponding to the configuration
+            if tailNodeIndexInElement(1)==1         % conf 1-2 and 1-3
+                A = A_conf1;
+                if tailNodeIndexInElement(2)==2
+                    B = B_conf1_2;
+                else
+                    B = B_conf1_3;
+                end
+            elseif tailNodeIndexInElement(1)==2     % conf 2-1 and 2-3
+                A = A_conf2;
+                if tailNodeIndexInElement(2)==1
+                    B = B_conf2_1;
+                else
+                    B = B_conf2_3;
+                end
+            else                                    % conf 3-1 and 3-2
+                A = A_conf3;
+                if tailNodeIndexInElement(2)==1
+                    B = B_conf3_1;
+                else
+                    B = B_conf3_2;
+                end
+            end
+
+            % compute tensor
+            R = [0 -1 0 0 0 0;
+                 1 0 0 0 0 0;
+                 0 0 0 -1 0 0;
+                 0 0 1 0 0 0;
+                 0 0 0 0 0 1;
+                 0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+
+            T = mTilde*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
+
+
+            % test
+            u = reshape(nodes.',[],1);
+            ud = zeros(size(u));
+            ud(2:2:end) = 4;
+            ud(1:2:end) = 0;
+            udd = zeros(size(u));
+            udd(2:2:end) = -4;
+            u2Columns = Tri3Element.vector_to_matrix(u); 
+            ud2Columns = Tri3Element.vector_to_matrix(ud);
+            udd2Columns = Tri3Element.vector_to_matrix(udd);
+            uElement = u2Columns(self.nodeIDs,:);
+            udElement = ud2Columns(self.nodeIDs,:);
+            uddElement = udd2Columns(self.nodeIDs,:);
+            nodesPos = self.nodes + uElement; % position = base node position + displacement
+
+            % convert back to 6 x 1 (x y x y x y)
+            nodesPos = reshape(nodesPos',[],1);  
+            uElement = reshape(uElement.',[],1);
+            udElement = reshape(udElement',[],1);
+            uddElement = reshape(uddElement',[],1);
+
+            T=tensor(T);
+
+            F = double(ttv(ttv(ttv(T,uddElement,2),nodesPos,2),nodesPos,2) + ttv(ttv(ttv(T,udElement,2),udElement,2),nodesPos,2)+ ttv(ttv(ttv(T,udElement,2),nodesPos,2),udElement,2));
+            test = 2;
+            T=double(T);
         end
        
         % HELPER FUNCTIONS ________________________________________________

@@ -1,4 +1,26 @@
-function t_actu = create_actuation_tensors(Assembly, elements, nodes)
+% create_actuation_tensors
+%
+% Synthax:
+% Actu = create_actuation_tensors(Assembly, elements, nodes)
+%
+% Description: This function returns the vectors and matrices related to
+% the actuation muscles in the FOM
+%
+% INPUTS: 
+% (1) Assembly:         Assembly from YAFEC               
+% (2) elements:         matrix that describes which nodes (columns) in each
+%                       element (rows)
+% (3) nodes:            position x y of the nodes
+%
+% OUTPUTS:
+% (1) TActu:            struct containing the B1 vectors and B2 matrices
+%                       for the top and bottom muscles
+%     
+%
+% Additional notes: -
+%
+% Last modified: 10/10/2023, Mathieu Dubied, ETH Zürich
+function TActu = create_actuation_tensors(Assembly, elements, nodes)
     
     % get size of fish and important features _____________________________
     Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
@@ -47,8 +69,8 @@ function t_actu = create_actuation_tensors(Assembly, elements, nodes)
     B2_bottom = Assembly.matrix_actuation('B2', 'weights', topMuscle, actuationDirection);
     fprintf('   B2 bottom: %.2f s\n',toc)
 
-    t_actu.B1_top = B1_top;
-    t_actu.B2_top = B2_top;
-    t_actu.B1_bottom = B1_bottom;
-    t_actu.B2_bottom = B2_bottom;
+    TActu.B1_top = B1_top;
+    TActu.B2_top = B2_top;
+    TActu.B1_bottom = B1_bottom;
+    TActu.B2_bottom = B2_bottom;
 end

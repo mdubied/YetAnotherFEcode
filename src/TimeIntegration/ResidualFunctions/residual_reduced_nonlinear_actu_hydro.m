@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fActu,fHydro, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fHydroProp,R,mTilde,x0)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fActu,fTail,fSpine, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,R,mTilde,x0)
 %  RESIDUAL_REDUCED_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -69,27 +69,34 @@ u = V*q; %q is the reduced variable
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
-F_ext_V =  fActu(t,q) + fHydro(q,qd);
+F_ext_V =  fActu(t,q) + fTail(q,qd) + fSpine(q,qd,qdd);
 r = F_inertial + F_damping + F_V - F_ext_V ;
 
-% Derivatives
-A = fHydroProp.A;
-B = fHydroProp.B;
-w = fHydroProp.w;
-VTail = fHydroProp.V;
-
+% Derivatives tail pressure force
+A = fTailProp.A;
+B = fTailProp.B;
+w = fTailProp.w;
+VTail = fTailProp.V;
 der_tail_pressure = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0,VTail);
 
-drdqdd = M_V;
-drdqd = C_V - der_tail_pressure.dfdqd ;
+% Derivatives spine change in momentum 
+der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,fSpineProp.Tr);
+
+% Residual derivative
+drdqdd = M_V - der_spine_momentum.dfdqdd;
+
+drdqd = C_V - der_tail_pressure.dfdqd ...
+            - der_spine_momentum.dfdqd;
+
 drdq = K_V  - actuSignalTop(t)*actuTop.B2 ....
-            -actuSignalBottom(t)*actuBottom.B2 ...
-            - der_tail_pressure.dfdq;
+            - actuSignalBottom(t)*actuBottom.B2 ...
+            - der_tail_pressure.dfdq ...
+            - der_spine_momentum.dfdq;
 
 %% 
 % We use the following measure to comapre the norm of the residual $\mathbf{r}$
 % 
 % $$\texttt{c0} = \|\mathbf{M_V}\ddot{\mathbf{q}}\| + \|\mathbf{C_V}\dot{\mathbf{q}}\| 
 % + \|\mathbf{F_V}(\mathbf{q})\| + \|\mathbf{V}^{\top}\mathbf{F}_{ext}(t)\|$$
-c0 = norm(F_inertial) + norm(F_damping) + norm(F_V) + norm(fActu(t,q)) + norm(fHydro(q,qd));
+c0 = norm(F_inertial) + norm(F_damping) + norm(F_V) + norm(fActu(t,q)) + norm(fTail(q,qd));
 end

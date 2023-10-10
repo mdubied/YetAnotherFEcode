@@ -440,6 +440,41 @@ classdef Assembly < handle
             v = vertcat(v{:});
             v = sparse(index, ones(length(index),1), v, self.Mesh.nDOFs, 1);
         end
+
+        function [v] = vector_hydro3(self,elementMethodName,varargin)
+            % This function assembles a finite element vector from
+            % its element level counterpart. The method allows to pass
+            % extra arguments specific to the "elementMethodName"
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            n_e = self.Mesh.nElements;            
+            index = cell(n_e,1); % indices
+            v = cell(n_e,1); % values
+            Elements = self.Mesh.Elements; % Elements array
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                
+                index{j} = thisElement.iDOFs;
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:), inputs{2}(j), inputs{3}, inputs{4}, inputs{5}, inputs{6});
+               
+            end
+                                    
+            % assembling
+            index = vertcat(index{:});
+            v = vertcat(v{:});
+            v = sparse(index, ones(length(index),1), v, self.Mesh.nDOFs, 1);
+        end
         
         function [S] = scalar(self,elementMethodName,varargin)
             % This function assembles a generic finite element scalar from
@@ -585,6 +620,47 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
+                Te = tensor(Te);
+                [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, {}, sumDIMS);
+            end
+
+            subs = vertcat(subs{:});
+            if ~isempty(sumDIMS)
+                subs(:,sumDIMS) = sort(subs(:,sumDIMS),2);
+            end
+            T = vertcat(T{:});
+            T = sptensor(subs, T, SIZE);
+
+        end
+
+        function [T] = tensor_spine_momentum(self,elementMethodName,SIZE,sumDIMS,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.
+
+            n_e = self.Mesh.nElements;
+
+            subs = cell(n_e,1);
+            T = cell(n_e,1); % values
+            
+            Elements = self.Mesh.Elements;
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;          
+                
+                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
                 Te = tensor(Te);
                 [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, {}, sumDIMS);
             end

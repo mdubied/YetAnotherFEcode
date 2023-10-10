@@ -97,7 +97,7 @@ for j = 1:nt
             xlim = get(gca,'xlim');
             ylim = get(gca,'ylim');
         end
-        set(gca,'xlim',[xlim(1)*1.00, -xlim(1)*1.5],'ylim',ylim*1.5)
+        set(gca,'xlim',[xlim(1)*1.00, -xlim(1)*2.5],'ylim',ylim*1.5)
     end
     % gif movie
     frame = getframe(gcf);
