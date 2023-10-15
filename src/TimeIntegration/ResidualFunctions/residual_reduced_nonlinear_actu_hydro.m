@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fActu,fTail,fSpine, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,R,mTilde,x0)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fActu,fTail,fSpine, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,R,x0)
 %  RESIDUAL_REDUCED_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -77,10 +77,12 @@ A = fTailProp.A;
 B = fTailProp.B;
 w = fTailProp.w;
 VTail = fTailProp.V;
+mTilde = fTailProp.mTilde;
+
 der_tail_pressure = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0,VTail);
 
 % Derivatives spine change in momentum 
-der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,fSpineProp.Tr);
+der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,x0,fSpineProp.tensors.T);
 
 % Residual derivative
 drdqdd = M_V - der_spine_momentum.dfdqdd;
@@ -88,10 +90,10 @@ drdqdd = M_V - der_spine_momentum.dfdqdd;
 drdqd = C_V - der_tail_pressure.dfdqd ...
             - der_spine_momentum.dfdqd;
 
-drdq = K_V  - actuSignalTop(t)*actuTop.B2 ....
-            - actuSignalBottom(t)*actuBottom.B2 ...
-            - der_tail_pressure.dfdq ...
-            - der_spine_momentum.dfdq;
+drdq = K_V - actuSignalTop(t)*actuTop.B2 ....
+           - actuSignalBottom(t)*actuBottom.B2 ...
+           - der_tail_pressure.dfdq ...
+           - der_spine_momentum.dfdq;
 
 %% 
 % We use the following measure to comapre the norm of the residual $\mathbf{r}$

@@ -1,7 +1,0 @@
-Hydrodynamic tensors V1
-
-- area kept constant
-- thrust coefficient Ct in the wrong direction (used -alpha instead of alpha)
-- no scaling of thrust force
-
-Rather slow as some simplifications (area) could not be performed when using this formulation

@@ -94,6 +94,7 @@ classdef DpromAssembly < ReducedAssembly
         end
         
         function M = ParametricMass(self, varargin)
+
             % This function computes the reduced order mass matrix for the
             % DpROM, approximating the integral over the defected volume
             % (same procedure used for the stiffness tensors).
@@ -122,6 +123,110 @@ classdef DpromAssembly < ReducedAssembly
                     M{d}  = M{d}  + Me{d};
                 end
             end
+        end
+
+        % Hydrodynamic tensors ____________________________________________
+        function [T] = tensor_spine_momentum_U3(self,elementMethodName,SIZE,varargin)
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}, self.Mesh.nodes);
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ve);
+ 
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_U4(self,elementMethodName,SIZE,varargin)
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+            md = size(self.U,2);
+            TDouble = zeros(SIZE); % if md=1, array of dimension mxmxmxmd are computed as a mxmxm array, but we want a tensor mxmxmx1 as a final result
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}, self.Mesh.nodes);
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ue);
+                TDouble = TDouble + Ter;
+ 
+            end
+
+            if md==1
+                T(:,:,:,1) = TDouble;    
+            else
+                T = tensor(TDouble);
+            end 
+      
+        end
+
+        function [T] = tensor_spine_momentum_U34(self,elementMethodName,SIZE,varargin)
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+            md = size(self.U,2);
+            TDouble = zeros(SIZE); % if md=1, array of dimension mxmxmdxmd are computed as a mxm array, but we want a tensor mxmx1x1 as a final result
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}, self.Mesh.nodes);
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ue);
+                
+                TDouble = TDouble + Ter;
+                
+            end
+
+            if md==1
+                T(:,:,1,1) = TDouble;    
+            else
+                T = tensor(TDouble);
+            end 
+                      
         end
         
         % Ancillary functions _____________________________________________

@@ -1,49 +1,86 @@
 % gradient_cost_function_w_constraints
 %
 % Synthax:
-% nabla_Lr = gradient_cost_function_w_constraints(dr,xi,eta,etad,s,sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER)
+% nabla_Lr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,eta0,eta,etad,etadd,s,sd,sdd,tailProperties,spineProperties,AConstraint,bConstraint,barrierParam)
 %
 % Description:  gradient of the (reduced) cost function Lr. The gradient is
 %               analytical and based on the hydrodynamic tensors
 %
 % INPUTS: 
-% (1) dr:                   reduced forward swimming direction vector
-% (2) xi:                   vector of shape variation parameters
-% (3) eta:                  solution for the reduced state variables
-% (4) etad:                 solution for the reduced state derivatives
-% (5) s:                    solution for the sensitivity
-% (6) sd:                   solution for the sensitivity derivative
-% (7) tensors_hydro_PROM:   reduced tensors for the hydrodynamic forces
-% (8)-(9)                   constraints on xi of the form Axi<b 
-% (10) barrierParam:        parameter to scale (1/barrierParam) the barrier functions 
-% (11) FOURTHORDER:         logical value for 4th order tensors (1), or not
-%                           (0)
+% (1) dr:               reduced forward swimming direction vector
+% (2) xiRebuild:        current value for xi, after the last PROM rebuild
+% (3) xi:               current value for xi, after first PROM build
+% (4) eta0:             initial node position in ROM
+% (5) eta:              solution for the reduced state variables
+% (6) etad:             solution for the reduced velocities
+% (7) etadd:            solution for the reduced accelerations
+% (8) s:                solution for the sensitivity
+% (9) sd:               solution for the sensitivity derivative
+% (10) sdd:             solution for the sensitivity 2nd derivative
+% (11)tailProperties:   properties of the tail pressure force
+%                       (matrices, tail elements etc.)
+% (12) spineProperties: properties of the spine change in momentum
+%                       (tensor, spine elements etc.)
+% (13)-(14) A,b:        constraints on xi of the form Axi<b 
+% (14) barrierParam:    parameter to scale (1/barrierParam) the barrier functions 
 %                       
 % OUTPUTS:
-% (1) nablaLr:          gradient of the (reduced cost function)
+% (1) nablaLr:          gradient of the reduced cost function
 %     
 %
-% Last modified: 15/03/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 15/10/2023, Mathieu Dubied, ETH Zürich
 
-function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,eta,etad,s,sd,A,b,barrierParam,tensors_hydro_PROM,FOURTHORDER)
+function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,eta0,eta,etad,etadd,s,sd,sdd,tailProperties,spineProperties,AConstraint,bConstraint,barrierParam)
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
-    nConstraints = size(b);
-    secondOrderDer = 0;
+    nConstraints = size(bConstraint);
+ 
     %barrierParam = 14000;%400; for C:400
 
-    for t=1:N 
-        % part stemming from hydrodynamic forces
-        derivative_hydro = DpROM_hydro_derivatives(eta(:,t),etad(:,t),xiRebuild,tensors_hydro_PROM,FOURTHORDER,secondOrderDer);
-        dfhydrodeta = derivative_hydro.dfdq; 
-        dfhydrodetad = derivative_hydro.dfdqd;
-        dfhydrodxi = derivative_hydro.dfdp;
+    % tail pressure force properties
+    A = tailProperties.A;
+    B = tailProperties.B;
+    R = [0 -1 0 0 0 0;
+         1 0 0 0 0 0;
+         0 0 0 -1 0 0;
+         0 0 1 0 0 0;
+         0 0 0 0 0 1;
+         0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+    wTail = tailProperties.w;
+    VTail = tailProperties.V;
+    UTail = tailProperties.U;
+    mTilde = tailProperties.mTilde;
+   
+    % spine change in momentum
+    tensorsSpine = spineProperties.tensors;
+    
+    for t=50:N 
+        % tail pressure force
+        derTail = PROM_tail_pressure_derivatives(eta(:,t),etad(:,t),A,B,R,mTilde,wTail,eta0,xiRebuild,VTail,UTail); 
+        dfTaildq = derTail.dfdq;               
+        dfTaildqd = derTail.dfdqd;
+        dfTaildp = derTail.dfdp;
+
+        % spine change in momentum
+        derSpine = PROM_spine_momentum_derivatives(eta(:,t),etad(:,t),etadd(:,t),eta0,xiRebuild,tensorsSpine);        
+        dfSpinedq = derSpine.dfdq;  
+        dfSpinedqd = derSpine.dfdqd;
+        dfSpinedqdd = derSpine.dfdqdd;
+        dfSpinedp = derSpine.dfdp;
+
+        % get gradient dfdxi_i (dfdp_i)         
         if size(xi,1)>1
             s = double(s);
             sd = double(sd);
-            dfdxi_i = dfhydrodxi + dfhydrodeta*s(:,:,t) + dfhydrodetad*sd(:,:,t);
+            sdd = double(sdd);
+            dfdxi_i = dfTaildp + dfTaildq*s(:,:,t) + dfTaildqd*sd(:,:,t) ...
+                    + dfSpinedp + dfSpinedq*s(:,:,t) ...
+                    + dfSpinedqd*sd(:,:,t) + dfSpinedqdd*sdd(:,:,t); 
+            
         else
-            dfdxi_i = dfhydrodxi + dfhydrodeta*s(:,t) + dfhydrodetad*sd(:,t);
+            dfdxi_i = dfTaildp + dfTaildq*s(:,t) + dfTaildqd*sd(:,t) ...
+                    + dfSpinedp + dfSpinedq*s(:,t) ...
+                    + dfSpinedqd*sd(:,t) + dfSpinedqdd*sdd(:,t); 
         end
         
         
@@ -51,7 +88,7 @@ function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,eta,etad
         logBarrierDInTimeStep = zeros(size(xi,1),1);
        
         for i = 1:nConstraints 
-            logBarrierDInTimeStep = logBarrierDInTimeStep - 1/barrierParam*1/(A(i,:)*xi-b(i))*A(i,:).';
+            logBarrierDInTimeStep = logBarrierDInTimeStep - 1/barrierParam*1/(AConstraint(i,:)*xi-bConstraint(i))*AConstraint(i,:).';
         end
         
 

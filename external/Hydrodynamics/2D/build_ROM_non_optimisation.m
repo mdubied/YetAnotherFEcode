@@ -1,7 +1,7 @@
 % build_ROM_non_optimisation
 %
 % Synthax:
-% [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actuBottom] = ...
+% [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
 %    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
 %
 % Description: Builds a ROM based on the nominal mesh
@@ -34,9 +34,12 @@
 %
 % Last modified: 10/10/2023, Mathieu Dubied, ETH Zürich
 
-function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actuBottom] = ...
+function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
     
+    % 2D or 3D? ___________________________________________________________
+    fishDim = size(nodes,2);
+
     % ASSEMBLY ____________________________________________________________
     NominalAssembly = Assembly(MeshNominal);
     Mn = NominalAssembly.mass_matrix();
@@ -77,13 +80,27 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actu
     
     % ROB formulation
     % V  = [VMn MDn DS];
-    mSingle = [-1 0];    % horizontal displacement, rigid body mode
+    mSingle = [1 0];    % horizontal displacement, rigid body mode
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [m1 m2 VMn MDn];
+    V  = [VMn MDn];
     % V = [VMn MDn]
     V  = orth(V);
+
+    % plot
+    mod = 2;
+    if fishDim == 2
+        elementPlot = elements(:,1:3);  % plot only corners (otherwise it's a mess)
+        v1 = reshape(VMn(:,mod), 2, []).';
+    else
+        elementPlot = elements(:,1:4); 
+        v1 = reshape(VMn(:,mod), 3, []).';
+    end
+    figure('units','normalized','position',[.2 .1 .6 .8])
+    PlotMesh(nodes, elementPlot, 0);
+    PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+    title(['\Phi_' num2str(mod)])
 
     % reduced assembly
     ROM_Assembly = ReducedAssembly(MeshNominal, V);
@@ -95,14 +112,16 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actu
     tensors_ROM = reduced_tensors_ROM(NominalAssembly, elements, V, USEJULIA);  
     
     % HYDRODYNAMIC FORCES _________________________________________________
-    % [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    % vwater = [1;0.1];
-    % rho = 1;
-    % tensors_hydro_PROM = reduced_tensors_hydro_PROM(NominalAssembly, elements, V, U, FOURTHORDER, skinElements, skinElementFaces, vwater, rho);
     
     % find spine and tail elements
-    [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
-    [tailNode, tailElement, tailElementWeights] = find_tail_TRI3(elements,nodes,spineElements,nodeIdxPosInElements);
+    if fishDim == 2
+        [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
+        [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
+    else
+        [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TET4(elements,nodes);
+        [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
+    end
+    
 
     % get normalisation factors
     normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
@@ -129,9 +148,17 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,actuTop,actu
     spineProperties.Tr = Tr;
     spineProperties.spineNodes = spineNodes;
     spineProperties.spineElements = spineElements;
+
+    % drag force (reduced order)
+    [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
+    rho = 1000;
+    tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
+    dragProperties.tensors = tensors_drag;
+    dragProperties.skinElements = skinElements;
+    dragProperties.skinElementFaces = skinElementFaces;
     
 
-    % ACTUATION FORCES MATRICES ___________________________________________
+    % ACTUATION FORCES ____________________________________________________
     if ACTUATION
         Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
         Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of the nominal fish

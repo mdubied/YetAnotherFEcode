@@ -11,18 +11,18 @@
 % INPUTS: 
 % (1) tensors_PROM: structure array containing reduced tensors of
 %                   F_act model
-% (2) a:            actuation value
+% (2) a:            actuation signal
 %
 % OUTPUTS:
 % (1) der:              strucure array containing first order partial 
 %                       derivatives needed to solve the sensitivity ODE. 
 %
-% Last modified: 28/03/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
 function der = PROM_actu_derivatives(tensors_PROM,a)
 
 % evaluate partial derivatives
-dfdp = 0.5*(1-a)*tensors_PROM.B3;
-dfdq = 0.5*(1-a)*tensors_PROM.B2;
+dfdp = a*tensors_PROM.B3;
+dfdq = a*tensors_PROM.B2;
 
 % store results in output struct
 der.dfdp = double(dfdp);

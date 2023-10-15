@@ -15,6 +15,7 @@ FORMULATION = 'N1'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 USEJULIA = 0;
 
+
 %% PREPARE MODEL                                                    
 % DATA ____________________________________________________________________
 E       = 2600000;      % Young's modulus [Pa]
@@ -63,7 +64,7 @@ for el=1:nel
     end   
 end
 for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0)   %
+    MeshNominal.set_essential_boundary_condition([nset{l}],2,0)   %
     % fixed head
     % MeshNominal.set_essential_boundary_condition([nset{l}],2,0)     % head on "rail"
 end
@@ -78,35 +79,46 @@ PlotMesh(nodes, elementPlot, 1);
 %% ROM CONSTRUCTION _______________________________________________________
 ACTUATION =1;
 mTilde = 10;
-[V,ROM_Assembly,tensors_ROM,tailProp,spineProp,actuTop,actuBottom] = build_ROM_non_optimisation( ...
-    MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION);
+[V,ROM_Assembly,tensors_ROM,tailProp,spineProp,dragProp,actuTop,actuBottom] = ...
+    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION);
 
 %% CHECK spine momentum force _____________________________________________
 q = reshape(nodes.',[],1);
 qd = zeros(size(q));
-qd(2:2:end) = 4;
-qd(1:2:end) = 0;
+qd0 = ones(length(q),1)*0.01;
+qd(1:2:end) = 4;
+qd(2:2:end) = 0;
 qdd = zeros(size(q));
 qdd(2:2:end) = -4;
 
 q = V.'*q;
 qd = V.'*qd;
-qdd = V.'*qdd;
+qd0 = V.'*qd0;
+% qdd = V.'*qdd;
 T = spineProp.Tr;
 
-spineForce = V*double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
+T1 = dragProp.tensors.Tr1;
+Tu2 = dragProp.tensors.Tru2;
+Tudotudot3 = dragProp.tensors.Trudotudot3;
+Tudot2 = dragProp.tensors.Trudot2;
+drag = V*double(Tudot2*(qd-qd0)+T1)
+
+% drag = V*double(Tudot2*qd+T1+double(ttv(ttv(Tudotudot3,qd,2),qd,2)))
+
+% spineForce = V*double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
 
 %% TIME INTEGRATION _______________________________________________________
 
 % time step for integration
 h1 = 0.01;
-tmax = 2.0; 
+tmax = 1; 
 
 % initial condition: equilibrium
 fprintf('solver')
 tic
 q0 = zeros(size(V,2),1);        % q, qd are reduced order DOFs
 qd0 = zeros(size(V,2),1);
+% qd0(1:2:end) = -0.2;
 qdd0 = zeros(size(V,2),1);
 
 % actuation properties
@@ -139,8 +151,15 @@ fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
                    
 fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
                     B*VTail*(nodesInPos+q));
+% forceTest = zeros(size(reshape(nodes.',[],1)));
+% forceTest(1:2:end)=2;
+% fTail = @(q,qd)  V.'*forceTest;
 
-fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
+% forceTest(1:2:end)=1;
+% fActu = @(t,q)  k/2*sin(t*2*pi)^2*V.'*forceTest;
+
+T = spineProp.Tr;
+fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q+nodesInPos,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),qd,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),q+nodesInPos,2),qd,2));
 
 
 % fHydro = @(q,qd)  VTail.'*[0;-1;0;-1;0;-1]*0.2;
@@ -155,13 +174,22 @@ Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
 TI_NL_ROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution
+
+TI_NL_ROM.Solution.ud = V * TI_NL_ROM.Solution.qd; % get full order solution
+
+TI_NL_ROM.Solution.udd = V * TI_NL_ROM.Solution.qdd; % get full order solution
 toc
 
 %% PLOT ___________________________________________________________________
 tailNode = 1;
-hold on
+
 initialPosFOM = reshape(nodes.',[],1);
-plot(initialPosFOM(tailNode*2)+TI_NL_ROM.Solution.u(tailNode*2,:))
+figure(Position=[300,150,300,300])
+plot(initialPosFOM(tailNode*2-1)+TI_NL_ROM.Solution.u(tailNode*2-1,:))
+title('tail position')
+figure(Position=[700,150,300,300])
+plot(TI_NL_ROM.Solution.ud(tailNode*2-1,:))
+title('tail velocity')
 
 %% CHECK TAIL FORCE _______________________________________________________
 upTo = 200;

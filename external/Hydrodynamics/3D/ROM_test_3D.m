@@ -29,8 +29,9 @@ myMaterial.PLANE_STRESS = true;	% set "false" for plane_strain
 myElementConstructor = @()Tet4Element(myMaterial);
 
 % MESH_____________________________________________________________________
-filename = 'naca0012_TET4_350';%'testPartTET4D4';
+filename = 'testPartTET4D4';%'fish1_728el_rot';%'testPartTET4D4';
 [nodes, elements, nset, elset] = mesh_ABAQUSread(filename);
+% nodes = nodes*0.01;
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);

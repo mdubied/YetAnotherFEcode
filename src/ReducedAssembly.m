@@ -173,7 +173,7 @@ classdef ReducedAssembly < Assembly
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
-                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
+                Ke = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
                 K = K + elementWeights(j) * (Ve.' * Ke * Ve);
             end
         end
@@ -309,7 +309,7 @@ classdef ReducedAssembly < Assembly
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
-                fe = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
+                fe = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
                 f = f + elementWeights(j) * (Ve.' * fe);
             end
         end
@@ -466,7 +466,7 @@ classdef ReducedAssembly < Assembly
                 index = thisElement.iDOFs;          
                 Ve = V(index,:); %#ok<*PFBNS>
                 if strcmpi(mode,'ELP') % toggle Element-Level projection
-                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
+                    Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
                     Ter = einsum('iI,ijk,jJ,kK->IJK',Ve,Te,Ve,Ve);
                     T = T + Ter;
                 else

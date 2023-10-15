@@ -28,7 +28,7 @@
 %
 % Additional notes: -
 %
-% Last modified: 06/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 14/10/2023, Mathieu Dubied, ETH Zurich
 function [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements, nodes)
     nNodes = length(nodes(:,1));
     nElements = length(elements(:,1));
@@ -50,7 +50,7 @@ function [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] 
     % select elements that have 2 spine nodes and are on the upper half
     spineElements = [];
     for c = 1:length(sElCandidates)
-        % spine element candidate we check
+        % spine element candidate (elC) we check
         elC = sElCandidates(c);
 
         % get index of third node in candidate element  
@@ -68,14 +68,14 @@ function [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] 
     spineElementWeights(spineElements) = 1;
 
     % create a matrix that gives the spine node column position in
-    % "elements" for the element that are spine element
+    % "elements" for the elements that are spine elements
     nodeIdxPosInElements = zeros(nElements,2);
     for s = 1:length(spineElements)
         sEl = spineElements(s);                     % element number
         cIdx = find(snInElements(sEl,:));           % column index of spine nodes in this element
         sN = elements(sEl,snInElements(sEl,:));     % spine nodes numbers
         
-        % check which nodes is closer to tail (x larger)
+        % check which nodes is closer to tail (x smaller)
         inv = 0;
         if nodes(sN(1),1) > nodes(sN(2),1)
             inv = 1;

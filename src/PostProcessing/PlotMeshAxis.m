@@ -57,14 +57,22 @@ if dimension == 3   % For 3D plots
     maxX = max(Nodes(:,1));
     maxY = max(Nodes(:,2));
     maxZ = max(Nodes(:,3));
-    quiver3(0,0,0,maxX*1.4,0,0,'r','LineWidth',1)
+    quiver3(0,0,0,maxY*1.4,0,0,'r','LineWidth',1)
     quiver3(0,0,0,0,maxY*1.4,0,'r','LineWidth',1)
     quiver3(0,0,0,0,0,maxZ*1.4,'r','LineWidth',1)
-    text(maxX*1.4,0,0, sprintf('x'),'Color','r')
+    text(maxY*1.4,0,0, sprintf('x'),'Color','r')
     text(0,maxY*1.4,0, sprintf('y'),'Color','r')
     text(0,0,maxZ*1.4, sprintf('z'),'Color','r')
-
-    view(3)
+    
+    % open View->Camera Toolbar, and View->Properties Inspector (Axes,
+    % Viewing angles
+    view(-1.5078,39.6338)   
+    camproj('orthographic')
+    campos([-0.949358102339665,-1.789111161270594,1.491057614878067])
+    camtarget([-0.160061975241042,-0.004309698762181,0.011789814756804])
+    camup([0.244316050410686,0.552461400881531,0.79692914870002])
+    camva(11.0954365)
+    
     
 elseif dimension == 2           % For 2D plots
     elementdim = rank(diff(Nodes(Elements(1,:),1:2))); % dimension of element
@@ -112,8 +120,10 @@ if show ~= 0
         end
         % print node numbers and element numbers
         for i = 1:nSkinFaces
+            
             text(X(:,i),Y(:,i),Z(:,i),int2str(nd(skinFaces(i,:))),'fontsize',8,'color','k'); % node number of the skin element i
-            text(mean(X(:,i)),mean(Y(:,i)),mean(Z(:,i)),int2str(elementIdxSkinFace(i)),'fontsize',10,'color','r') ; % 3D element number
+            % text(mean(X(:,i)),mean(Y(:,i)),mean(Z(:,i)),int2str(elementIdxSkinFace(i)),'fontsize',10,'color','r') ; % 3D element number
+        
         end
         p.FaceAlpha = 0.2;
     end

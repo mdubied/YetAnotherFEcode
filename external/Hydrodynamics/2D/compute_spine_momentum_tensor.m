@@ -1,5 +1,4 @@
 % compute_spine_momentum_tensor
-% WARNING: does not work properly due to sparsify function
 %
 % Synthax:
 % tensor = compute_spine_momentum_tensor(ROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
@@ -28,10 +27,10 @@
 %   tensor: the 4th order tensor mentioned above
 %       
 %
-% Additional notes:  WARNING: does not work properly due to sparsify function
+% Additional notes:  
 %
 % Last modified: 10/10/2023, Mathieu Dubied, ETH Zurich
-function tensor = compute_spine_momentum_tensor(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde)
+function tensors = compute_spine_momentum_tensor(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde)
     m = size(ROMAssembly.V,2);
-    tensor = ROMAssembly.tensor_spine_momentum('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.T = ROMAssembly.tensor_spine_momentum('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
 end
