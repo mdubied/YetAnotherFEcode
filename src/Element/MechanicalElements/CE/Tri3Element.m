@@ -641,7 +641,7 @@ classdef Tri3Element < ContinuumElement
             F = double(ttv(ttv(ttv(T,uddElement,2),nodesPos,2),nodesPos,2) + ttv(ttv(ttv(T,udElement,2),udElement,2),nodesPos,2)+ ttv(ttv(ttv(T,udElement,2),nodesPos,2),udElement,2));
         end
 
-        function T = spine_momentum_tensor(self, tailNodeIndexInElement, normalisation, mTilde,nodes)
+        function T = spine_momentum_tensor(self, tailNodeIndexInElement, normalisation, mTilde)
             % _____________________________________________________________ 
             % Compute the spine momentum change tensor needed to compute 
             % d/dt \int_0^l mTilde(a) v_\perp n da
@@ -682,28 +682,28 @@ classdef Tri3Element < ContinuumElement
             T = -mTilde*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
 
 
-            % test
-            u = reshape(nodes.',[],1);
-            ud = zeros(size(u));
-            ud(2:2:end) = 4;
-            ud(1:2:end) = 0;
-            udd = zeros(size(u));
-            udd(2:2:end) = -4;
-            u2Columns = Tri3Element.vector_to_matrix(u); 
-            ud2Columns = Tri3Element.vector_to_matrix(ud);
-            udd2Columns = Tri3Element.vector_to_matrix(udd);
-            uElement = u2Columns(self.nodeIDs,:);
-            udElement = ud2Columns(self.nodeIDs,:);
-            uddElement = udd2Columns(self.nodeIDs,:);
-            nodesPos = self.nodes + uElement; % position = base node position + displacement
-
-            % convert back to 6 x 1 (x y x y x y)
-            nodesPos = reshape(nodesPos',[],1);  
-            uElement = reshape(uElement.',[],1);
-            udElement = reshape(udElement',[],1);
-            uddElement = reshape(uddElement',[],1);
-
-            T=tensor(T);
+            % % test
+            % u = reshape(nodes.',[],1);
+            % ud = zeros(size(u));
+            % ud(2:2:end) = 4;
+            % ud(1:2:end) = 0;
+            % udd = zeros(size(u));
+            % udd(2:2:end) = -4;
+            % u2Columns = Tri3Element.vector_to_matrix(u); 
+            % ud2Columns = Tri3Element.vector_to_matrix(ud);
+            % udd2Columns = Tri3Element.vector_to_matrix(udd);
+            % uElement = u2Columns(self.nodeIDs,:);
+            % udElement = ud2Columns(self.nodeIDs,:);
+            % uddElement = udd2Columns(self.nodeIDs,:);
+            % nodesPos = self.nodes + uElement; % position = base node position + displacement
+            % 
+            % % convert back to 6 x 1 (x y x y x y)
+            % nodesPos = reshape(nodesPos',[],1);  
+            % uElement = reshape(uElement.',[],1);
+            % udElement = reshape(udElement',[],1);
+            % uddElement = reshape(uddElement',[],1);
+            % 
+            % T=tensor(T);
 
             % F = double(ttv(ttv(ttv(T,uddElement,2),nodesPos,2),nodesPos,2) + ttv(ttv(ttv(T,udElement,2),udElement,2),nodesPos,2)+ ttv(ttv(ttv(T,udElement,2),nodesPos,2),udElement,2));
             % test = 2;

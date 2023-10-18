@@ -21,27 +21,34 @@
 % Additional notes:
 %   - q,qd, qdd should be understood as eta and dot{eta}, ddot{eta}.
 %
-% Last modified: 13/10/2023, Mathieu Dubied, ETH Zürich
-function der = ROM_spine_momentum_derivatives(q,qd,qdd,x0,T)
-    T = tensor(T);
+% Last modified: 18/10/2023, Mathieu Dubied, ETH Zürich
+function der = ROM_spine_momentum_derivatives(q,qd,qdd,tensors)
+    Txx = tensors.Txx;
+    TxV = tensors.TxV;
+    TVx = tensors.TVx;
+    TVV = tensors.TVV;
     
     % dfdq ________________________________________________________________
-    dfdq = ttv(ttv(T,qdd,2),x0+q,3) + ttv(ttv(T,qdd,2),x0+q,2) + ...
-           ttv(ttv(T,qd,2),qd,2) + ttv(ttv(T,qd,2),qd,3);
-    dfdq = double(dfdq);
+    dfdq = ttv(TxV,qdd,2) + ttv(TVx,qdd,2) ...
+         + ttv(ttv(TVV,q,4),qdd,2) ...
+         + ttv(ttv(TVV,q,3),qdd,2) ...
+         + ttv(ttv(TVV,qd,3),qd,2) ...
+         + ttv(ttv(TVV,qd,4),qd,2);
     
     % dfdqd _______________________________________________________________
-    dfdqd = ttv(ttv(T,qd,3),x0+q,3) + ttv(ttv(T,qd,2),x0+q,3) + ...
-            ttv(ttv(T,x0+q,3),qd,3) + ttv(ttv(T,qd,2),x0+q,3);
-    dfdqd = double(dfdqd);
+    dfdqd = ttv(TVx,qd,3) + ttv(TVx,qd,2) ...
+            + ttv(ttv(TVV,q,4),qd,3) + ttv(ttv(TVV,q,4),qd,2) ...
+            + ttv(TxV,qd,3) + ttv(TxV,qd,2) ...
+            + ttv(ttv(TVV,qd,4),q,3) + ttv(ttv(TVV,q,3),qd,2);
+            
 
     % dfdqdd ______________________________________________________________
-    dfdqdd = ttv(ttv(T,x0+q,3),x0+q,3);
-    dfdqdd = double(dfdqdd);
+    dfdqdd = Txx + ttv(TxV,q,3) + ttv(TVx,q,3) + ttv(ttv(TVV,q,4),q,3);
+ 
     
     % store results in output struct ______________________________________
-    der.dfdq = dfdq;
-    der.dfdqd = dfdqd;
-    der.dfdqdd = dfdqdd;
+    der.dfdq = double(dfdq);
+    der.dfdqd = double(dfdqd);
+    der.dfdqdd = double(dfdqdd);
 
 end

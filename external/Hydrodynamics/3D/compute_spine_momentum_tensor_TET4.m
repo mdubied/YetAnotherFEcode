@@ -1,7 +1,7 @@
-% compute_spine_momentum_tensor
+% compute_spine_momentum_tensor_TET4
 %
 % Synthax:
-% tensor = compute_spine_momentum_tensor(ROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
+% tensor = compute_spine_momentum_tensor_TET4(ROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
 %
 % Description: 
 % This function computes the 4th order tensor that can be used to compute
@@ -29,11 +29,8 @@
 %
 % Additional notes:  
 %
-% Last modified: 18/10/2023, Mathieu Dubied, ETH Zurich
-function tensors = compute_spine_momentum_tensor(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde)
+% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
+function tensors = compute_spine_momentum_tensor_TET4(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos)
     m = size(ROMAssembly.V,2);
-    tensors.Txx = ROMAssembly.tensor_spine_momentum_xx('spine_momentum_tensor',[m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
-    tensors.TxV = ROMAssembly.tensor_spine_momentum_xV('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
-    tensors.TVx = ROMAssembly.tensor_spine_momentum_Vx('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
-    tensors.TVV = ROMAssembly.tensor_spine_momentum_VV('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.T = ROMAssembly.tensor_spine_momentum_TET4('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 
 end

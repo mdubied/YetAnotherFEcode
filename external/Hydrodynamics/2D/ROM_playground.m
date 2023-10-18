@@ -2,7 +2,7 @@
 % Playground to test fish locomotion forces in ROM
 % Used element type: TRI3.
 % 
-% Last modified: 10/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 17/10/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -82,36 +82,11 @@ mTilde = 10;
 [V,ROM_Assembly,tensors_ROM,tailProp,spineProp,dragProp,actuTop,actuBottom] = ...
     build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION);
 
-%% CHECK spine momentum force _____________________________________________
-q = reshape(nodes.',[],1);
-qd = zeros(size(q));
-qd0 = ones(length(q),1)*0.01;
-qd(1:2:end) = 4;
-qd(2:2:end) = 0;
-qdd = zeros(size(q));
-qdd(2:2:end) = -4;
-
-q = V.'*q;
-qd = V.'*qd;
-qd0 = V.'*qd0;
-% qdd = V.'*qdd;
-T = spineProp.Tr;
-
-T1 = dragProp.tensors.Tr1;
-Tu2 = dragProp.tensors.Tru2;
-Tudotudot3 = dragProp.tensors.Trudotudot3;
-Tudot2 = dragProp.tensors.Trudot2;
-drag = V*double(Tudot2*(qd-qd0)+T1)
-
-% drag = V*double(Tudot2*qd+T1+double(ttv(ttv(Tudotudot3,qd,2),qd,2)))
-
-% spineForce = V*double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
-
 %% TIME INTEGRATION _______________________________________________________
 
 % time step for integration
 h1 = 0.01;
-tmax = 1; 
+tmax = 5; 
 
 % initial condition: equilibrium
 fprintf('solver')
@@ -140,6 +115,7 @@ R = [0 -1 0 0 0 0;
 wTail = tailProp.w;
 VTail = tailProp.V;
 nodesInPos = V.'*reshape(nodes.',[],1);     % initial node position expressed in the ROM
+x0 = reshape(nodes.',[],1);  
 
 % external forces: actuation and hydrodynamic reactive force
 
@@ -149,8 +125,8 @@ actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
 fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
                 k/2*(1-(1-0.02*sin(t*2*pi)))*(B1B+B2B*q);
                    
-fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
-                    B*VTail*(nodesInPos+q));
+fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*(x0(tailProp.iDOFs)+VTail*q))).^2* ...
+                    B*(x0(tailProp.iDOFs)+VTail*q);
 % forceTest = zeros(size(reshape(nodes.',[],1)));
 % forceTest(1:2:end)=2;
 % fTail = @(q,qd)  V.'*forceTest;
@@ -158,8 +134,19 @@ fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesIn
 % forceTest(1:2:end)=1;
 % fActu = @(t,q)  k/2*sin(t*2*pi)^2*V.'*forceTest;
 
-T = spineProp.Tr;
-fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q+nodesInPos,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),qd,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),q+nodesInPos,2),qd,2));
+Txx = spineProp.tensors.Txx;
+TxV = spineProp.tensors.TxV;
+TVx = spineProp.tensors.TVx;
+TVV = spineProp.tensors.TVV;
+
+fSpine = @(q,qd,qdd) double(Txx)*qdd ...
+    + double(ttv(ttv(TxV,q,3),qdd,2) ...
+    + ttv(ttv(TVx,q,3),qdd,2) ...
+    + ttv(ttv(ttv(TVV,q,4),q,3),qdd,2) ...
+    + ttv(ttv(TVx,qd,3),qd,2) ...
+    + ttv(ttv(ttv(TVV,q,4),qd,3),qd,2) ...
+    + ttv(ttv(TxV,qd,3),qd,2) ...
+    + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
 
 
 % fHydro = @(q,qd)  VTail.'*[0;-1;0;-1;0;-1]*0.2;
@@ -169,7 +156,7 @@ TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,mTilde,nodesInPos);
+    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,x0);
 
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);

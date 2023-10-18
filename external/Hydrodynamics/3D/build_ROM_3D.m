@@ -35,7 +35,7 @@
 % Last modified: 10/10/2023, Mathieu Dubied, ETH Zürich
 
 function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
+    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA,ACTUATION)
     
     % 2D or 3D? ___________________________________________________________
     fishDim = size(nodes,2);
@@ -60,7 +60,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 3;
+    n_VMs = 5;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
@@ -80,11 +80,11 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     
     % ROB formulation
     % V  = [VMn MDn DS];
-    mSingle = [1 0];    % horizontal displacement, rigid body mode
+    mSingle = [1 0 0];    % horizontal displacement, rigid body mode
     m1 = repmat(mSingle,1,nNodes)';
-    mSingle = [0 1];    % vertical displacement, rigid body mode
+    mSingle = [0 1 0];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [VMn MDn];
+    V  = [m1 VMn MDn];
     % V = [VMn MDn]
     V  = orth(V);
 
@@ -122,68 +122,88 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
         [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
     end
     
-
-    % get normalisation factors
+    % get spine normalisation factors
     normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
     wTail = normalisationFactors(tailElement);
 
+    % get dorsal nodes
+    [~,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ....
+        find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
+
     % tail pressure force: get matrices
-    [A,B] = compute_AB_tail_pressure(nodeIdxPosInElements(tailElement,:));
+    [A,B] = compute_AB_tail_pressure_TET4(nodeIdxPosInElements(tailElement,:));
     nodesTailEl = elements(tailElement,:);
-    iDOFs = [nodesTailEl(1)*2-1,nodesTailEl(1)*2,...
-             nodesTailEl(2)*2-1,nodesTailEl(2)*2,...
-             nodesTailEl(3)*2-1,nodesTailEl(3)*2];
+    iDOFs = [nodesTailEl(1)*3-2,nodesTailEl(1)*3-1,nodesTailEl(1)*3,...
+             nodesTailEl(2)*3-2,nodesTailEl(2)*3-1,nodesTailEl(2)*3,...
+             nodesTailEl(3)*3-2,nodesTailEl(3)*3-1,nodesTailEl(3)*3,...
+             nodesTailEl(4)*3-2,nodesTailEl(4)*3-1,nodesTailEl(4)*3];
     VTail = V(iDOFs,:);
+    R = [0 -1 0 0 0 0 0 0 0 0 0 0;
+         1 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 -1 0 0 0 0 0 0 0;
+         0 0 0 1 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 -1 0 0 0 0;
+         0 0 0 0 0 0 1 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 -1 0;
+         0 0 0 0 0 0 0 0 0 1 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0];     % 90 degrees rotation counterclock-wise
 
     % tail pressure force: group tail quantities in a struct
     tailProperties.A = A;
     tailProperties.B = B;
     tailProperties.w = wTail;
     tailProperties.V = VTail;
+    tailProperties.R = R;
     tailProperties.tailNode = tailNode;
     tailProperties.tailElement = tailElement;
-    tailProperties.mTilde = mTilde;
-    tailProperties.iDOFs = iDOFs;
-
+    tailProperties.tailDOFs = iDOFs;
+    tailProperties.z = matchedDorsalNodesZPos(tailElement);
+    
     % spine momentum change tensor (reduced order)
-    spineTensors = compute_spine_momentum_tensor(ROM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,mTilde);
+    spineTensors = compute_spine_momentum_tensor_TET4(ROM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,matchedDorsalNodesZPos);
     spineProperties.tensors = spineTensors;
     spineProperties.spineNodes = spineNodes;
     spineProperties.spineElements = spineElements;
-
-    % drag force (reduced order)
-    [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    rho = 1000;
-    tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
-    dragProperties.tensors = tensors_drag;
-    dragProperties.skinElements = skinElements;
-    dragProperties.skinElementFaces = skinElementFaces;
-    
-
+    spineProperties.nodeIdxPosInElements = nodeIdxPosInElements;
+    spineProperties.dorsalNodeIdx = matchedDorsalNodesIdx;
+    spineProperties.zPos = matchedDorsalNodesZPos;
+     
+    % % drag force (reduced order)
+    % [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
+    % rho = 1000;
+    % tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
+    % dragProperties.tensors = tensors_drag;
+    % dragProperties.skinElements = skinElements;
+    % dragProperties.skinElementFaces = skinElementFaces;
+    % 
+    % 
     % ACTUATION FORCES ____________________________________________________
     if ACTUATION
         Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
         Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of the nominal fish
 
         nel = size(elements,1);
-        actuationDirection = [1;0;0];               %[1;0]-->[1;0;0] (Voigt notation)
-        
+        actuationDirection = [1;0;0;0;0;0];               %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
+
         % top muscle
         topMuscle = zeros(nel,1);
         for el=1:nel
-            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
-            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
             if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
                 topMuscle(el) = 1;
             end    
         end
         actuTop = reduced_tensors_actuation_ROM(NominalAssembly, V, topMuscle, actuationDirection);
-        
+
         % bottom muscle
         bottomMuscle = zeros(nel,1);
         for el=1:nel
-            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
-            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
             if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
                 bottomMuscle(el) = 1;
             end    
@@ -193,5 +213,8 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
         actuTop = 0;
         actuBottom = 0;
     end
+
+    dragProperties = 0;
+
 
 end 

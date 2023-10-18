@@ -69,7 +69,7 @@ u = V*q; %q is the reduced variable
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
-F_ext_V =  fActu(t,q) + fTail(q,qd) + fSpine(q,qd,qdd);
+F_ext_V =  fActu(t,q) + fTail(q,qd)+ fSpine(q,qd,qdd);
 r = F_inertial + F_damping + F_V - F_ext_V ;
 
 % Derivatives tail pressure force
@@ -78,11 +78,12 @@ B = fTailProp.B;
 w = fTailProp.w;
 VTail = fTailProp.V;
 mTilde = fTailProp.mTilde;
+tailiDOFs = fTailProp.iDOFs;
 
-der_tail_pressure = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0,VTail);
+der_tail_pressure = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0(tailiDOFs),VTail);
 
 % Derivatives spine change in momentum 
-der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,x0,fSpineProp.tensors.T);
+der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,fSpineProp.tensors);
 
 % Residual derivative
 drdqdd = M_V - der_spine_momentum.dfdqdd;

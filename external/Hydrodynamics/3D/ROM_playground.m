@@ -55,7 +55,7 @@ for el=1:nel
     end   
 end
 for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],2,0)   %
+    MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)   %
     % fixed head
     % MeshNominal.set_essential_boundary_condition([nset{l}],2,0)     % head on "rail"
 end
@@ -70,40 +70,24 @@ hold off
 
 %% ROM CONSTRUCTION _______________________________________________________
 ACTUATION =1;
-mTilde = 10;
 [V,ROM_Assembly,tensors_ROM,tailProp,spineProp,dragProp,actuTop,actuBottom] = ...
-    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION);
+    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA,ACTUATION);
 
-%% CHECK spine momentum force _____________________________________________
-q = reshape(nodes.',[],1);
-qd = zeros(size(q));
-qd0 = ones(length(q),1)*0.01;
-qd(1:2:end) = 4;
-qd(2:2:end) = 0;
-qdd = zeros(size(q));
-qdd(2:2:end) = -4;
+%% TESTINGS THINGS ________________________________________________________
 
-q = V.'*q;
-qd = V.'*qd;
-qd0 = V.'*qd0;
-% qdd = V.'*qdd;
-T = spineProp.Tr;
+% [skin,allfaces,skinElements,skinElementFaces] = getSkin3D(elements);
 
-T1 = dragProp.tensors.Tr1;
-Tu2 = dragProp.tensors.Tru2;
-Tudotudot3 = dragProp.tensors.Trudotudot3;
-Tudot2 = dragProp.tensors.Trudot2;
-drag = V*double(Tudot2*(qd-qd0)+T1)
+[allDorsalNodesIdx,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ...
+    find_dorsal_nodes(elements, nodes, spineProp.spineElements, spineProp.nodeIdxPosInElements);
 
-% drag = V*double(Tudot2*qd+T1+double(ttv(ttv(Tudotudot3,qd,2),qd,2)))
 
-% spineForce = V*double(ttv(ttv(ttv(T,qdd,2),q,2),q,2) + ttv(ttv(ttv(T,qd,2),qd,2),q,2) + ttv(ttv(ttv(T,qd,2),q,2),qd,2));
+
 
 %% TIME INTEGRATION _______________________________________________________
 
 % time step for integration
 h1 = 0.01;
-tmax = 3; 
+tmax = 2; 
 
 % initial condition: equilibrium
 fprintf('solver')
@@ -118,28 +102,24 @@ B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
-k=1;
+k=10;
 
 % tail pressure force properties
 A = tailProp.A;
 B = tailProp.B;
-R = [0 -1 0 0 0 0;
-     1 0 0 0 0 0;
-     0 0 0 -1 0 0;
-     0 0 1 0 0 0;
-     0 0 0 0 0 1;
-     0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+R = tailProp.R;
 wTail = tailProp.w;
 VTail = tailProp.V;
+tailProp.mTilde = 0.25*pi*1000*(tailProp.z*2)^2;
 nodesInPos = V.'*reshape(nodes.',[],1);     % initial node position expressed in the ROM
 
 % external forces: actuation and hydrodynamic reactive force
 
-actuSignalT = @(t) k/2*(1-(1+0.02*sin(t*2*pi)));    % to change below as well if needed
-actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
+actuSignalT = @(t) k/2*(1-(1+0.08*sin(t*2*pi)));    % to change below as well if needed
+actuSignalB = @(t) k/2*(1-(1-0.08*sin(t*2*pi)));
 
-fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
-                k/2*(1-(1-0.02*sin(t*2*pi)))*(B1B+B2B*q);
+fActu = @(t,q)  k/2*(1-(1+0.08*sin(t*2*pi)))*(B1T+B2T*q) + ...
+                k/2*(1-(1-0.08*sin(t*2*pi)))*(B1B+B2B*q);
                    
 fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
                     B*VTail*(nodesInPos+q));
@@ -150,9 +130,9 @@ fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesIn
 % forceTest(1:2:end)=1;
 % fActu = @(t,q)  k/2*sin(t*2*pi)^2*V.'*forceTest;
 
-T = spineProp.Tr;
+T = spineProp.tensors.T;
 fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q+nodesInPos,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),qd,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),q+nodesInPos,2),qd,2));
-
+% fSpine = 0;
 
 % fHydro = @(q,qd)  VTail.'*[0;-1;0;-1;0;-1]*0.2;
 
@@ -161,7 +141,39 @@ TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,mTilde,nodesInPos);
+    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,nodesInPos);
+  
+% nonlinear Time Integration
+TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
+TI_NL_ROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution
+
+TI_NL_ROM.Solution.ud = V * TI_NL_ROM.Solution.qd; % get full order solution
+
+TI_NL_ROM.Solution.udd = V * TI_NL_ROM.Solution.qdd; % get full order solution
+toc
+%% TIME INTEGRATION _______________________________________________________
+
+% time step for integration
+h1 = 0.01;
+tmax = 2; 
+
+% initial condition: equilibrium
+fprintf('solver')
+tic
+q0 = zeros(size(V,2),1);        % q, qd are reduced order DOFs
+qd0 = zeros(size(V,2),1);
+qdd0 = zeros(size(V,2),1);
+
+fextFOM = zeros(MeshNominal.nDOFs,1);
+fextFOM(118*3)=-5000;
+fext = @(t) fextFOM*t;
+
+% instantiate object for nonlinear time integration
+TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
+
+% modal nonlinear Residual evaluation function handle
+Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear(q,qd, ...
+    qdd,t,ROM_Assembly,fext);
 
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
@@ -173,14 +185,14 @@ TI_NL_ROM.Solution.udd = V * TI_NL_ROM.Solution.qdd; % get full order solution
 toc
 
 %% PLOT ___________________________________________________________________
-tailNode = 1;
+tailNode = tailProp.tailNode;
 
 initialPosFOM = reshape(nodes.',[],1);
 figure(Position=[300,150,300,300])
-plot(initialPosFOM(tailNode*2-1)+TI_NL_ROM.Solution.u(tailNode*2-1,:))
+plot(initialPosFOM(tailNode*3-2)+TI_NL_ROM.Solution.u(tailNode*3-2,:))
 title('tail position')
 figure(Position=[700,150,300,300])
-plot(TI_NL_ROM.Solution.ud(tailNode*2-1,:))
+plot(TI_NL_ROM.Solution.ud(tailNode*3-2,:))
 title('tail velocity')
 
 %% CHECK TAIL FORCE _______________________________________________________
@@ -197,15 +209,14 @@ plot(force(3,:))
 
 TI_NL_PROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution
 
-elementPlot = elements(:,1:3); 
+elementPlot = elements(:,1:4); 
 nel = size(elements,1);
-actuationDirection = [1;0;0];%[1;0]-->[1;0;0] (Voigt notation)
 
 % top muscle
 topMuscle = zeros(nel,1);
 for el=1:nel
-    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
-    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
     if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
         topMuscle(el) = 1;
     end    
@@ -214,8 +225,8 @@ end
 % bottom muscle
 bottomMuscle = zeros(nel,1);
 for el=1:nel
-    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2))/3;
-    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1))/3;
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
     if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
         bottomMuscle(el) = 1;
     end    
@@ -233,7 +244,8 @@ end
 
 AnimateFieldonDeformedMeshActuation2Muscles(nodes, elementPlot,topMuscle,actuationValues,...
     bottomMuscle,actuationValues2,TI_NL_PROM.Solution.u, ...
-    'factor',1,'index',1:2,'filename','result_video','framerate',1/h1)
+    'factor',1,'index',1:3,'filename','result_video','framerate',1/h1)
+
 
 
 %% ANIMATION ______________________________________________________________

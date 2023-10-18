@@ -57,11 +57,11 @@ if dimension == 3   % For 3D plots
     maxX = max(Nodes(:,1));
     maxY = max(Nodes(:,2));
     maxZ = max(Nodes(:,3));
-    quiver3(0,0,0,maxY*1.4,0,0,'r','LineWidth',1)
-    quiver3(0,0,0,0,maxY*1.4,0,'r','LineWidth',1)
+    quiver3(0,0,0,maxZ*1.4,0,0,'r','LineWidth',1)
+    quiver3(0,0,0,0,maxZ*1.4,0,'r','LineWidth',1)
     quiver3(0,0,0,0,0,maxZ*1.4,'r','LineWidth',1)
-    text(maxY*1.4,0,0, sprintf('x'),'Color','r')
-    text(0,maxY*1.4,0, sprintf('y'),'Color','r')
+    text(maxZ*1.4,0,0, sprintf('x'),'Color','r')
+    text(0,maxZ*1.4,0, sprintf('y'),'Color','r')
     text(0,0,maxZ*1.4, sprintf('z'),'Color','r')
     
     % open View->Camera Toolbar, and View->Properties Inspector (Axes,

@@ -97,9 +97,21 @@ if dimension == 3   % For 3D plots
     defoY = Y+factor*UY ;
     defoZ = Z+factor*UZ ;
     
-    view(cameraPos); hold on;
-    h{1} = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
-        'DisplayName','Deformed Mesh');
+    % open View->Camera Toolbar, and View->Properties Inspector (Axes,
+    % Viewing angles
+    view(-1.5078,39.6338)   
+    camproj('orthographic')
+    campos([-0.949358102339665,-1.789111161270594,1.491057614878067])
+    camtarget([-0.160061975241042,-0.004309698762181,0.011789814756804])
+    camup([0.244316050410686,0.552461400881531,0.79692914870002])
+    camva(11.0954365);
+    hold on;
+
+    % h{1} = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
+    %     'DisplayName','Deformed Mesh');
+    h{1} = patch(defoX,defoY,defoZ,'white','EdgeColor',meshcolor,...
+    'DisplayName','Deformed Mesh');
+    % h{1} = plot(defoX(:),defoY(:),defoZ(:),'.','Color', meshcolor, 'Markersize',5);
     hIdx = 2;
     for idx=1:size(ActuationElements,1)
         % check if an element is part of the skin elements and actuation
@@ -148,15 +160,65 @@ if dimension == 3   % For 3D plots
             end
 
         end
-        
     end
+
+    for idx=1:size(ActuationElements2,1)
+    % check if an element is part of the skin elements and actuation
+    % elements
+
+        if ActuationElements2(idx) == 1 && skinElements(idx) == 1
+            % find nodes of the skin faces of this element
+            faceNodes = faceFromsSkinElement(originalElements(idx,:),skinElementFaces(idx,:));
+            % find idx in `skin' (i.e. skin faces) that corresponds to the
+            % faceNodes we just found (order can be different)
+            [i1, ~]=find(skinFaces==faceNodes(1,1));
+            [i2, ~]=find(skinFaces==faceNodes(1,2));
+            [i3, ~]=find(skinFaces==faceNodes(1,3));
+            i12 = intersect(i1,i2);
+            ColumnIdx = intersect(i12,i3);
+
+
+            h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'white','EdgeColor',meshcolor);
+            hIdx = hIdx + 1;
+
+            if ActuationValue2 >=0
+                h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'red','EdgeColor',meshcolor);
+            else
+                h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'blue','EdgeColor',meshcolor);
+            end  
+            set(h{hIdx},'FaceAlpha',abs(ActuationValue2))
+            hIdx = hIdx + 1;
+            % possibly a second element in this face being par of the skin
+            if faceNodes(2,1) ~= 0
+                [i1, ~]=find(skinFaces==faceNodes(2,1));
+                [i2, ~]=find(skinFaces==faceNodes(2,2));
+                [i3, ~]=find(skinFaces==faceNodes(2,3));
+                i12 = intersect(i1,i2);
+                ColumnIdx = intersect(i12,i3);
+
+                h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'white','EdgeColor',meshcolor);
+                hIdx = hIdx + 1;
     
-    camup(upVec) 
+                if ActuationValue2 >=0
+                    h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'red','EdgeColor',meshcolor);
+                else
+                    h{hIdx} = patch(defoX(ColumnIdx*3-2:ColumnIdx*3),defoY(ColumnIdx*3-2:ColumnIdx*3),defoZ(ColumnIdx*3-2:ColumnIdx*3),'blue','EdgeColor',meshcolor);
+                end  
+                set(h{hIdx},'FaceAlpha',abs(ActuationValue2))
+                hIdx = hIdx + 1;
+            end
+
+        end
+    end
+        
+    
+    
+    % camup(upVec) 
     
     
 
 
-    rotate3d on;
+    % rotate3d on;
 
 elseif dimension == 2           % For 2D plots
     ux = disp(:,1) ;
@@ -224,7 +286,7 @@ end
         axis off;
     % Colorbar Setting
     if ~isempty(c)
-        SetColorbar
+        % SetColorbar
     end
 end
 

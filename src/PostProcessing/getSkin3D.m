@@ -15,7 +15,8 @@
 %
 % Supported elements: TET4, maybe more as adapted from the master branch
 % version
-% Note: a large portion of the code is taken from getSkin3D
+% Note: a large portion of the code is taken from getSkin3D from the master
+% branch
 % Last modified: 24/08/2022, Mathieu Dubied, ETH Zurich
 % -------------------------------------------------------------------------
 function [skin,allfaces,skinElements,skinElementFaces] = getSkin3D(elements)
