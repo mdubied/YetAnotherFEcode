@@ -84,7 +84,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [VMn MDn];
+    V  = [m1 m2 VMn MDn];
     % V = [VMn MDn]
     V  = orth(V);
 

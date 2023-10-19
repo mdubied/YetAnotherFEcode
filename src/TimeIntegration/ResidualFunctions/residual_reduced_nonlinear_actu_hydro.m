@@ -69,7 +69,7 @@ u = V*q; %q is the reduced variable
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
-F_ext_V =  fActu(t,q) + fTail(q,qd)+ fSpine(q,qd,qdd);
+F_ext_V =  fActu(t,q) + fTail(q,qd) + fSpine(q,qd,qdd);
 r = F_inertial + F_damping + F_V - F_ext_V ;
 
 % Derivatives tail pressure force
@@ -88,7 +88,7 @@ der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,fSpineProp.tensors)
 % Residual derivative
 drdqdd = M_V - der_spine_momentum.dfdqdd;
 
-drdqd = C_V - der_tail_pressure.dfdqd ...
+drdqd = C_V - der_tail_pressure.dfdqd  ...
             - der_spine_momentum.dfdqd;
 
 drdq = K_V - actuSignalTop(t)*actuTop.B2 ....
@@ -101,5 +101,5 @@ drdq = K_V - actuSignalTop(t)*actuTop.B2 ....
 % 
 % $$\texttt{c0} = \|\mathbf{M_V}\ddot{\mathbf{q}}\| + \|\mathbf{C_V}\dot{\mathbf{q}}\| 
 % + \|\mathbf{F_V}(\mathbf{q})\| + \|\mathbf{V}^{\top}\mathbf{F}_{ext}(t)\|$$
-c0 = norm(F_inertial) + norm(F_damping) + norm(F_V) + norm(fActu(t,q)) + norm(fTail(q,qd));
+c0 = norm(F_inertial) + norm(F_damping) + norm(F_V) + norm(fActu(t,q)) + norm(fTail(q,qd)) + norm(fSpine(q,qd,qdd));
 end

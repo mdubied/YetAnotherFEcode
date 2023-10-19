@@ -98,7 +98,7 @@ for j = 1:nt
             ylim = get(gca,'ylim');
             zlim = get(gca,'zlim');
         end
-        set(gca,'xlim',[xlim(1)*1.1, -xlim(1)*2.5],'ylim',ylim*5, 'zlim',zlim*1.5)
+        set(gca,'xlim',[xlim(1)*1.1, -xlim(1)*4],'ylim',ylim*5, 'zlim',zlim*1.5)
     end
     % gif movie
     frame = getframe(gcf);
@@ -116,6 +116,7 @@ for j = 1:nt
     end
     cla
     hold off
+    
 end
 open(myVideo)
 writeVideo(myVideo,M);

@@ -185,20 +185,24 @@ tensors_actu = create_actuation_tensors(NominalAssembly, elements, nodes);
 fprintf('solver \n')
 tic
 h2=0.01;
-tmax = 0.8; 
+tmax = 3; 
 nUncDOFs = size(MeshNominal.EBC.unconstrainedDOFs,2);
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
-qd0(2:2:end) = 0.5;
+qd0(2:2:end) = 0.1;
 qdd0 = zeros(nUncDOFs,1);
 
 % external forces: tail pressure force and actuation
 % k=0.01;
-B1TopMuscle = tensors_actu.B1_top;
-B2TopMuscle = tensors_actu.B2_top;
-B1BottomMuscle =tensors_actu.B1_bottom;
-B2BottomMuscle = tensors_actu.B2_bottom;
-F_ext = @(t,q,qd) tail_pressure_force_TRI3(NominalAssembly, tailElementWeights, nodeIdxPosInElements,normalisationFactors, mTilde, q, qd);
+% B1TopMuscle = tensors_actu.B1_top;
+% B2TopMuscle = tensors_actu.B2_top;
+% B1BottomMuscle =tensors_actu.B1_bottom;
+% B2BottomMuscle = tensors_actu.B2_bottom;
+
+forceTest = zeros(size(reshape(nodes.',[],1)));
+forceTest(1:2:end)=0.5;
+
+F_ext = @(t,q,qd) forceTest;
 %     + k/2*(1-(1+0.04*sin(t*2*pi)))*(B1TopMuscle+B2TopMuscle*q) + ...
 %             k/2*(1-(1-0.04*sin(t*2*pi)))*(B1BottomMuscle+B2BottomMuscle*q);
 
@@ -222,7 +226,8 @@ end
 toc
 
 %% PLOT
-plot(TI_NL_FOMfull.Solution.q(tailNode*2,:))
+tailNode=1
+plot(TI_NL_FOMfull.Solution.qd(tailNode*2-1,:))
 
 %% CHECK TAIL PRESSURE FORCE ___________________________________________
 timeStep = 40;
