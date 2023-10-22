@@ -1,7 +1,7 @@
-% optimise_shape_2D
+% optimise_shape_3D
 %
 % Synthax:
-% [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
+% [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 %
 % Description: Implementation of the optimization pipeline 4 presented in
 % the paper, based on Newton's method. 
@@ -37,9 +37,9 @@
 % (3) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 22/10/2023, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
+function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin{:});
@@ -59,7 +59,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
     MeshNominal.create_elements_table(elements,myElementConstructor);
  
     for l=1:length(nset)
-        MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0)   
+        MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)   
     end
 
     % build PROM
@@ -68,7 +68,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
     tic
     mTilde = 10;
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);      
+    build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);      
     toc
 
     % Solve EoMs

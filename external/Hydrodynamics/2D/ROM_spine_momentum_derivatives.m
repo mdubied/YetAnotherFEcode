@@ -12,8 +12,7 @@
 % (1) q:                vector of time domain displacements
 % (2) qd:               vector of time domain velocities
 % (3) qdd:              vector of time domain acceleration
-% (4) x0:               node position projected in ROM
-% (5) T:                tensor used to express the spine momentum change
+% (4) tensors:          tensors used to express the spine momentum change
 %
 % OUTPUTS:
 % (1) der:              strucure array containing the partial derivatives 
@@ -21,8 +20,9 @@
 % Additional notes:
 %   - q,qd, qdd should be understood as eta and dot{eta}, ddot{eta}.
 %
-% Last modified: 18/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 19/10/2023, Mathieu Dubied, ETH Zürich
 function der = ROM_spine_momentum_derivatives(q,qd,qdd,tensors)
+    % get tensors   
     Txx = tensors.Txx;
     TxV = tensors.TxV;
     TVx = tensors.TVx;

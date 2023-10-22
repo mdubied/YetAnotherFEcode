@@ -14,7 +14,7 @@
 %                       (matrices, tail elements etc.)
 % (3) spineProperties:  properties of the spine change in momentum
 %                       (tensor, spine elements etc.)
-% (4) eta0:             initial node position in ROM
+% (4) x0:               initial node position in FOM
 % (5) eta:              solution for the reduced state variables
 % (6) etad:             solution for the reduced velocities
 % (7) etadd:            solution for the reduced accelerations
@@ -29,13 +29,13 @@
 % (1) Lr:   reduced cost function value    
 %     
 %
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 19/10/2023, Mathieu Dubied, ETH Zurich
 
-function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,eta0,eta,etad,etadd,xiRebuild,xi,dr,AConstraint,bConstraint,barrierParam)
+function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild,xi,dr,AConstraint,bConstraint,barrierParam)
     Lr = 0;
     nConstraints = size(bConstraint);
 
-    % tail pressure force properties
+    % tail pressure force 
     A = tailProperties.A;
     B = tailProperties.B;
     R = [0 -1 0 0 0 0;
@@ -47,18 +47,28 @@ function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperti
     wTail = tailProperties.w;
     VTail = tailProperties.V;
     mTilde = tailProperties.mTilde;
-
-    fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(eta0+q)).^2* ...
-                        B*VTail*(eta0+q));
+                   
+    fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*(x0(tailProperties.iDOFs)+VTail*q))).^2* ...
+                        B*(x0(tailProperties.iDOFs)+VTail*q);
     
-    % spine change in momentum
-    T = spineProperties.tensors.T;
-    fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q+eta0,2),q+eta0,2) + ttv(ttv(ttv(T,qd,2),qd,2),q+eta0,2) + ttv(ttv(ttv(T,qd,2),q+eta0,2),qd,2));
-
+    % spine change in momentum 
+    Txx = spineProperties.tensors.Txx;
+    TxV = spineProperties.tensors.TxV;
+    TVx = spineProperties.tensors.TVx;
+    TVV = spineProperties.tensors.TVV;
+    
+    fSpine = @(q,qd,qdd) double(Txx)*qdd ...
+        + double(ttv(ttv(TxV,q,3),qdd,2) ...
+        + ttv(ttv(TVx,q,3),qdd,2) ...
+        + ttv(ttv(ttv(TVV,q,4),q,3),qdd,2) ...
+        + ttv(ttv(TVx,qd,3),qd,2) ...
+        + ttv(ttv(ttv(TVV,q,4),qd,3),qd,2) ...
+        + ttv(ttv(TxV,qd,3),qd,2) ...
+        + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
    
     LwoB = 0;
     
-    for t=50:N-2
+    for t=N-100:N-2
         eta_i = eta(:,t);
         etad_i = etad(:,t);
         etadd_i = etadd(:,t);
@@ -78,6 +88,8 @@ function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperti
         Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
         %Lr = [Lr, -dr'*fhydro + logBarrierInTimeStep];
         LwoB = LwoB -dr'*fhydro;
+        % Lr = Lr - [1;0;1;0;1;0].'*VTail*eta(:,t) + logBarrierInTimeStep;
+        % LwoB = Lr - [1;0;1;0;1;0].'*VTail*eta(:,t);
     end
 
     % print cost function without part stemming from barrier functions

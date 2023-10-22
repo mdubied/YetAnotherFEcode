@@ -1,7 +1,7 @@
-% compute_spine_momentum_tensor_TET4
+% compute_spine_momentum_tensor_PROM_TET4
 %
 % Synthax:
-% tensor = compute_spine_momentum_tensor_TET4(ROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
+% tensor = compute_spine_momentum_tensor_PROM_TET4(ROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
 %
 % Description: 
 % This function computes the 4th order tensor that can be used to compute
@@ -29,8 +29,8 @@
 %
 % Additional notes:  
 %
-% Last modified: 19/10/2023, Mathieu Dubied, ETH Zurich
-function tensors = compute_spine_momentum_tensor_TET4(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos)
+% Last modified: 22/10/2023, Mathieu Dubied, ETH Zurich
+function tensors = compute_spine_momentum_tensor_PROM_TET4(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos)
     m = size(ROMAssembly.V,2);
     tensors.Txx = ROMAssembly.tensor_spine_momentum_xx_TET4('spine_momentum_tensor',[m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 
     tensors.TxV = ROMAssembly.tensor_spine_momentum_xV_TET4('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 

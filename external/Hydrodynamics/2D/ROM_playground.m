@@ -42,9 +42,11 @@ xi1 = 0.2;
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = 'naca0012_76el_2';
+        filename = '2d_rectangle_120el';%'naca0012_76el_2';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
+
+nodes = 0.01*nodes;
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -86,7 +88,7 @@ mTilde = 10;
 
 % time step for integration
 h = 0.01;
-tmax = 5; 
+tmax = 1; 
 
 % initial condition: equilibrium
 fprintf('solver')
@@ -101,13 +103,13 @@ B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
-k=1;
+k=10;
 
-actuSignalT = @(t) k/2*(1-(1+0.02*sin(t*2*pi)));    % to change below as well if needed
-actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
+actuSignalT = @(t) k/2*(1-(1+0.1*sin(t*2*pi)));    % to change below as well if needed
+actuSignalB = @(t) k/2*(1-(1-0.1*sin(t*2*pi)));
 
-fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
-                k/2*(1-(1-0.02*sin(t*2*pi)))*(B1B+B2B*q);
+fActu = @(t,q)  k/2*(1-(1+0.1*sin(t*2*pi)))*(B1T+B2T*q) + ...
+                k/2*(1-(1-0.1*sin(t*2*pi)))*(B1B+B2B*q);
 
 % tail pressure force 
 A = tailProp.A;
@@ -151,7 +153,7 @@ TI_NL_ROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,x0);
+    qdd,t,ROM_Assembly,tensors_ROM,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,x0);
 
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
@@ -167,12 +169,21 @@ tailNode = 1;
 
 initialPosFOM = reshape(nodes.',[],1);
 figure(Position=[300,150,300,300])
+plot(initialPosFOM(tailNode*2)+TI_NL_ROM.Solution.u(tailNode*2,:))
+title('tail y position')
+figure(Position=[600,150,300,300])
+plot(TI_NL_ROM.Solution.ud(tailNode*2,:))
+title('tail y velocity')
+
+%% PLOT ___________________________________________________________________
+
+initialPosFOM = reshape(nodes.',[],1);
+figure(Position=[300,150,300,300])
 plot(initialPosFOM(tailNode*2-1)+TI_NL_ROM.Solution.u(tailNode*2-1,:))
-title('tail position')
+title('tail x position')
 figure(Position=[600,150,300,300])
 plot(TI_NL_ROM.Solution.ud(tailNode*2-1,:))
-title('tail velocity')
-
+title('tail x velocity')
 %% lines at t=0.5, 1.0 etc
 timeSnapshot = 1:50:501;
 figure(Position=[600,150,300,300])

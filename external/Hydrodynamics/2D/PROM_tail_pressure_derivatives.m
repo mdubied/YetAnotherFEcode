@@ -18,7 +18,7 @@
 % (7) w:                normalisation factor for the tail (inverse of spine
 %                       section's length)
 
-% (8) x0:               initial node positions of the tail node in ROM
+% (8) x0Tail:           initial node positions of the tail node in FOM
 % (9) xi:               shape-varied parameters (vector or scalar)
 % (10) VTail:           part of the ROB matrix corresponding to the tail
 %                       element 
@@ -31,44 +31,43 @@
 %
 % Additional notes:
 %   - q and qd should be understood as eta and dot{eta} (ROM).
-%   - x0 should be understood as eta_0 (ROM)
 %   - p should be understood as xi.
 %
-% Last modified: 13/10/2023, Mathieu Dubied, ETH Zürich
-function der = PROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0,xi,VTail,UTail)
+% Last modified: 19/10/2023, Mathieu Dubied, ETH Zürich
+function der = PROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0Tail,xi,VTail,UTail)
+
+    % dfdp ________________________________________________________________
+    firstTerm1 = A*VTail*qd;                                    % vector
+    firstTerm2 = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q)); % scalar
+    firstTerm3 = B*(x0Tail+UTail*xi+VTail*q);                   % vector
+    firstTerm1RB = firstTerm1.'*R*B*UTail;                      % row vector 
+    
+    firstTerm = 2*firstTerm2*firstTerm3*firstTerm1RB;           % outer-product between the last two terms to get a matrix
+    secondTerm = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q))^2*B*UTail;
+    
+    dfdp = 0.5*mTilde*w^3*VTail.'*(firstTerm + secondTerm);
 
     % dfdq ________________________________________________________________
-    firstTerm1 = A*VTail*qd;                                        % vector
-    firstTerm2 = dot(A*VTail*qd,R*B*(VTail*(x0+q))+UTail*xi);       % scalar
-    firstTerm3 = B*(VTail*(x0+q)+UTail*xi);                         % vector
-    firstTerm1RB = firstTerm1.'*R*B*VTail;                          % row vector 
+    firstTerm1 = A*VTail*qd;                                    % vector
+    firstTerm2 = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q)); % scalar
+    firstTerm3 = B*(x0Tail+UTail*xi+VTail*q);                   % vector
+    firstTerm1RB = firstTerm1.'*R*B*VTail;                      % row vector 
     
-    firstTerm = 2*firstTerm2*firstTerm3*firstTerm1RB;               % outer-product between the last two terms to get a matrix
-    secondTerm = dot(A*VTail*qd,R*B*(VTail*(x0+q)+UTail*xi))^2*B*VTail;
+    firstTerm = 2*firstTerm2*firstTerm3*firstTerm1RB;           % outer-product between the last two terms to get a matrix
+    secondTerm = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q))^2*B*VTail;
     
     dfdq = 0.5*mTilde*w^3*VTail.'*(firstTerm + secondTerm);
     
     % dfdqd _______________________________________________________________
-    term1RB = R*B*(VTail*(x0+q)+UTail*xi);                  % vector 
+    term1RB = R*B*(x0Tail+UTail*xi+VTail*q);                % vector 
     term1B = (A*VTail).'*term1RB;                           % row vector
-    term2 = dot(A*VTail*qd,R*B*(VTail*(x0+q)+UTail*xi));    % scalar
-    term3 = B*(VTail*(x0+q)+UTail*xi);                      % vector 
+    term2 = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q));  % scalar
+    term3 = B*(x0Tail+UTail*xi+VTail*q);                    % vector 
     dfdqd = 0.5*mTilde*w^3*VTail.'*term2*term3*term1B.';    % with outer-product
-
-    % dfdp ________________________________________________________________
-    firstTerm1 = A*VTail*qd;                                        % vector
-    firstTerm2 = dot(A*VTail*qd,R*B*(VTail*(x0+q))+UTail*xi);       % scalar
-    firstTerm3 = B*(VTail*(x0+q)+UTail*xi);                         % vector
-    firstTerm1RB = firstTerm1.'*R*B*UTail;                          % row vector 
-    
-    firstTerm = 2*firstTerm2*firstTerm3*firstTerm1RB;               % outer-product between the last two terms to get a matrix
-    secondTerm = dot(A*VTail*qd,R*B*(VTail*(x0+q)+UTail*xi))^2*B*UTail;
-    
-    dfdp = 0.5*mTilde*w^3*VTail.'*(firstTerm + secondTerm);
     
     % store results in output struct ______________________________________
+    der.dfdp = dfdp;
     der.dfdq = dfdq;
     der.dfdqd = dfdqd;
-    der.dfdp = dfdp;    
 
 end

@@ -60,7 +60,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 5;
+    n_VMs = 4;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
@@ -84,23 +84,23 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [m1 VMn MDn];
+    V  = [m1 m2 VMn MDn];
     % V = [VMn MDn]
     V  = orth(V);
 
     % plot
-    % mod = 2;
-    % if fishDim == 2
-    %     elementPlot = elements(:,1:3);  % plot only corners (otherwise it's a mess)
-    %     v1 = reshape(VMn(:,mod), 2, []).';
-    % else
-    %     elementPlot = elements(:,1:4); 
-    %     v1 = reshape(VMn(:,mod), 3, []).';
-    % end
-    % figure('units','normalized','position',[.2 .1 .6 .8])
-    % PlotMesh(nodes, elementPlot, 0);
-    % PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
-    % title(['\Phi_' num2str(mod)])
+    mod = 1;
+    if fishDim == 2
+        elementPlot = elements(:,1:3);  % plot only corners (otherwise it's a mess)
+        v1 = reshape(VMn(:,mod), 2, []).';
+    else
+        elementPlot = elements(:,1:4); 
+        v1 = reshape(VMn(:,mod), 3, []).';
+    end
+    figure('units','normalized','position',[.2 .1 .6 .8])
+    PlotMesh(nodes, elementPlot, 0);
+    PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+    title(['\Phi_' num2str(mod)])
 
     % reduced assembly
     ROM_Assembly = ReducedAssembly(MeshNominal, V);
@@ -159,7 +159,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     tailProperties.R = R;
     tailProperties.tailNode = tailNode;
     tailProperties.tailElement = tailElement;
-    tailProperties.tailDOFs = iDOFs;
+    tailProperties.iDOFs = iDOFs;
     tailProperties.z = matchedDorsalNodesZPos(tailElement);
     
     % spine momentum change tensor (reduced order)

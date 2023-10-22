@@ -432,7 +432,8 @@ classdef ReducedAssembly < Assembly
             
             T = tenzeros(SIZE);
             Elements = self.Mesh.Elements;
-            V = self.V;              
+            V = self.V; 
+            m = size(V,2);
 
             % parsing element weights
             [elementWeights,inputs] = self.parse_inputs(varargin{:});
@@ -450,7 +451,10 @@ classdef ReducedAssembly < Assembly
                 
                 Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ve); % will be of size m x m x 1 x m
-                Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
+                
+                if m ~= 0
+                    Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
+                end
                 
                 T = T + Ter;
 
@@ -511,6 +515,134 @@ classdef ReducedAssembly < Assembly
                 Ve = V(index,:); %#ok<*PFBNS>
                 
                 Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
+
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_xx_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;   
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,x0);  % will be of size m x m, as the two last dimensions of 1 will not appear in Ter
+ 
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_xV_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V; 
+            m = size(V,2);
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ve); % will be of size m x m x 1 x m
+                
+                if m ~= 0
+                    Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
+                end
+                
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_Vx_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;   
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,x0); % will be of size m x m x m, as the forth dimension of 1 will not appear in Ter
+
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_VV_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
 
                 T = T + Ter;

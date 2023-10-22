@@ -64,7 +64,7 @@ end
 
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
 figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes, elementPlot, 1);
+PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
 
@@ -97,12 +97,18 @@ qd0 = zeros(size(V,2),1);
 % qd0(1:2:end) = -0.2;
 qdd0 = zeros(size(V,2),1);
 
-% actuation properties
+% actuation force
 B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
 k=10;
+
+actuSignalT = @(t) k/2*(1-(1+0.1*sin(t*2*pi)));    % to change below as well if needed
+actuSignalB = @(t) k/2*(1-(1-0.1*sin(t*2*pi)));
+
+fActu = @(t,q)  k/2*(1-(1+0.1*sin(t*2*pi)))*(B1T+B2T*q) + ...
+                k/2*(1-(1-0.1*sin(t*2*pi)))*(B1B+B2B*q);
 
 % tail pressure force properties
 A = tailProp.A;
@@ -110,19 +116,13 @@ B = tailProp.B;
 R = tailProp.R;
 wTail = tailProp.w;
 VTail = tailProp.V;
-tailProp.mTilde = 0.25*pi*1000*(tailProp.z*2)^2;
+tailProp.mTilde = 0.25*pi*1000*((tailProp.z*2)*2)^2;
 nodesInPos = V.'*reshape(nodes.',[],1);     % initial node position expressed in the ROM
-
-% external forces: actuation and hydrodynamic reactive force
-
-actuSignalT = @(t) k/2*(1-(1+0.08*sin(t*2*pi)));    % to change below as well if needed
-actuSignalB = @(t) k/2*(1-(1-0.08*sin(t*2*pi)));
-
-fActu = @(t,q)  k/2*(1-(1+0.08*sin(t*2*pi)))*(B1T+B2T*q) + ...
-                k/2*(1-(1-0.08*sin(t*2*pi)))*(B1B+B2B*q);
+x0 = reshape(nodes.',[],1);  
                    
-fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
-                    B*VTail*(nodesInPos+q));
+fTail = @(q,qd)  0.5*tailProp.mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*(x0(tailProp.iDOFs)+VTail*q))).^2* ...
+                    B*(x0(tailProp.iDOFs)+VTail*q);
+
 % forceTest = zeros(size(reshape(nodes.',[],1)));
 % forceTest(1:2:end)=2;
 % fTail = @(q,qd)  V.'*forceTest;
@@ -130,9 +130,20 @@ fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesIn
 % forceTest(1:2:end)=1;
 % fActu = @(t,q)  k/2*sin(t*2*pi)^2*V.'*forceTest;
 
-T = spineProp.tensors.T;
-fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q+nodesInPos,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),qd,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),q+nodesInPos,2),qd,2));
-% fSpine = 0;
+% spine change in momentum
+Txx = spineProp.tensors.Txx;
+TxV = spineProp.tensors.TxV;
+TVx = spineProp.tensors.TVx;
+TVV = spineProp.tensors.TVV;
+
+fSpine = @(q,qd,qdd) double(Txx)*qdd ...
+    + double(ttv(ttv(TxV,q,3),qdd,2) ...
+    + ttv(ttv(TVx,q,3),qdd,2) ...
+    + ttv(ttv(ttv(TVV,q,4),q,3),qdd,2) ...
+    + ttv(ttv(TVx,qd,3),qd,2) ...
+    + ttv(ttv(ttv(TVV,q,4),qd,3),qd,2) ...
+    + ttv(ttv(TxV,qd,3),qd,2) ...
+    + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
 
 % fHydro = @(q,qd)  VTail.'*[0;-1;0;-1;0;-1]*0.2;
 
@@ -141,7 +152,7 @@ TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,nodesInPos);
+    qdd,t,ROM_Assembly,tensors_ROM,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,x0);
   
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
@@ -151,49 +162,26 @@ TI_NL_ROM.Solution.ud = V * TI_NL_ROM.Solution.qd; % get full order solution
 
 TI_NL_ROM.Solution.udd = V * TI_NL_ROM.Solution.qdd; % get full order solution
 toc
-%% TIME INTEGRATION _______________________________________________________
 
-% time step for integration
-h1 = 0.01;
-tmax = 2; 
-
-% initial condition: equilibrium
-fprintf('solver')
-tic
-q0 = zeros(size(V,2),1);        % q, qd are reduced order DOFs
-qd0 = zeros(size(V,2),1);
-qdd0 = zeros(size(V,2),1);
-
-fextFOM = zeros(MeshNominal.nDOFs,1);
-fextFOM(118*3)=-5000;
-fext = @(t) fextFOM*t;
-
-% instantiate object for nonlinear time integration
-TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
-
-% modal nonlinear Residual evaluation function handle
-Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear(q,qd, ...
-    qdd,t,ROM_Assembly,fext);
-
-% nonlinear Time Integration
-TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
-TI_NL_ROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution
-
-TI_NL_ROM.Solution.ud = V * TI_NL_ROM.Solution.qd; % get full order solution
-
-TI_NL_ROM.Solution.udd = V * TI_NL_ROM.Solution.qdd; % get full order solution
-toc
-
-%% PLOT ___________________________________________________________________
+%% PLOT X _________________________________________________________________
 tailNode = tailProp.tailNode;
 
 initialPosFOM = reshape(nodes.',[],1);
 figure(Position=[300,150,300,300])
 plot(initialPosFOM(tailNode*3-2)+TI_NL_ROM.Solution.u(tailNode*3-2,:))
-title('tail position')
+title('tail x position')
 figure(Position=[700,150,300,300])
 plot(TI_NL_ROM.Solution.ud(tailNode*3-2,:))
-title('tail velocity')
+title('tail x velocity')
+
+%% PLOT Y _________________________________________________________________
+initialPosFOM = reshape(nodes.',[],1);
+figure(Position=[300,150,300,300])
+plot(initialPosFOM(tailNode*3-1)+TI_NL_ROM.Solution.u(tailNode*3-1,:))
+title('tail y position')
+figure(Position=[700,150,300,300])
+plot(TI_NL_ROM.Solution.ud(tailNode*3-2,:))
+title('tail y velocity')
 
 %% CHECK TAIL FORCE _______________________________________________________
 upTo = 200;

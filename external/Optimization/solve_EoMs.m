@@ -25,9 +25,9 @@
 % (1) TI_NL_PROM:           struct containing the solutions and related
 %                           information
 %     
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 19/10/2023, Mathieu Dubied, ETH Zurich
 
-function TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,actuTop,actuBottom,tmax)
+function TI_NL_ROM = solve_EoMs(V,ROM_Assembly,fIntTensors,tailProperties,spineProperties,actuTop,actuBottom,h,tmax)
 
     % SIMULATION PARAMETERS AND ICs _______________________________________
     eta0 = zeros(size(V,2),1);
@@ -35,14 +35,20 @@ function TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,ac
     etadd0 = zeros(size(V,2),1);
 
     % FORCES: ACTUATION, REACTIVE FORCE, DRAG FORCE _______________________
-    % actuation properties
+    % actuation force
     B1T = actuTop.B1;
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=1;
+    k=10;
 
-    % tail pressure force properties
+    actuSignalT = @(t) k/2*(1-(1+0.08*sin(t*2*pi)));    % to change below as well if needed
+    actuSignalB = @(t) k/2*(1-(1-0.08*sin(t*2*pi)));
+    
+    fActu = @(t,q)  k/2*(1-(1+0.08*sin(t*2*pi)))*(B1T+B2T*q) + ...
+                    k/2*(1-(1-0.08*sin(t*2*pi)))*(B1B+B2B*q);
+
+    % tail pressure force 
     A = tailProperties.A;
     B = tailProperties.B;
     R = [0 -1 0 0 0 0;
@@ -56,20 +62,25 @@ function TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,ac
     mTilde = tailProperties.mTilde;
     nodes = ROM_Assembly.Mesh.nodes;
     nodesInPos = V.'*reshape(nodes.',[],1);     % initial node position expressed in the ROM
+    x0 = reshape(nodes.',[],1);  
+                   
+    fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*(x0(tailProperties.iDOFs)+VTail*q))).^2* ...
+                        B*(x0(tailProperties.iDOFs)+VTail*q);
     
-    % external forces handles 
-    actuSignalT = @(t) k/2*(1-(1+0.02*sin(t*2*pi)));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
+    % spine change in momentum 
+    Txx = spineProperties.tensors.Txx;
+    TxV = spineProperties.tensors.TxV;
+    TVx = spineProperties.tensors.TVx;
+    TVV = spineProperties.tensors.TVV;
     
-    fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
-                    k/2*(1-(1-0.02*sin(t*2*pi)))*(B1B+B2B*q);
-                       
-    fTail = @(q,qd)  0.5*mTilde*2*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*VTail*(nodesInPos+q)).^2* ...
-                        B*VTail*(nodesInPos+q));
-    
-    T = spineProperties.tensors.T;
-    fSpine = @(q,qd,qdd) double(ttv(ttv(ttv(T,qdd,2),q+nodesInPos,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),qd,2),q+nodesInPos,2) + ttv(ttv(ttv(T,qd,2),q+nodesInPos,2),qd,2));
-
+    fSpine = @(q,qd,qdd) double(Txx)*qdd ...
+        + double(ttv(ttv(TxV,q,3),qdd,2) ...
+        + ttv(ttv(TVx,q,3),qdd,2) ...
+        + ttv(ttv(ttv(TVV,q,4),q,3),qdd,2) ...
+        + ttv(ttv(TVx,qd,3),qd,2) ...
+        + ttv(ttv(ttv(TVV,q,4),qd,3),qd,2) ...
+        + ttv(ttv(TxV,qd,3),qd,2) ...
+        + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
 
     % NONLINEAR TIME INTEGRATION __________________________________________
     
@@ -78,7 +89,7 @@ function TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,ac
     
     % modal nonlinear Residual evaluation function handle
     Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro(eta,etad,etadd, ...
-        t,ROM_Assembly,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,R,nodesInPos);
+        t,ROM_Assembly,fIntTensors,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,R,x0);
 
     % time integration 
     TI_NL_ROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red);

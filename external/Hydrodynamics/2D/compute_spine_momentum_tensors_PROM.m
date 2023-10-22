@@ -32,17 +32,18 @@
 %
 % Additional notes:  
 %
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 19/10/2023, Mathieu Dubied, ETH Zurich
 function tensors = compute_spine_momentum_tensors_PROM(PROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde)
     m = size(PROMAssembly.V,2);
     md = size(PROMAssembly.U,2);
-    Tr = PROMAssembly.tensor_spine_momentum('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
-    TrU3 = PROMAssembly.tensor_spine_momentum_U3('spine_momentum_tensor',[m m md m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
-    TrU4 = PROMAssembly.tensor_spine_momentum_U4('spine_momentum_tensor',[m m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
-    TrU34 = PROMAssembly.tensor_spine_momentum_U34('spine_momentum_tensor',[m m md md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.Txx = PROMAssembly.tensor_spine_momentum_xx('spine_momentum_tensor',[m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.TxV = PROMAssembly.tensor_spine_momentum_xV('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.TVx = PROMAssembly.tensor_spine_momentum_Vx('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.TVV = PROMAssembly.tensor_spine_momentum_VV('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.TUV = PROMAssembly.tensor_spine_momentum_UV('spine_momentum_tensor',[m m md m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.TVU = PROMAssembly.tensor_spine_momentum_VU('spine_momentum_tensor',[m m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde); 
+    tensors.TUU = PROMAssembly.tensor_spine_momentum_UU('spine_momentum_tensor',[m m md md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde);
+    tensors.TxU = PROMAssembly.tensor_spine_momentum_xU('spine_momentum_tensor',[m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde);
+    tensors.TUx = PROMAssembly.tensor_spine_momentum_Ux('spine_momentum_tensor',[m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, mTilde);
 
-    tensors.T = Tr;
-    tensors.TU3 = TrU3;
-    tensors.TU4 = TrU4;
-    tensors.TU34 = TrU34;
 end

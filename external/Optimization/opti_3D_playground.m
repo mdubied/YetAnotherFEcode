@@ -1,14 +1,13 @@
 % ------------------------------------------------------------------------ 
-% 2D optimization of a fish.
+% 3D optimization of a fish.
 % 
-% Last modified: 19/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 22/10/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
 close all; 
 clc
 
-whichModel = 'ABAQUS';
 elementType = 'TRI3';
 
 FORMULATION = 'N1'; % N1/N1t/N0
@@ -22,7 +21,6 @@ USEJULIA = 0;
 E       = 2600000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
 nu      = 0.499;        % Poisson's ratio 
-thickness = .1;         % [m] out-of-plane thickness
 
 % material
 myMaterial = KirchoffMaterial();
@@ -32,16 +30,13 @@ myMaterial.PLANE_STRESS = true;	    % set "false" for plane_strain
 % element
 switch elementType
     case 'TRI3'
-        myElementConstructor = @()Tri3Element(thickness, myMaterial);
+        myElementConstructor = @()Tet4Element(myMaterial);
 end
 % MESH ____________________________________________________________________
 
 % nominal mesh
-switch upper( whichModel )
-    case 'ABAQUS'
-        filename = '2d_rectangle_120el';
-        [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
-end
+filename = 'fish3_664el';
+[nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 
 nodes = nodes*0.01;
 
@@ -52,9 +47,10 @@ Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
 Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
 
 % plot nominal mesh
-elementPlot = elements(:,1:3); 
-figure('units','normalized','position',[.2 .1 .6 .4],'name','Nominal mesh with element and node indexes')
-PlotMesh(nodes, elementPlot, 0);
+elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMeshAxis(nodes, elementPlot, 0);
+hold off
 
 % boundary conditions of nominal mesh
 nel = size(elements,1);
@@ -75,27 +71,21 @@ end
 
 %% SHAPE VARIATIONS _______________________________________________________
 
-% % (1) thinner airfoil 
-% nodes_projected = [nodes(:,1), nodes(:,2)*0];   % projection on x-axis
-% yDif = nodes_projected(:,2) - nodes(:,2);       % y-difference projection vs nominal
-% thinAirfoil = zeros(numel(nodes),1);            % create a single long vectors [x1 y1 x2 y2 ...]^T
-% thinAirfoil(2:2:end) = yDif;                    % fill up all y-positions
-% 
-% % shape variations basis
-% U = thinAirfoil;    % shape variations basis
-% 
+% (1) thinner fish (y direction)
+nodes_projected = [nodes(:,1), nodes(:,2)*0, nodes(:,3)];   % projection on x-axis
+yDif = nodes_projected(:,2) - nodes(:,2);       % y-difference projection vs nominal
+thinFish = zeros(numel(nodes),1);            % create a single long vectors [x1 y1 x2 y2 ...]^T
+thinFish(2:3:end) = yDif;                    % fill up all y-positions
 
-
-% shape variations 
-[thinFish,shortFish,linearTail,longTail,shortTail,linearHead,longHead,shortHead] = shape_variations_2D(nodes,Lx,Ly);
-U = [linearTail,shortHead];
+% shape variations basis
+U = thinFish;    % shape variations basis
 
 % plot the two meshes
 xiPlot = ones(size(U,2),1)*0.6;
 f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
-elementPlot = elements(:,1:3); hold on 
+elementPlot = elements(:,1:4); hold on 
 PlotMesh(nodes, elementPlot, 0); 
-v1 = reshape(U*xiPlot, 2, []).';
+v1 = reshape(U*xiPlot, 3, []).';
 S = 1;
 hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
 axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
@@ -120,7 +110,7 @@ A = [1 0;
 b = [0.2;0.2;0.2;0.2];
 
 tStart = tic;
-[xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset, ...
+[xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,dSwim,h,tmax,A,b,'maxIteration',15,'convCrit',0.002,'barrierParam',100,'gStepSize',0.01,'nRebuild',3);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)

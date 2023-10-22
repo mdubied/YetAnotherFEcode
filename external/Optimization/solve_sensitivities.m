@@ -66,13 +66,14 @@ function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailPro
     UTail = tailProperties.U;
     mTilde = tailProperties.mTilde;
     nodes = PROM_Assembly.Mesh.nodes;
-    nodesInPos = V.'*reshape(nodes.',[],1);     % initial node position expressed in the ROM
-    xi=0;
-    pd_tail = @(eta,etad) PROM_tail_pressure_derivatives(eta,etad,A,B,R,mTilde,wTail,nodesInPos,xi,VTail,UTail);
+    iDOFs = tailProperties.iDOFs;
+    x0 = reshape(nodes.',[],1);     % initial node position expressed in the ROM
+    xi=zeros(size(PROM_Assembly.U,2),1);
+    pd_tail = @(eta,etad) PROM_tail_pressure_derivatives(eta,etad,A,B,R,mTilde,wTail,x0(iDOFs),xi,VTail,UTail);
 
     % spine change in momentum
     spineTensors = spineProperties.tensors;
-    pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives(eta,etad,etadd,nodesInPos,xi,spineTensors);
+    pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives(eta,etad,etadd,xi,spineTensors);
     
     % TIME INTEGRATION ____________________________________________________
     

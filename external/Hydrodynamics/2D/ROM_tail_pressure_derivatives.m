@@ -24,7 +24,6 @@
 %
 % Additional notes:
 %   - q and qd should be understood as eta and dot{eta} (ROM).
-%   - x0 should be understood as eta_0 (ROM)
 %   - p should be understood as xi.
 %
 % Last modified: 17/10/2023, Mathieu Dubied, ETH Zürich

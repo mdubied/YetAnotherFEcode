@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fActu,fTail,fSpine, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,R,x0)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fIntTensors, fActu,fTail,fSpine, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,R,x0)
 %  RESIDUAL_REDUCED_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -63,9 +63,13 @@ C_V = Assembly.DATA.C; % damping matrix
 % from the reduced variables $\mathbf{q}$ as $\mathbf{u} = \mathbf{Vq}$, and then 
 % directly assemble the reduced nonlinear operators  with the Assembly class method 
 % $\texttt{tangent\_stiffness\_and\_force\_modal(u,V)}$. 
-u = V*q; %q is the reduced variable
-[K_V, F_V] = Assembly.tangent_stiffness_and_force(u);
-%% 
+% u = V*q; %q is the reduced variable
+% 
+% [K_V, F_V] = Assembly.tangent_stiffness_and_force(u);
+
+[K_V, F_V] = tensors_KF(fIntTensors.Q2,fIntTensors.Q3,fIntTensors.Q4, ...
+    fIntTensors.Q3t,fIntTensors.Q4t,q);
+
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;

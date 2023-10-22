@@ -126,7 +126,7 @@ classdef DpromAssembly < ReducedAssembly
         end
 
         % Hydrodynamic tensors ____________________________________________
-        function [T] = tensor_spine_momentum_U3(self,elementMethodName,SIZE,varargin)
+        function [T] = tensor_spine_momentum_UV(self,elementMethodName,SIZE,varargin)
             
             T = tenzeros(SIZE);
             Elements = self.Mesh.Elements;
@@ -146,7 +146,7 @@ classdef DpromAssembly < ReducedAssembly
                 Ve = V(index,:); %#ok<*PFBNS>
                 Ue = self.U(index,:);
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}, self.Mesh.nodes);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ve);
  
                 T = T + Ter;
@@ -156,7 +156,7 @@ classdef DpromAssembly < ReducedAssembly
             
         end
 
-        function [T] = tensor_spine_momentum_U4(self,elementMethodName,SIZE,varargin)
+        function [T] = tensor_spine_momentum_VU(self,elementMethodName,SIZE,varargin)
             
             T = tenzeros(SIZE);
             Elements = self.Mesh.Elements;
@@ -178,7 +178,7 @@ classdef DpromAssembly < ReducedAssembly
                 Ve = V(index,:); %#ok<*PFBNS>
                 Ue = self.U(index,:);
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}, self.Mesh.nodes);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ue);
                 TDouble = TDouble + Ter;
  
@@ -192,7 +192,7 @@ classdef DpromAssembly < ReducedAssembly
       
         end
 
-        function [T] = tensor_spine_momentum_U34(self,elementMethodName,SIZE,varargin)
+        function [T] = tensor_spine_momentum_UU(self,elementMethodName,SIZE,varargin)
             
             T = tenzeros(SIZE);
             Elements = self.Mesh.Elements;
@@ -214,7 +214,7 @@ classdef DpromAssembly < ReducedAssembly
                 Ve = V(index,:); %#ok<*PFBNS>
                 Ue = self.U(index,:);
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}, self.Mesh.nodes);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ue);
                 
                 TDouble = TDouble + Ter;
@@ -223,6 +223,86 @@ classdef DpromAssembly < ReducedAssembly
 
             if md==1
                 T(:,:,1,1) = TDouble;    
+            else
+                T = tensor(TDouble);
+            end 
+                      
+        end
+
+        function [T] = tensor_spine_momentum_xU(self,elementMethodName,SIZE,varargin)
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+            md = size(self.U,2);
+            TDouble = zeros(SIZE); % if md=1, array of dimension mxmxmdxmd are computed as a mxm array, but we want a tensor mxmx1x1 as a final result
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                x0 = reshape(thisElement.nodes.',[],1);
+                                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ue);
+
+                if md ~=1
+                    Ter = ttv(tensor(Ter),1,3); % from mxmx1xmd to mxmxmd
+                end
+                                
+                TDouble = TDouble + Ter;
+                
+            end
+
+            if md==1
+                T(:,:,1) = TDouble;    
+            else
+                T = tensor(TDouble);
+            end 
+                      
+        end
+
+        function [T] = tensor_spine_momentum_Ux(self,elementMethodName,SIZE,varargin)
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+            md = size(self.U,2);
+            TDouble = zeros(SIZE); % if md=1, array of dimension mxmxmdxmd are computed as a mxm array, but we want a tensor mxmx1x1 as a final result
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                x0 = reshape(thisElement.nodes.',[],1);
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3});
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,x0);
+                
+                TDouble = TDouble + Ter;
+                
+            end
+
+            if md==1
+                T(:,:,1) = TDouble;    
             else
                 T = tensor(TDouble);
             end 
