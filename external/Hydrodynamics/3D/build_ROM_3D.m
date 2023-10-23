@@ -127,7 +127,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     wTail = normalisationFactors(tailElement);
 
     % get dorsal nodes
-    [~,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ....
+    [~,matchedDorsalNodesIdx,~,matchedDorsalNodesZPos] = ....
         find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
 
     % tail pressure force: get matrices

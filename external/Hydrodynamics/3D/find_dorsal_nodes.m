@@ -1,7 +1,7 @@
 % find_dorsal_nodes
 %
 % Synthax:
-% [allDorsalNodesIdx,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ...
+% [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matchedDorsalNodesZPos] = ...
 %   find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements)
 %
 % Description: 
@@ -26,6 +26,9 @@
 %   - matchedDorsalNodesIdx:array containing the indexes of the dorsal
 %                           nodes that have been matched to a spine
 %                           element
+%   - dorsalNodesElementsVec: array of size nElements, in which the entry
+%                           corresponding to spine elements is filled with
+%                           the matched dorsal node index.
 %   - matchedDorsalNodesZPos: array of size nElements, in which the entry
 %                           corresponding to spine elements is filled with
 %                           the matched dorsal node position. For each
@@ -36,8 +39,8 @@
 %
 % Additional notes: -
 %
-% Last modified: 17/10/2023, Mathieu Dubied, ETH Zurich
-function [allDorsalNodesIdx,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ....
+% Last modified: 23/10/2023, Mathieu Dubied, ETH Zurich
+function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matchedDorsalNodesZPos] = ....
     find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements)
        
     % GET ALL DORSAL NODES ________________________________________________
@@ -56,6 +59,7 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ....
     nSpineEl = length(spineElements);
     matchedDorsalNodesIdx = zeros(nSpineEl,1);
     matchedDorsalNodesZPos = zeros(nElements,1);
+    dorsalNodesElementsVec = zeros(nElements,1);
     for i=1:nSpineEl
         % get spine node position
         el = spineElements(i);
@@ -73,6 +77,7 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,matchedDorsalNodesZPos] = ....
         % get matched dorsal node index
         matchedDorsalNodesIdx(i) = allDorsalNodesIdx(ind);
         matchedDorsalNodesZPos(el) = nodes(allDorsalNodesIdx(ind),3);
+        dorsalNodesElementsVec(el) = allDorsalNodesIdx(ind);
         disp(nodes(allDorsalNodesIdx(ind),:))
 
     end

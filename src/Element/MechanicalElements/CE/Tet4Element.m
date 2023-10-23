@@ -87,7 +87,7 @@ classdef Tet4Element < ContinuumElement
         
         % HYDRODYNAMIC FORCES _____________________________________________
 
-        function T = spine_momentum_tensor(self, spineNodeIndexInElement, normalisation, zPos)
+        function T = spine_momentum_tensor(self, spineNodeIndexInElement, normalisation)
             % _____________________________________________________________ 
             % Compute the tensor related to the spine change in momentum
             % _____________________________________________________________
@@ -109,8 +109,7 @@ classdef Tet4Element < ContinuumElement
                  0 0 0 0 0 0 0 0 0 0 0 0];     % 90 degrees rotation counterclock-wise around z axis
             
             % compute force
-            mTilde = 0.25*pi*(zPos*2)^2;
-            T = -mTilde*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
+            T = -0.25*pi*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
             T = double (T);
 
         end

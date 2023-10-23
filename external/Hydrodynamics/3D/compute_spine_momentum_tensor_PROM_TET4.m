@@ -1,7 +1,7 @@
 % compute_spine_momentum_tensor_PROM_TET4
 %
 % Synthax:
-% tensor = compute_spine_momentum_tensor_PROM_TET4(ROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
+% tensor = compute_spine_momentum_tensor_PROM_TET4(PROMAssembly, spineElementWeights, normalisationFactors, nodeIdxPosInElements, mTilde)
 %
 % Description: 
 % This function computes the 4th order tensor that can be used to compute
@@ -30,10 +30,19 @@
 % Additional notes:  
 %
 % Last modified: 22/10/2023, Mathieu Dubied, ETH Zurich
-function tensors = compute_spine_momentum_tensor_PROM_TET4(ROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos)
-    m = size(ROMAssembly.V,2);
-    tensors.Txx = ROMAssembly.tensor_spine_momentum_xx_TET4('spine_momentum_tensor',[m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 
-    tensors.TxV = ROMAssembly.tensor_spine_momentum_xV_TET4('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 
-    tensors.TVx = ROMAssembly.tensor_spine_momentum_Vx_TET4('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 
-    tensors.TVV = ROMAssembly.tensor_spine_momentum_VV_TET4('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos); 
+function tensors = compute_spine_momentum_tensor_PROM_TET4(PROMAssembly, spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx)
+    m = size(PROMAssembly.V,2);
+    md = size(PROMAssembly.U,2);
+
+    % f0, f1, f2 (tensors.Txx.f0, tensors.Txx.f1, tensors.Txx.f2)
+    tensors.Txx = PROMAssembly.tensor_spine_momentum_xx_TET4_PROM('spine_momentum_tensor',[m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx); 
+    tensors.TxV = PROMAssembly.tensor_spine_momentum_xV_TET4_PROM('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx); 
+    tensors.TVx = PROMAssembly.tensor_spine_momentum_Vx_TET4_PROM('spine_momentum_tensor',[m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx); 
+    tensors.TVV = PROMAssembly.tensor_spine_momentum_VV_TET4_PROM('spine_momentum_tensor',[m m m m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx); 
+    tensors.TUV = PROMAssembly.tensor_spine_momentum_UV_TET4_PROM('spine_momentum_tensor',[m m md m], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx); 
+    tensors.TVU = PROMAssembly.tensor_spine_momentum_VU_TET4_PROM('spine_momentum_tensor',[m m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx); 
+    tensors.TUU = PROMAssembly.tensor_spine_momentum_UU_TET4_PROM('spine_momentum_tensor',[m m md md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx);
+    tensors.TxU = PROMAssembly.tensor_spine_momentum_xU_TET4_PROM('spine_momentum_tensor',[m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx);
+    tensors.TUx = PROMAssembly.tensor_spine_momentum_Ux_TET4_PROM('spine_momentum_tensor',[m m md], 'weights', spineElementWeights, nodeIdxPosInElements, normalisationFactors, dorsalZPos, dorsalNodeIdx);
+
 end

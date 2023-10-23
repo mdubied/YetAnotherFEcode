@@ -395,7 +395,7 @@ classdef ReducedAssembly < Assembly
             T = sptensor(subs, T, SIZE);
         end
 
-        
+        % SPINE MOMENTUM TRI3
         function [T] = tensor_spine_momentum_xx(self,elementMethodName,SIZE,varargin)
             % 
             
@@ -524,6 +524,7 @@ classdef ReducedAssembly < Assembly
             
         end
 
+        % SPINE MOMENTUM TET4 (ROM)
         function [T] = tensor_spine_momentum_xx_TET4(self,elementMethodName,SIZE,varargin)
             % 
             
@@ -545,8 +546,8 @@ classdef ReducedAssembly < Assembly
                 x0 = reshape(thisElement.nodes.',[],1);
                 Ve = V(index,:); %#ok<*PFBNS>
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
-                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,x0);  % will be of size m x m, as the two last dimensions of 1 will not appear in Ter
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,x0);  % will be of size m x m, as the two last dimensions of 1 will not appear in Ter
  
                 T = T + Ter;
 
@@ -577,8 +578,8 @@ classdef ReducedAssembly < Assembly
                 x0 = reshape(thisElement.nodes.',[],1);
                 Ve = V(index,:); %#ok<*PFBNS>
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
-                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ve); % will be of size m x m x 1 x m
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ve); % will be of size m x m x 1 x m
                 
                 if m ~= 0
                     Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
@@ -612,8 +613,8 @@ classdef ReducedAssembly < Assembly
                 x0 = reshape(thisElement.nodes.',[],1);
                 Ve = V(index,:); %#ok<*PFBNS>
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
-                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,x0); % will be of size m x m x m, as the forth dimension of 1 will not appear in Ter
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,x0); % will be of size m x m x m, as the forth dimension of 1 will not appear in Ter
 
                 T = T + Ter;
 
@@ -642,8 +643,8 @@ classdef ReducedAssembly < Assembly
                 index = thisElement.iDOFs;          
                 Ve = V(index,:); %#ok<*PFBNS>
                 
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
-                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
 
                 T = T + Ter;
 
@@ -651,47 +652,8 @@ classdef ReducedAssembly < Assembly
             T = tensor(T);
             
         end
-
-        function [T] = tensor_spine_momentum_TET4(self,elementMethodName,SIZE,varargin)
-            % This function assembles a generic finite element vector from
-            % its element level counterpart.
-            % elementMethodName is a string input containing the name of
-            % the method that returns the element level vector Fe.
-            % For this to work, a method named elementMethodName which
-            % returns the appropriate vector must be defined for all
-            % element types in the FE Mesh.            
-            % NOTE: in this function, we reduce all the dimensions with 
-            % the same reduction basis
-            
-            T = tenzeros(SIZE);
-            Elements = self.Mesh.Elements;
-            V = self.V;              
-
-            % parsing element weights
-            [elementWeights,inputs] = self.parse_inputs(varargin{:});
-            
-            % extracting elements with nonzero weights
-            elementSet = find(elementWeights);
-            
-            % Computing element level contributions
-
-            for j = elementSet
-                thisElement = Elements(j).Object;
-                index = thisElement.iDOFs;          
-                Ve = V(index,:); %#ok<*PFBNS>
-                
-                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j), inputs{3}(j));
-                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
-                % test
-                % =einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve',Ter,Ve',Ve',Ve') %
-                % map back
-                T = T + Ter;
-
-            end
-            T = tensor(T);
-            
-        end
-        
+       
+        % SKIN TENSORS
         function [T] = tensor_skin(self,elementMethodName,SIZE,sumDIMS,mode,varargin)
             % This function assembles a generic finite element vector from
             % its element level counterpart.

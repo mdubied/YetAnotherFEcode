@@ -82,9 +82,9 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     FORMULATION);
     
     % ROB formulation, case studies 1 and 2 (no rigid body mode)
-    mSingle = [1 0]; % horizontal displacement
+    mSingle = [1 0 0]; % horizontal displacement
     m1 = repmat(mSingle,1,nNodes)';
-    mSingle = [0 1];
+    mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
     V  = [m1 m2 VMn MDn DS];
     V  = orth(V);
@@ -123,6 +123,10 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
     wTail = normalisationFactors(tailElement);
 
+    % get dorsal nodes
+    [~,matchedDorsalNodesIdx,dorsalNodesElementsVec,matchedDorsalNodesZPos] = ....
+        find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
+
     % tail pressure force: get matrices
     [A,B] = compute_AB_tail_pressure_TET4(nodeIdxPosInElements(tailElement,:));
     nodesTailEl = elements(tailElement,:);
@@ -158,7 +162,8 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     tailProperties.iDOFs = iDOFs;
 
     % spine momentum change tensor (reduced order)
-    spineTensors = compute_spine_momentum_tensors_PROM_TET4(PROM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,mTilde);
+    spineTensors = compute_spine_momentum_tensor_PROM_TET4(PROM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,matchedDorsalNodesZPos,dorsalNodesElementsVec);
+      
     spineProperties.tensors = spineTensors;
     spineProperties.spineNodes = spineNodes;
     spineProperties.spineElements = spineElements;
@@ -181,7 +186,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of the nominal fish
 
     nel = size(elements,1);
-    actuationDirection = [1;0;0];               %[1;0]-->[1;0;0] (Voigt notation)
+    actuationDirection = [1;0;0;0;0;0];               %[1;0]-->[1;0;0] (Voigt notation)
     
     % top muscle
     topMuscle = zeros(nel,1);

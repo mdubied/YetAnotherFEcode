@@ -45,6 +45,7 @@ MeshNominal.create_elements_table(elements,myElementConstructor);
 
 Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
 Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
+Lz = abs(max(nodes(:,3))-min(nodes(:,3)));  % vertical length of airfoil
 
 % plot nominal mesh
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
@@ -77,6 +78,12 @@ yDif = nodes_projected(:,2) - nodes(:,2);       % y-difference projection vs nom
 thinFish = zeros(numel(nodes),1);            % create a single long vectors [x1 y1 x2 y2 ...]^T
 thinFish(2:3:end) = yDif;                    % fill up all y-positions
 
+% (2) smaller fish (z direction)
+nodes_projected = [nodes(:,1), nodes(:,2), nodes(:,3)*0];   % projection on x-axis
+zDif = nodes_projected(:,3) - nodes(:,3);       % y-difference projection vs nominal
+smallFish = zeros(numel(nodes),1);            % create a single long vectors [x1 y1 x2 y2 ...]^T
+smallFish(3:3:end) = zDif;                    % fill up all y-positions
+
 % shape variations basis
 U = thinFish;    % shape variations basis
 
@@ -84,7 +91,7 @@ U = thinFish;    % shape variations basis
 xiPlot = ones(size(U,2),1)*0.6;
 f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
-PlotMesh(nodes, elementPlot, 0); 
+% PlotMesh(nodes, elementPlot, 0); 
 v1 = reshape(U*xiPlot, 3, []).';
 S = 1;
 hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);

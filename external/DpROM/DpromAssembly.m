@@ -125,7 +125,7 @@ classdef DpromAssembly < ReducedAssembly
             end
         end
 
-        % Hydrodynamic tensors ____________________________________________
+        % Hydrodynamic tensors (TRI3) _____________________________________
         function [T] = tensor_spine_momentum_UV(self,elementMethodName,SIZE,varargin)
             
             T = tenzeros(SIZE);
@@ -308,6 +308,490 @@ classdef DpromAssembly < ReducedAssembly
             end 
                       
         end
+        
+        % Hydrodynamic tensors (TET3) _____________________________________
+        
+        function T = tensor_spine_momentum_xx_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            Tf2Double = zeros(cat(2,SIZE,[md,md]));
+
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x md
+            Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x md x md
+            
+            Elements = self.Mesh.Elements;
+            V = self.V;  
+        
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions (f0)
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs; 
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,x0);  % will be of size m x m, as the two last dimensions of 1 will not appear in Ter
+                
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(Ter,Uz');  % outer product
+                Tf2Double = Tf2Double + tensorprod(tensorprod(Ter,Uz'),Uz');  % outer product
+            end
+
+            T.f0 = tensor(Tf0Double);
+
+            if md==1
+                Tf1(:,:,1) = Tf1Double;
+                Tf2(:,:,1,1) = Tf2Double;
+                T.f1 = Tf1;
+                T.f2 = Tf2;
+            else
+                T.f1 = tensor(Tf1Double);
+                T.f2 = tensor(Tf2Double);
+            end
+                
+        end
+
+        function T = tensor_spine_momentum_xV_TET4_PROM(self,elementMethodName,SIZE,varargin)
+           
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x m
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            Tf2Double = zeros(cat(2,SIZE,[md,md]));
+
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x m x md
+            Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x m x md x md
+
+            Elements = self.Mesh.Elements;
+            V = self.V; 
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ve); % will be of size m x m x 1 x m
+                Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
+
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+            end
+
+            T.f0 = tensor(Tf0Double);
+
+            if md==1
+                Tf1(:,:,:,1) = Tf1Double;
+                Tf2(:,:,:,1,1) = Tf2Double;
+                T.f1 = Tf1;
+                T.f2 = Tf2;
+            else
+                T.f1 = tensor(Tf1Double);
+                T.f2 = tensor(Tf2Double);
+            end
+            
+        end
+
+        function T = tensor_spine_momentum_Vx_TET4_PROM(self,elementMethodName,SIZE,varargin)
+                       
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x m
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            Tf2Double = zeros(cat(2,SIZE,[md,md]));
+
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x m x md
+            Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x m x md x md
+
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;   
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,x0); % will be of size m x m x m, as the forth dimension of 1 will not appear in Ter
+
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+            end
+
+            T.f0 = tensor(Tf0Double);
+
+            if md==1
+                Tf1(:,:,:,1) = Tf1Double;
+                Tf2(:,:,:,1,1) = Tf2Double;
+                T.f1 = Tf1;
+                T.f2 = Tf2;
+            else
+                T.f1 = tensor(Tf1Double);
+                T.f2 = tensor(Tf2Double);
+            end
+            
+        end
+
+        function T = tensor_spine_momentum_VV_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x m x m
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            Tf2Double = zeros(cat(2,SIZE,[md,md]));
+
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x m x m x md
+            Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x m x m x md x md
+
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
+
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+            end
+            
+            T.f0 = tensor(Tf0Double);
+
+            if md==1
+                Tf1(:,:,:,:,1) = Tf1Double;
+                Tf2(:,:,:,:,1,1) = Tf2Double;
+                T.f1 = Tf1;
+                T.f2 = Tf2;
+            else
+                T.f1 = tensor(Tf1Double);
+                T.f2 = tensor(Tf2Double);
+            end
+            
+        end
+       
+
+        function T = tensor_spine_momentum_UV_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x md x m
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            % Tf2Double = zeros(cat(2,SIZE,[md,md]));
+
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x md x m x md
+            % Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x md x m x md x md
+
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ve);
+ 
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+
+            end
+            T.f0 = tensor(Tf0Double);
+
+            if md==1
+                Tf1(:,:,:,:,1) = Tf1Double;
+                % Tf2(:,:,:,:,1,1) = Tf2Double;
+                T.f1 = Tf1;
+                % T.f2 = Tf2;
+            else
+                T.f1 = tensor(Tf1Double);
+                % T.f2 = tensor(Tf2Double);
+            end
+            
+        end
+
+        function [T] = tensor_spine_momentum_VU_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x m x md
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            % Tf2Double = zeros(cat(2,SIZE,[md,md]));
+            
+            Tf0 = tenzeros(SIZE);                       % m x m x m x md 
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x m x md x md
+            % Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x m x md x md x md
+
+            Elements = self.Mesh.Elements;
+            V = self.V;   
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ue);
+
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+ 
+            end
+
+            if md==1
+                Tf0(:,:,:,1) = Tf0Double;
+                Tf1(:,:,:,1,1) = Tf1Double;
+                % Tf2(:,:,:,1,1,1) = Tf2Double;
+                T.f0 = Tf0;
+                T.f1 = Tf1;
+                % T.f2 = Tf2;
+            else
+                T.f0 = tensor(Tf0Double);
+                T.f1 = tensor(Tf1Double);
+                % T.f2 = tensor(Tf2Double);
+            end
+      
+        end
+
+        function T = tensor_spine_momentum_UU_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x md x md
+            % Tf1Double = zeros(cat(2,SIZE,md));          
+            % Tf2Double = zeros(cat(2,SIZE,[md,md]));
+            
+            Tf0 = tenzeros(SIZE);                       % m x m x md x md 
+            % Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x md x md x md
+            % Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x m x md x md x md x md
+            
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                % Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ue);
+                
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                % Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                
+            end
+
+            if md==1
+                Tf0(:,:,1,1) = Tf0Double;
+                % Tf1(:,:,1,1,1) = Tf1Double;
+                % Tf2(:,:,1,1,1,1) = Tf2Double;
+                T.f0 = Tf0;
+                % T.f1 = Tf1;
+                % T.f2 = Tf2;
+            else
+                T.f0 = tensor(Tf0Double);
+                % T.f1 = tensor(Tf1Double);
+                % T.f2 = tensor(Tf2Double);
+            end
+          
+        end
+
+        function T = tensor_spine_momentum_xU_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x md
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            % Tf2Double = zeros(cat(2,SIZE,[md,md]));
+            
+            Tf0 = tenzeros(SIZE);                       % m x m x md 
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x md x md
+            % Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x  m x md x md x md
+            
+            Elements = self.Mesh.Elements;
+            V = self.V;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                x0 = reshape(thisElement.nodes.',[],1);
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ue);
+
+                if md ~=1   % if md=1, Ter is m x m and we do not need this
+                    Ter = ttv(tensor(Ter),1,3); % from mxmx1xmd to mxmxmd
+                end
+
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                
+                                               
+            end
+
+            if md==1
+                Tf0(:,:,1) = Tf0Double;
+                Tf1(:,:,1,1) = Tf1Double;
+                % Tf2(:,:,1,1,1) = Tf2Double;
+                T.f0 = Tf0;
+                T.f1 = Tf1;
+                % T.f2 = Tf2;
+            else
+                T.f0 = tensor(Tf0Double);
+                T.f1 = tensor(Tf1Double);
+                % T.f2 = tensor(Tf2Double);
+            end
+                      
+        end
+
+        function T = tensor_spine_momentum_Ux_TET4_PROM(self,elementMethodName,SIZE,varargin)
+            
+            md = size(self.U,2);
+            Tf0Double = zeros(SIZE);                    % m x m x md
+            Tf1Double = zeros(cat(2,SIZE,md));          
+            % Tf2Double = zeros(cat(2,SIZE,[md,md]));
+            
+            Tf0 = tenzeros(SIZE);                       % m x m x md 
+            Tf1 = tenzeros(cat(2,SIZE,md));             % m x m x md x md
+            % Tf2 = tenzeros(cat(2,SIZE,[md,md]));        % m x  m x md x md x md
+            
+            Elements = self.Mesh.Elements;
+            V = self.V;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                Ue = self.U(index,:);
+                x0 = reshape(thisElement.nodes.',[],1);
+                Uz = self.U(inputs{4}(j)*3,:); % row vector
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,x0);
+                
+                Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+
+                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                
+            end
+
+            if md==1
+                Tf0(:,:,1) = Tf0Double;
+                Tf1(:,:,1,1) = Tf1Double;
+                % Tf2(:,:,1,1,1) = Tf2Double;
+                T.f0 = Tf0;
+                T.f1 = Tf1;
+                % T.f2 = Tf2;
+            else
+                T.f0 = tensor(Tf0Double);
+                T.f1 = tensor(Tf1Double);
+                % T.f2 = tensor(Tf2Double);
+            end
+                      
+        end
+        
+        
         
         % Ancillary functions _____________________________________________
         
