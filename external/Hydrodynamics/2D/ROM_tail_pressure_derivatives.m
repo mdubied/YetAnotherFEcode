@@ -1,7 +1,7 @@
 % ROM_tail_pressure_derivates
 %
 % Synthax:
-% der = ROM_tail_pressure_derivatives(q,qd,A,B)
+% der = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0Tail,VTailB)
 %
 % Description: This function returns the partial derivatives of the change
 % in tail pressure force, which is understood as a force acting on the spine.
@@ -26,7 +26,7 @@
 %   - q and qd should be understood as eta and dot{eta} (ROM).
 %   - p should be understood as xi.
 %
-% Last modified: 17/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 23/10/2023, Mathieu Dubied, ETH Zürich
 function der = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0Tail,VTail)
 
     % dfdq ________________________________________________________________

@@ -61,9 +61,9 @@ fprintf('   B3: %.2f s\n',toc)
 
 % display time needed for computation
 time = toc(t0);
-fprintf(' TOTAL TIME: %.2f s\n',toc(t0),time)
-fprintf(' SPEED: %.1f el/s\n',nel/time)
-fprintf(' SIZEs: %d \n\n', size(V,2))
+fprintf(' TOTAL TIME: %.2f s\n',toc(t0))
+% fprintf(' SPEED: %.1f el/s\n',nel/time)
+% fprintf(' SIZEs: %d \n\n', size(V,2))
 
 % store outputs
 tensors.B1 = B1; 

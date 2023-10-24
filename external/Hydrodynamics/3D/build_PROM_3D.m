@@ -39,6 +39,8 @@
 
 function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION)
+
+    startPROMBuilding = tic;
     
     % 2D or 3D? ___________________________________________________________
     fishDim = size(nodes,2);
@@ -109,6 +111,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     V, U, FORMULATION, VOLUME, USEJULIA)  ;
     
     % HYDRODYNAMIC FORCES _________________________________________________
+    disp(' REDUCED REACTIVE FORCE/TENSORS (PROM):')
     
     % find spine and tail elements
     if fishDim == 2
@@ -160,6 +163,9 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     tailProperties.tailNode = tailNode;
     tailProperties.tailElement = tailElement;
     tailProperties.iDOFs = iDOFs;
+    tailProperties.zDOFIdx = matchedDorsalNodesIdx(spineElements==tailElement)*3;
+    tailProperties.z = matchedDorsalNodesZPos(tailElement);
+    tailProperties.Uz = U(tailProperties.zDOFIdx,:);
 
     % spine momentum change tensor (reduced order)
     spineTensors = compute_spine_momentum_tensor_PROM_TET4(PROM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,matchedDorsalNodesZPos,dorsalNodesElementsVec);
@@ -210,5 +216,6 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     end
     actuBottom = reduced_tensors_actuation_PROM(NominalAssembly, V, U, bottomMuscle, actuationDirection);
 
+    fprintf('Time to build PROM: %.2fsec\n',toc(startPROMBuilding))
 
 end 

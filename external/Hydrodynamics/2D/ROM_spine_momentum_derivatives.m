@@ -27,6 +27,14 @@ function der = ROM_spine_momentum_derivatives(q,qd,qdd,tensors)
     TxV = tensors.TxV;
     TVx = tensors.TVx;
     TVV = tensors.TVV;
+
+    if isa(Txx,'struct')    % the tensors were computed for a PROM
+        Txx = Txx.f0;
+        TxV = TxV.f0;
+        TVx = TVx.f0;
+        TVV = TVV.f0;
+    end
+
     
     % dfdq ________________________________________________________________
     dfdq = ttv(TxV,qdd,2) + ttv(TVx,qdd,2) ...

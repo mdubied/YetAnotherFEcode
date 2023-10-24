@@ -65,11 +65,11 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     % build PROM
     fprintf('____________________\n')
     fprintf('Building PROM ... \n')
-    tic
+
     mTilde = 10;
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);      
-    toc
+    
 
     % Solve EoMs
     tic 
@@ -78,17 +78,27 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,h,tmax);                        
     toc
 
-    % uTail = zeros(6,tmax/h);
-    % for a=1:tmax/h-2
-    %     uTail(:,a) = tailProperties.V*TI_NL_PROM.Solution.q(:,a);
-    % end
-    % 
-    % figure
-    % plot(uTail(1,:))
-    % hold on
-    % plot(uTail(3,:))
-    % plot(uTail(5,:))
-    % hold off
+    uTail = zeros(3,tmax/h);
+    timePlot = linspace(0,tmax-h,tmax/h);
+    x0Tail = min(nodes(:,1));
+    for a=1:tmax/h
+        uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_PROM.Solution.q(:,a);
+    end
+
+    figure
+    subplot(2,1,1);
+    plot(timePlot,x0Tail+uTail(1,:),'DisplayName','k=0')
+    hold on
+    xlabel('Time [s]')
+    ylabel('x-position tail node')
+    legend('Location','northwest')
+    subplot(2,1,2);
+    plot(timePlot,uTail(2,:),'DisplayName','k=0')
+    hold on
+    xlabel('Time [s]')
+    ylabel('y-position tail node')
+    legend('Location','southwest')
+    drawnow
 
 
     % Solve sensitivity equation 
@@ -119,8 +129,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
-    dr = reduced_constant_vector(d,V);
-    Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam);  
+    dr = reduced_constant_vector(d,V,3);
+    Lr = reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam,V);  
     LrEvo = Lr;
 
     for k = 1:maxIteration
@@ -135,21 +145,21 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 
             % update defected mesh nodes
             df = U*xi_k;                       % displacement fields introduced by defects
-            ddf = [df(1:2:end) df(2:2:end)]; 
+            ddf = [df(1:3:end) df(2:3:end) df(3:3:end)]; 
             nodes_defected = nodes + ddf;    % nominal + d ---> defected 
             svMesh = Mesh(nodes_defected);
             svMesh.create_elements_table(elements,myElementConstructor);
             for l=1:length(nset)
-                svMesh.set_essential_boundary_condition([nset{l}],1:2,0)   
+                svMesh.set_essential_boundary_condition([nset{l}],1:3,0)   
             end
 
             % build PROM
             [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-                 build_PROM(svMesh,nodes_defected,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);
-              
+                 build_PROM_3D(svMesh,nodes_defected,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);
+                                             
             xiRebuild_k = zeros(size(U,2),1);   % reset local xi to 0 as we rebuild the ROM
             
-            dr = reduced_constant_vector(d,V);
+            dr = reduced_constant_vector(d,V,3);
     
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
@@ -163,6 +173,20 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             etadd_k = TI_NL_PROM.Solution.qdd;
     
             N = size(eta_k,2);
+
+            uTail = zeros(3,tmax/h);
+            for a=1:tmax/h
+                uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_PROM.Solution.q(:,a);
+            end 
+            subplot(2,1,1);
+            plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+            legend
+            drawnow
+     
+            subplot(2,1,2);
+            plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+            legend
+            drawnow
             
             % solve sensitivity equation 
             tic
@@ -179,7 +203,6 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             Sdd = TI_sens.Solution.qdd;
         else
             % approximate new solution under new xi, using sensitivity
-            tic 
             fprintf('____________________\n')
             fprintf('Approximating solutions...\n')
             if size(xi_k,1)>1
@@ -188,14 +211,14 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             else
                 eta_k = eta_k + S*xiRebuild_k;
             end
-            toc
+            
         end 
 
         % compute cost function and its gradient
         fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n') 
-        nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta_k,etad_k,etadd_k,xiRebuild_k,xi_k,dr,A,b,barrierParam)];
+        nablaLr = gradient_cost_function_w_constraints_TET4(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam,V);
+        LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta_k,etad_k,etadd_k,xiRebuild_k,xi_k,dr,A,b,barrierParam,V)];
         
         % update optimal parameter
         fprintf('____________________\n')

@@ -344,8 +344,8 @@ classdef DpromAssembly < ReducedAssembly
                 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(Ter,Uz');  % outer product
-                Tf2Double = Tf2Double + tensorprod(tensorprod(Ter,Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(Ter,Uz');  % outer product
+                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(Ter,Uz'),Uz');  % outer product
             end
 
             T.f0 = tensor(Tf0Double);
@@ -396,8 +396,8 @@ classdef DpromAssembly < ReducedAssembly
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
             end
 
             T.f0 = tensor(Tf0Double);
@@ -447,8 +447,8 @@ classdef DpromAssembly < ReducedAssembly
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
             end
 
             T.f0 = tensor(Tf0Double);
@@ -498,8 +498,8 @@ classdef DpromAssembly < ReducedAssembly
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
             end
             
             T.f0 = tensor(Tf0Double);
@@ -550,8 +550,8 @@ classdef DpromAssembly < ReducedAssembly
  
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
 
             end
             T.f0 = tensor(Tf0Double);
@@ -568,7 +568,7 @@ classdef DpromAssembly < ReducedAssembly
             
         end
 
-        function [T] = tensor_spine_momentum_VU_TET4_PROM(self,elementMethodName,SIZE,varargin)
+        function T = tensor_spine_momentum_VU_TET4_PROM(self,elementMethodName,SIZE,varargin)
             
             md = size(self.U,2);
             Tf0Double = zeros(SIZE);                    % m x m x m x md
@@ -602,8 +602,8 @@ classdef DpromAssembly < ReducedAssembly
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
  
             end
 
@@ -656,8 +656,8 @@ classdef DpromAssembly < ReducedAssembly
                 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                % Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                % Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
                 
             end
 
@@ -715,8 +715,8 @@ classdef DpromAssembly < ReducedAssembly
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
                 
                                                
             end
@@ -771,8 +771,8 @@ classdef DpromAssembly < ReducedAssembly
                 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
 
-                Tf1Double = Tf1Double + 4*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                % Tf2Double = Tf2Double + tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
                 
             end
 

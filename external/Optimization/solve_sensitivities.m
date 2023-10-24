@@ -46,34 +46,32 @@ function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailPro
     pd_fint = @(eta)DpROM_derivatives(eta,tensors_PROM);
     
     % actuation
-    k=1;
-    actuSignalT = @(t) k/2*(1-(1+0.02*sin(t*2*pi)));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
+    k=400;
+    actuSignalT = @(t) k/2*(1-(1+0.4*sin(t*2*pi)));    % to change below as well if needed
+    actuSignalB = @(t) k/2*(1-(1-0.4*sin(t*2*pi)));
     pd_actuTop = @(a)PROM_actu_derivatives(actuTop,a);
     pd_actuBottom = @(a)PROM_actu_derivatives(actuBottom,a);
 
     % tail pressure force
     A = tailProperties.A;
     B = tailProperties.B;
-    R = [0 -1 0 0 0 0;
-         1 0 0 0 0 0;
-         0 0 0 -1 0 0;
-         0 0 1 0 0 0;
-         0 0 0 0 0 1;
-         0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+    R = tailProperties.R;     
     wTail = tailProperties.w;
     VTail = tailProperties.V;
     UTail = tailProperties.U;
     mTilde = tailProperties.mTilde;
     nodes = PROM_Assembly.Mesh.nodes;
     iDOFs = tailProperties.iDOFs;
+    z0 = tailProperties.z;
+    Uz = tailProperties.Uz;
     x0 = reshape(nodes.',[],1);     % initial node position expressed in the ROM
     xi=zeros(size(PROM_Assembly.U,2),1);
-    pd_tail = @(eta,etad) PROM_tail_pressure_derivatives(eta,etad,A,B,R,mTilde,wTail,x0(iDOFs),xi,VTail,UTail);
+
+    pd_tail = @(eta,etad) PROM_tail_pressure_derivatives_TET4(eta,etad,A,B,R,wTail,x0(iDOFs),xi,VTail,UTail,z0,Uz);
 
     % spine change in momentum
     spineTensors = spineProperties.tensors;
-    pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives(eta,etad,etadd,xi,spineTensors);
+    pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives_TET4(eta,etad,etadd,xi,spineTensors);
     
     % TIME INTEGRATION ____________________________________________________
     

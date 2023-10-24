@@ -8,9 +8,9 @@ clear;
 close all; 
 clc
 
-elementType = 'TRI3';
+elementType = 'TET4';
 
-FORMULATION = 'N1'; % N1/N1t/N0
+FORMULATION = 'N1t'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
 USEJULIA = 0;
@@ -29,13 +29,13 @@ myMaterial.PLANE_STRESS = true;	    % set "false" for plane_strain
 
 % element
 switch elementType
-    case 'TRI3'
+    case 'TET4'
         myElementConstructor = @()Tet4Element(myMaterial);
 end
 % MESH ____________________________________________________________________
 
 % nominal mesh
-filename = 'fish3_664el';
+filename = '3d_rectangle_660el';%'fish3_664el';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 
 nodes = nodes*0.01;
@@ -84,17 +84,51 @@ zDif = nodes_projected(:,3) - nodes(:,3);       % y-difference projection vs nom
 smallFish = zeros(numel(nodes),1);            % create a single long vectors [x1 y1 x2 y2 ...]^T
 smallFish(3:3:end) = zDif;                    % fill up all y-positions
 
+% (3) smaller z tail fish (z direction)
+elCenter = [-Lx*0.7;0];
+a = Lx*0.3;
+b = Lz*0.5;
+nodes_ellipse = nodes;
+zDif = zeros(size(nodes,1),1);
+for n = 1:size(nodes,1)
+    if nodes(n,1) <= elCenter(1)
+        nodes_ellipse(n,:) = [nodes(n,1), nodes(n,2), sign(nodes(n,3)).*b/a.*sqrt(a^2-(nodes(n,1)-elCenter(1)).^2)];    % projection on ellipse
+        zDif(n) = (nodes_ellipse(n,3) - max(nodes(:,3)).*sign(nodes(n,3))).*abs(nodes(n,3))/(Lz*0.5);       % z-difference projection vs nominal
+    end
+end
+fishTailsv = zeros(numel(nodes),1);
+fishTailsv(3:3:end) = real(zDif);
+
+% (4) smaller z head fish (z direction)
+elCenter = [-Lx*0.3;0];
+a = Lx*0.3;
+b = Lz*0.5;
+nodes_ellipse = nodes;
+zDif = zeros(size(nodes,1),1);
+for n = 1:size(nodes,1)
+    if nodes(n,1) >= elCenter(1)
+        nodes_ellipse(n,:) = [nodes(n,1), nodes(n,2), sign(nodes(n,3)).*b/a.*sqrt(a^2-(nodes(n,1)-elCenter(1)).^2)];    % projection on ellipse
+        zDif(n) = (nodes_ellipse(n,3) - max(nodes(:,3)).*sign(nodes(n,3))).*abs(nodes(n,3))/(Lz*0.5);       % z-difference projection vs nominal
+    end
+end
+fishHeadsv = zeros(numel(nodes),1);
+fishHeadsv(3:3:end) = real(zDif);
+
+
 % shape variations basis
-U = thinFish;    % shape variations basis
+U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
 
 % plot the two meshes
-xiPlot = ones(size(U,2),1)*0.6;
+xiPlot = [0.6;-0.6;0.3];
 f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 % PlotMesh(nodes, elementPlot, 0); 
 v1 = reshape(U*xiPlot, 3, []).';
 S = 1;
 hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+L = [Lx,Ly,Lz];
+O = [-Lx,-Ly/2,-Lz/2];
+plotcube(L,O,.05,[0 0 0]);
 axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 set(f1,'PaperUnits','centimeters');
 set(f1,'PaperPositionMode','auto');
@@ -105,51 +139,48 @@ set(f1,'Units','centimeters');
 
 
 %% OPTIMIZATION PARAMETERS
-dSwim = [1;0]; %swimming direction
+dSwim = [1;0;0]; %swimming direction
 h = 0.01;
-tmax = 2.0;
+tmax = 1.0;
 
 %% OPTIMISATION TEST 1 ____________________________________________________
-A = [1 0;
-    -1 0;
-    0 1;
-    0 -1];
-b = [0.2;0.2;0.2;0.2];
+A = [1 0 0 ;
+    -1 0 0;
+    0 1 0;
+    0 -1 0;
+    0 0 1;
+    0 0 -1];
+b = [0.2;0.2;0.2;0.2;0.2;0.2];
+% A = [1 0;
+%     -1 0;
+%     0 1;
+%     0 -1];
+% b = [0.2;0.2;0.2;0.2];
+% A = [1;
+%     -1];
+% b = [0.2;0.2];
 
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,dSwim,h,tmax,A,b,'maxIteration',15,'convCrit',0.002,'barrierParam',100,'gStepSize',0.01,'nRebuild',3);
+    nodes,elements,U,dSwim,h,tmax,A,b,'FORMULATION',FORMULATION,'VOLUME',VOLUME, ...
+    'maxIteration',15,'convCrit',0.002,'barrierParam',3,'gStepSize',0.00005,'nRebuild',5);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
 
 %% VISUALIZATION __________________________________________________________
 
-% shape-varied mesh 
-df = U*xiStar;                       % displacement field introduced by shape variations
-dd = [df(1:2:end) df(2:2:end)];   % rearrange as two columns matrix
-nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
-svMesh = Mesh(nodes_sv);
-svMesh.create_elements_table(elements,myElementConstructor);
-svMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
-
-% plot the two meshes
-figure('units','normalized','position',[.2 .3 .6 .4],'name','Shape-varied mesh');
-elementPlot = elements(:,1:3); hold on 
-PlotMesh(nodes, elementPlot, 0); 
-v1 = reshape(U*xiStar, 2, []).';
-S = 1;
-hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
-axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
-%%
 % plot the two meshes
 xiPlot = xiStar;
 f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
-elementPlot = elements(:,1:3); hold on 
-PlotMesh(nodes, elementPlot, 0); 
-v1 = reshape(U*xiPlot, 2, []).';
+elementPlot = elements(:,1:4); hold on 
+% PlotMesh(nodes, elementPlot, 0); 
+v1 = reshape(U*xiPlot, 3, []).';
 S = 1;
 hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+L = [Lx,Ly,Lz];
+O = [-Lx,-Ly/2,-Lz/2];
+plotcube(L,O,.05,[0 0 0]);
 axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
 set(f1,'PaperUnits','centimeters');
 set(f1,'PaperPositionMode','auto');

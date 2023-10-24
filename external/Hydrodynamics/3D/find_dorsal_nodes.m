@@ -78,8 +78,7 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matched
         matchedDorsalNodesIdx(i) = allDorsalNodesIdx(ind);
         matchedDorsalNodesZPos(el) = nodes(allDorsalNodesIdx(ind),3);
         dorsalNodesElementsVec(el) = allDorsalNodesIdx(ind);
-        disp(nodes(allDorsalNodesIdx(ind),:))
-
+        
     end
   
 end
