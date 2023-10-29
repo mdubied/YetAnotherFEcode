@@ -132,9 +132,17 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     VTail = V(iDOFs,:);
     UTail = U(iDOFs,:);
 
+    R = [0 -1 0 0 0 0;
+     1 0 0 0 0 0;
+     0 0 0 -1 0 0;
+     0 0 1 0 0 0;
+     0 0 0 0 0 1;
+     0 0 0 0 -1 0];     % 90 degrees rotation counterclock-wise
+
     % tail pressure force: group tail quantities in a struct
     tailProperties.A = A;
     tailProperties.B = B;
+    tailProperties.R = R;
     tailProperties.mTilde = mTilde;
     tailProperties.w = wTail;
     tailProperties.V = VTail;
@@ -151,9 +159,12 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
 
     % drag force (reduced order)
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    % rho = 1000;
-    % tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
-    % dragProperties.tensors = tensors_drag;
+    headNode = find_node_2D(0,0,nodes);
+    headxDOF = 2*headNode-1;
+    VHead = V(headxDOF,:);
+    rho = 1000;
+    tensors_drag = compute_drag_tensors_PROM(PROM_Assembly, skinElements, skinElementFaces, rho,VHead) ;
+    dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
     dragProperties.skinElementFaces = skinElementFaces;
     

@@ -75,7 +75,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
     tic 
     fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
-    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,h,tmax);                        
+    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
     toc
 
     % uTail = zeros(6,tmax/h);

@@ -1,7 +1,7 @@
-% compute_drag_tensors_ROM
+% compute_drag_tensors_PROM
 %
 % Synthax:
-% tensors = compute_drag_tensors_ROM(ROMAssembly, skinElements, skinElementFaces, rho)
+% tensors = compute_drag_tensors_PROM(ROMAssembly, skinElements, skinElementFaces, rho)
 %
 % Description: This function computes the reduced order drag
 % tensors at the global level, by combining (i.e., summing), the
@@ -22,31 +22,41 @@
 % OUTPUTS
 %   tensors: a struct variable with the following fields:     
 %       .Tr3
+%       .Tr4
+%       .Tr5
 %      	.time           computational time
 %     
 %
 % Additional notes:
 %   - List of currently supported elements: TRI3
 %
-% Last modified: 27/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 29/10/2023, Mathieu Dubied, ETH Zurich
 
-function tensors = compute_drag_tensors_ROM(ROMAssembly, skinElements, skinElementFaces, rho, VHead) 
+function tensors = compute_drag_tensors_PROM(PROMAssembly, skinElements, skinElementFaces, rho, VHead) 
 
     t0=tic;
     
-    % data from ROM Assembly
-    nel = ROMAssembly.Mesh.nElements;      % number of elements
-    V = ROMAssembly.V;
+    % data from PROM Assembly
+    nel = PROMAssembly.Mesh.nElements;      % number of elements
+    V = PROMAssembly.V;
     m = size(V,2);                          % size of the ROM
+    md = size(PROMAssembly.U,2);
     
     % compute reduced tensors
     disp(' REDUCED HYDRODYNAMIC TENSORS:')
     fprintf(' Assembling %d elements ...\n', nel)
 
     tic;
-    Tr3 = ROMAssembly.tensor_skin('Te1',[m m m],'weights', skinElements, skinElementFaces, rho, VHead);
-
+    Tr3 = PROMAssembly.tensor_skin('Te1',[m m m],'weights', skinElements, skinElementFaces, rho, VHead);
     fprintf('   3rd order term - Tr3: %.2f s\n',toc)
+
+    tic;
+    Tr4 = PROMAssembly.tensor_skin_4('Te2',[m md m m],'weights', skinElements, skinElementFaces, rho, VHead);
+    fprintf('   4th order term - Tr4: %.2f s\n',toc)
+
+    tic;
+    Tr5 = PROMAssembly.tensor_skin_5('Te3',[m md md m m],'weights', skinElements, skinElementFaces, rho, VHead);
+    fprintf('   5th order term - Tr5: %.2f s\n',toc)
     
     % display time needed for computation
     time = toc(t0);
@@ -54,6 +64,8 @@ function tensors = compute_drag_tensors_ROM(ROMAssembly, skinElements, skinEleme
     
     % store outputs   
     tensors.Tr3 = Tr3;
+    tensors.Tr4 = Tr4;
+    tensors.Tr5 = Tr5;
     tensors.time = time;
 
 end

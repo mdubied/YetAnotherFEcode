@@ -27,7 +27,7 @@
 %     
 % Last modified: 24/10/2023, Mathieu Dubied, ETH Zurich
 
-function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,actuTop,actuBottom,h,tmax)
+function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
 
     % SIMULATION PARAMETERS AND ICs _______________________________________
     eta0 = zeros(size(V,2),1);
@@ -77,6 +77,10 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
         + ttv(ttv(TxV3,qd,3),qd,2) ...
         + ttv(ttv(ttv(TVV4,qd,4),q,3),qd,2));
 
+    % drag force
+    T3 = dragProperties.tensors.Tr3;
+    fDrag = @(qd)  0.5*double(ttv(ttv(T3,qd,3),qd,2));
+
     % NONLINEAR TIME INTEGRATION __________________________________________
     
     % instantiate object for nonlinear time integration
@@ -84,7 +88,7 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     
     % modal nonlinear Residual evaluation function handle
     Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro_PROM(eta,etad,etadd, ...
-        t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,R,x0);
+        t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
 
     % time integration 
     TI_NL_ROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red);

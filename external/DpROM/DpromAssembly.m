@@ -125,7 +125,8 @@ classdef DpromAssembly < ReducedAssembly
             end
         end
 
-        % Hydrodynamic tensors (TRI3) _____________________________________
+        % Spine momentum tensors (TRI3) ___________________________________
+        
         function [T] = tensor_spine_momentum_UV(self,elementMethodName,SIZE,varargin)
             
             T = tenzeros(SIZE);
@@ -309,7 +310,7 @@ classdef DpromAssembly < ReducedAssembly
                       
         end
         
-        % Hydrodynamic tensors (TET3) _____________________________________
+        % Spine momentum tensors (TET3) ___________________________________
         
         function T = tensor_spine_momentum_xx_TET4_PROM(self,elementMethodName,SIZE,varargin)
             
@@ -791,7 +792,75 @@ classdef DpromAssembly < ReducedAssembly
                       
         end
         
-        
+        % Drag tensors ____________________________________________________
+
+        function T = tensor_skin_4(self,elementMethodName,SIZE,varargin)
+                 
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            VHead = inputs{3};
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ue = self.U(index,:);
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
+
+                % augment original tensor for head velocity and reduce it
+                Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                Ter = einsum('iI,ijKL,jJ->IJKL',Ve,double(Te),Ue);
+
+                T = T + Ter;    
+            end
+
+            T = tensor(T);
+            
+        end
+
+        function T = tensor_skin_5(self,elementMethodName,SIZE,varargin)
+                 
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            VHead = inputs{3};
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ue = self.U(index,:);
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
+
+                % augment original tensor for head velocity and reduce it
+                Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                Ter = einsum('iI,ijkLM,jJ,kK->IJKLM',Ve,double(Te),Ue,Ue);
+
+                T = T + Ter;    
+            end
+
+            T = tensor(T);
+            
+        end
         
         % Ancillary functions _____________________________________________
         

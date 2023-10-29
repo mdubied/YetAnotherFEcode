@@ -86,7 +86,7 @@ classdef Tri3Element < ContinuumElement
             end
         end
 
-        function T = Teu2(self, specificFace, rho)
+        function T = Te2(self, specificFace, rho)
             % _____________________________________________________________
             % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
             % the drag force. These forces are acting on the
@@ -95,310 +95,55 @@ classdef Tri3Element < ContinuumElement
             % _____________________________________________________________
 
             if specificFace(1) == 1
-                T = Tu2_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T2_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tu2_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T2_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tu2_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T2_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0                               
                 if specificFace(2) == 1
-                    T = Tu2_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T2_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                    T = Tu2_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T2_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                    T = Tu2_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T2_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
         end
 
-        function T = Teu3(self, specificFace, vwater, rho, c)
+        function T = Te3(self, specificFace, rho)
             % _____________________________________________________________
             % Returns one of the 3rd order tensors stemming from 
             % the drag and the thrust force. These forces are acting on the
             % ``specificFace'' of an element. The forces are divided by 2 
             % and applied to the nodes at of the considered face. 
             % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-
+                      
             if specificFace(1) == 1
-                T = Tu3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             elseif specificFace(1) == 2
-                T = Tu3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             else
-                T = Tu3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tu3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                elseif specificFace(2) == 2
-                    T = Tu3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                else
-                    T = Tu3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-
-        end
-
-        function T = Teudot2(self, specificFace, rho)
-            % _____________________________________________________________
-            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
-            % the drag force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-           
-            if specificFace(1) == 1
-                T = Tudot2_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            elseif specificFace(1) == 2
-                T = Tudot2_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            else
-                T = Tudot2_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            end
-            
-            if specificFace(2) ~= 0
-               
-                if specificFace(2) == 1
-                    T = Tudot2_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                elseif specificFace(2) == 2
-                    T = Tudot2_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                else
-                    T = Tudot2_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                end
-            end
-
-        end
-
-        function T = Teudot3(self, specificFace, vwater, rho, c)
-            % _____________________________________________________________
-            % Returns one of the 2nd order tensors (i.e., a matrix) stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-
-            if specificFace(1) == 1
-                T = Tudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            elseif specificFace(1) == 2
-                T = Tudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            else
-                T = Tudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tudot3_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                elseif specificFace(2) == 2
-                    T = Tudot3_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                else
-                    T = Tudot3_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                end
-            end
-
-        end
-        
-        function T = Teuu3(self, specificFace, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-                   
-            if specificFace(1) == 1
-                T = Tuu3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            elseif specificFace(1) == 2
-                T = Tuu3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            else
-                T = Tuu3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            end
-            
-            if specificFace(2) ~= 0
-                                
-                if specificFace(2) == 1
-                    T = Tuu3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                elseif specificFace(2) == 2
-                    T = Tuu3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                else
-                    T = Tuu3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-        end
-
-        function T = Teuu4(self, specificFace, vwater, rho, c)
-            % _____________________________________________________________
-            % Returns one of the 4th order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            
-            if specificFace(1) == 1
-                T = Tuu4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tuu4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tuu4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tuu4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(2) == 2
-                    T = Tuu4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tuu4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-    
-            T = permute(T,[4 3 1 2]);
-        end
-
-        function T = Teuudot3(self, specificFace, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            
-            if specificFace(1) == 1
-                T = Tuudot3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            elseif specificFace(1) == 2
-                T = Tuudot3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            else
-                T = Tuudot3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                T = T3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
             end
             
             if specificFace(2) ~= 0
                 
                 if specificFace(2) == 1
-                    T = Tuudot3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 elseif specificFace(2) == 2
-                   T = Tuudot3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 else
-                   T = Tuudot3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
+                    T = T3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
                 end
             end
 
-            T = permute(T,[3 1 2]);
+            T = 0.5*permute(T,[3 1 2]);     % 0.5 from Taylor serie
+
         end
 
-        function T = Teuudot4(self, specificFace, vwater, rho, c)
-            % _____________________________________________________________
-            % Returns one of the 4th order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tuudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tuudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tuudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tuudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(2) == 2
-                    T = Tuudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tuudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[4 3 1 2]);
-        end
-
-        function T = Teudotudot3(self, specificFace, rho)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-                        
-            if specificFace(1) == 1
-                T = Tudotudot3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            elseif specificFace(1) == 2
-                T = Tudotudot3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            else
-                T = Tudotudot3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-            end
-            
-            if specificFace(2) ~= 0
-                                
-                if specificFace(2) == 1
-                    T = Tudotudot3_conf1(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                elseif specificFace(2) == 2
-                    T = Tudotudot3_conf2(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                else
-                    T = Tudotudot3_conf3(rho,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));
-                end
-            end
-
-            T = permute(T,[3 1 2]);
-        end
-
-        function T = Teudotudot4(self, specificFace, vwater, rho, c)
-            % _____________________________________________________________
-            % Returns one of the 3rd order tensors stemming from 
-            % the drag and the thrust force. These forces are acting on the
-            % ``specificFace'' of an element. The forces are divided by 2 
-            % and applied to the nodes at of the considered face. 
-            % _____________________________________________________________
-            [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(1));
-            inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-            if specificFace(1) == 1
-                T = Tudotudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-            elseif specificFace(1) == 2
-                T = Tudotudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            else
-                T = Tudotudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-            end
-            
-            if specificFace(2) ~= 0
-                [startNode, endNode, nextNode] = get_node_from_face(self,specificFace(2));
-                inv = normal_vector_inversion(self, self.nodes(startNode,:), self.nodes(endNode,:), self.nodes(nextNode,:));
-                
-                if specificFace(2) == 1
-                    T = Tudotudot4_conf1_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));      
-                elseif specificFace(2) == 2
-                    T = Tudotudot4_conf2_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                else
-                    T = Tudotudot4_conf3_V4(rho,c,vwater(1),vwater(2),inv,self.nodes(1,1),self.nodes(1,2),self.nodes(2,1),self.nodes(2,2),self.nodes(3,1),self.nodes(3,2));   
-                end
-            end
-
-            T = permute(T,[4 3 1 2]);
-        end
         
         % Early stage and test functions
         function F = drag_force_full(self, specificFace, vwater, rho, c, u, ud)

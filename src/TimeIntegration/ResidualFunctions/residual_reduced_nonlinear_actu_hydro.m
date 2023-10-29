@@ -1,4 +1,4 @@
-function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fIntTensors, fActu,fTail,fSpine, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,R,x0)
+function [ r, drdqdd,drdqd,drdq, c0] = residual_reduced_nonlinear_actu_hydro( q, qd, qdd, t, Assembly, fIntTensors, fActu,fTail,fSpine,fDrag, actuTop, actuBottom,actuSignalTop,actuSignalBottom,fTailProp,fSpineProp,fDragProp,R,x0)
 %  RESIDUAL_REDUCED_NONLINEAR In the following function, we construct the residual needed for time integration 
 % of
 % 
@@ -73,7 +73,7 @@ C_V = Assembly.DATA.C; % damping matrix
 % Residual is computed according to the formula above:
 F_inertial = M_V * qdd;
 F_damping = C_V * qd;
-F_ext_V =  fActu(t,q) + fTail(q,qd) + fSpine(q,qd,qdd);
+F_ext_V =  fActu(t,q) + fTail(q,qd) + fSpine(q,qd,qdd) + fDrag(qd);
 r = F_inertial + F_damping + F_V - F_ext_V ;
 
 % Derivatives tail pressure force
@@ -89,11 +89,15 @@ der_tail_pressure = ROM_tail_pressure_derivatives(q,qd,A,B,R,mTilde,w,x0(tailiDO
 % Derivatives spine change in momentum 
 der_spine_momentum = ROM_spine_momentum_derivatives(q,qd,qdd,fSpineProp.tensors);
 
+% Derivatives drag force
+der_drag = ROM_drag_derivatives(qd,fDragProp.tensors);
+
 % Residual derivative
 drdqdd = M_V - der_spine_momentum.dfdqdd;
 
 drdqd = C_V - der_tail_pressure.dfdqd  ...
-            - der_spine_momentum.dfdqd;
+            - der_spine_momentum.dfdq ...
+            - 0.5*der_drag.dfdqd;
 
 drdq = K_V - actuSignalTop(t)*actuTop.B2 ....
            - actuSignalBottom(t)*actuBottom.B2 ...

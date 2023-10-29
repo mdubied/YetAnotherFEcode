@@ -88,7 +88,7 @@ end
 
 % shape variations 
 [thinFish,shortFish,linearTail,longTail,shortTail,linearHead,longHead,shortHead] = shape_variations_2D(nodes,Lx,Ly);
-U = [linearTail,shortHead];
+U = [linearTail];
 
 % plot the two meshes
 xiPlot = ones(size(U,2),1)*0.6;

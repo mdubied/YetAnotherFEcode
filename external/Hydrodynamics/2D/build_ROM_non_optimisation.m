@@ -32,7 +32,7 @@
 %
 % Additional notes: -
 %
-% Last modified: 10/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 27/10/2023, Mathieu Dubied, ETH Zürich
 
 function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
@@ -153,8 +153,11 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
 
     % drag force (reduced order)
     [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
+    headNode = find_node_2D(0,0,nodes);
+    headxDOF = 2*headNode-1;
+    VHead = V(headxDOF,:);
     rho = 1000;
-    tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
+    tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
     dragProperties.skinElementFaces = skinElementFaces;

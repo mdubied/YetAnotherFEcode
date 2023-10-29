@@ -42,11 +42,11 @@ xi1 = 0.2;
 % nominal mesh
 switch upper( whichModel )
     case 'ABAQUS'
-        filename = '2d_rectangle_120el';%'naca0012_76el_2';
+        filename = 'naca0012_76el_2';
         [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 end
 
-nodes = 0.01*nodes;
+nodes = nodes;
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -88,7 +88,7 @@ mTilde = 10;
 
 % time step for integration
 h = 0.01;
-tmax = 1; 
+tmax = 2.0; 
 
 % initial condition: equilibrium
 fprintf('solver')
@@ -103,13 +103,13 @@ B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
-k=10;
+k=1;
 
-actuSignalT = @(t) k/2*(1-(1+0.1*sin(t*2*pi)));    % to change below as well if needed
-actuSignalB = @(t) k/2*(1-(1-0.1*sin(t*2*pi)));
+actuSignalT = @(t) k/2*(1-(1+0.02*sin(t*2*pi)));    % to change below as well if needed
+actuSignalB = @(t) k/2*(1-(1-0.02*sin(t*2*pi)));
 
-fActu = @(t,q)  k/2*(1-(1+0.1*sin(t*2*pi)))*(B1T+B2T*q) + ...
-                k/2*(1-(1-0.1*sin(t*2*pi)))*(B1B+B2B*q);
+fActu = @(t,q)  k/2*(1-(1+0.02*sin(t*2*pi)))*(B1T+B2T*q) + ...
+                k/2*(1-(1-0.02*sin(t*2*pi)))*(B1B+B2B*q);
 
 % tail pressure force 
 A = tailProp.A;
@@ -148,12 +148,16 @@ fSpine = @(q,qd,qdd) double(Txx)*qdd ...
     + ttv(ttv(TxV,qd,3),qd,2) ...
     + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
 
+% drag force
+T3 = dragProp.tensors.Tr3;
+fDrag = @(qd)  0.5*double(ttv(ttv(T3,qd,3),qd,2));
+
 % instantiate object for nonlinear time integration
 TI_NL_ROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,tensors_ROM,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,x0);
+    qdd,t,ROM_Assembly,tensors_ROM,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,dragProp,R,x0);
 
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
