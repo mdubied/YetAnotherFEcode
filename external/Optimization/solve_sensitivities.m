@@ -1,7 +1,7 @@
 % solve_sensitivities
 %
 % Synthax:
-% TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,etaSol,etadSol,etaddSol,h,tmax)
+% TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,etaSol,etadSol,etaddSol,h,tmax)
 %
 % Description: Computes the solutions for the sensitivity S for [0,tmax] 
 % for a given PROM assembly, xi_k, and time step h
@@ -31,9 +31,11 @@
 %                           information
 %     
 %
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 29/10/2023, Mathieu Dubied, ETH Zurich
 
-function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,etaSol,etadSol,etaddSol,h,tmax)        
+function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,etaSol,etadSol,etaddSol,h,tmax)        
+
+    fishDim = size(PROM_Assembly.Mesh.nodes,2);
 
     % SIMULATION PARAMETERS AND ICs _______________________________________
     s0 = zeros(size(V,2),size(xi_k,1));
@@ -59,19 +61,32 @@ function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailPro
     wTail = tailProperties.w;
     VTail = tailProperties.V;
     UTail = tailProperties.U;
-    mTilde = tailProperties.mTilde;
     nodes = PROM_Assembly.Mesh.nodes;
     iDOFs = tailProperties.iDOFs;
-    z0 = tailProperties.z;
-    Uz = tailProperties.Uz;
+    
     x0 = reshape(nodes.',[],1);     % initial node position expressed in the ROM
     xi=zeros(size(PROM_Assembly.U,2),1);
 
-    pd_tail = @(eta,etad) PROM_tail_pressure_derivatives_TET4(eta,etad,A,B,R,wTail,x0(iDOFs),xi,VTail,UTail,z0,Uz);
+    if fishDim == 3
+        z0 = tailProperties.z;
+        Uz = tailProperties.Uz;
+        pd_tail = @(eta,etad) PROM_tail_pressure_derivatives_TET4(eta,etad,A,B,R,wTail,x0(iDOFs),xi,VTail,UTail,z0,Uz);
+    else 
+        mTilde = tailProperties.mTilde;
+        pd_tail = @(eta,etad) PROM_tail_pressure_derivatives(eta,etad,A,B,R,mTilde,wTail,x0(iDOFs),xi,VTail,UTail);                                                           
+    end
 
     % spine change in momentum
     spineTensors = spineProperties.tensors;
-    pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives_TET4(eta,etad,etadd,xi,spineTensors);
+    if fishDim == 3
+        pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives_TET4(eta,etad,etadd,xi,spineTensors);
+    else
+        pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives(eta,etad,etadd,xi,spineTensors);
+    end
+
+    % drag force
+    dragTensors = dragProperties.tensors;
+    pd_drag = @(etad) PROM_drag_derivatives(etad,xi,dragTensors);
     
     % TIME INTEGRATION ____________________________________________________
     
@@ -81,7 +96,7 @@ function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailPro
     % residual function handle
     Residual_sens = @(s,sd,sdd,t)residual_linear_sens(s,sd,sdd,t,PROM_Assembly, ...
         etaSol,etadSol,etaddSol, ...
-        pd_fint,pd_tail,pd_spine,pd_actuTop,pd_actuBottom, ...
+        pd_fint,pd_tail,pd_spine,pd_drag,pd_actuTop,pd_actuBottom, ...
         actuSignalT,actuSignalB,h);
 
     % time integration

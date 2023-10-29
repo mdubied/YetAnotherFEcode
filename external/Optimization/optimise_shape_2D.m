@@ -78,17 +78,28 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
     TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
     toc
 
-    % uTail = zeros(6,tmax/h);
-    % for a=1:tmax/h-2
-    %     uTail(:,a) = tailProperties.V*TI_NL_PROM.Solution.q(:,a);
-    % end
-    % 
-    % figure
-    % plot(uTail(1,:))
-    % hold on
-    % plot(uTail(3,:))
-    % plot(uTail(5,:))
-    % hold off
+    uTail = zeros(2,tmax/h);
+    timePlot = linspace(0,tmax-h,tmax/h);
+    x0Tail = nodes(tailProperties.tailNode,1);
+    for a=1:tmax/h
+        uTail(:,a) = V(tailProperties.tailNode*2-1:tailProperties.tailNode*2,:)*TI_NL_PROM.Solution.q(:,a);
+    end
+
+    figure
+    subplot(2,1,1);
+    plot(timePlot,x0Tail+uTail(1,:),'DisplayName','k=0')
+    hold on
+    xlabel('Time [s]')
+    ylabel('x-position tail node')
+    legend('Location','northwest')
+
+    subplot(2,1,2);
+    plot(timePlot,uTail(2,:),'DisplayName','k=0')
+    hold on
+    xlabel('Time [s]')
+    ylabel('y-position tail node')
+    legend('Location','southwest')
+    drawnow
 
 
     % Solve sensitivity equation 
@@ -96,7 +107,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Solving sensitivity...\n') 
     TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly, ...
-       tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom, ...
+       tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
        TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
        h,tmax);
     toc
@@ -119,8 +130,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
-    dr = reduced_constant_vector(d,V);
-    Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam);  
+    dr = d;%reduced_constant_vector(d,V);      
+    Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam,V);  
     LrEvo = Lr;
 
     for k = 1:maxIteration
@@ -155,7 +166,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
             tic 
             fprintf('____________________\n')
             fprintf('Solving EoMs...\n') 
-            TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,h,tmax);
+            TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);
             toc
                 
             eta_k = TI_NL_PROM.Solution.q;
@@ -169,7 +180,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
             fprintf('____________________\n')
             fprintf('Solving sensitivity...\n') 
             TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly, ...
-               tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom, ...
+               tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
                TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
                h,tmax);
             toc 
@@ -194,8 +205,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset,node
         % compute cost function and its gradient
         fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n') 
-        nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta_k,etad_k,etadd_k,xiRebuild_k,xi_k,dr,A,b,barrierParam)];
+        nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam,V);
+        LrEvo = [LrEvo, reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam,V)];
         
         % update optimal parameter
         fprintf('____________________\n')

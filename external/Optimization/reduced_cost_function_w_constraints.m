@@ -31,7 +31,7 @@
 %
 % Last modified: 19/10/2023, Mathieu Dubied, ETH Zurich
 
-function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild,xi,dr,AConstraint,bConstraint,barrierParam)
+function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild,xi,dr,AConstraint,bConstraint,barrierParam,V)
     Lr = 0;
     nConstraints = size(bConstraint);
 
@@ -68,13 +68,16 @@ function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperti
    
     LwoB = 0;
     
-    for t=N-100:N-2
+    xDir = zeros(size(V,1),1);
+    xDir(1:2:end) = 1;
+
+    for t=1:N-2
         eta_i = eta(:,t);
         etad_i = etad(:,t);
         etadd_i = etadd(:,t);
 
         % evaluate total hydrodynamic force
-        fhydro = fTail(eta_i,etad_i) + fSpine(eta_i,etad_i,etadd_i);
+        % fhydro = fTail(eta_i,etad_i) + fSpine(eta_i,etad_i,etadd_i);
         
         % constraints (log barriers) to be included in the cost function
         logBarrierInTimeStep = 0;
@@ -85,11 +88,13 @@ function Lr = reduced_cost_function_w_constraints(N,tailProperties,spineProperti
         end
 
         % final cost function at time step t
-        Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
+        % Lr = Lr - dr'*fhydro + logBarrierInTimeStep;
         %Lr = [Lr, -dr'*fhydro + logBarrierInTimeStep];
-        LwoB = LwoB -dr'*fhydro;
+        % LwoB = LwoB -dr'*fhydro;
         % Lr = Lr - [1;0;1;0;1;0].'*VTail*eta(:,t) + logBarrierInTimeStep;
         % LwoB = Lr - [1;0;1;0;1;0].'*VTail*eta(:,t);
+        Lr = Lr - xDir.'*V*eta_i + logBarrierInTimeStep;
+        LwoB = LwoB - xDir.'*V*eta_i;
     end
 
     % print cost function without part stemming from barrier functions

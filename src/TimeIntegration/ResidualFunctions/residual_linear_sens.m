@@ -24,10 +24,10 @@
 %                                   residual and its partial derivatives
 %     
 %
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 29/10/2023, Mathieu Dubied, ETH Zürich
 function [r, drdsdd, drdsd, drds] = ...
 residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
-        pd_fint,pd_tail,pd_spine,pd_actuTop,pd_actuBottom, ...
+        pd_fint,pd_tail,pd_spine,pd_drag,pd_actuTop,pd_actuBottom, ...
         actuSignalTop,actuSignalBottom,h)
     
     % compute current time step
@@ -52,6 +52,7 @@ residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
     der_fint = pd_fint(qsolIt);
     der_tail = pd_tail(qsolIt,qdsolIt);
     der_spine = pd_spine(qsolIt,qdsolIt,qddsolIt);
+    der_drag = pd_drag(qdsolIt);
     der_actuTop = pd_actuTop(aTop);
     der_actuBottom = pd_actuBottom(aBottom);
 
@@ -79,6 +80,10 @@ residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
     dfSpinedqdd = der_spine.dfdqdd;
     dfSpinedp = der_spine.dfdp;
 
+    % drag force
+    dfDragdqd = der_drag.dfdqd;
+    dfDragdp = der_drag.dfdp;
+
     % actuation forces
     dfactTopdq = der_actuTop.dfdq;
     dfactTopdp = der_actuTop.dfdp;
@@ -89,10 +94,11 @@ residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
     r =  double(ttv(tensor(dMdp),qddsolIt,2)) + M*sdd + C*sd + K*s + dfintdq*s + dfintdp ...
         - dfTaildq*s - dfTaildqd*sd -dfTaildp ...
         - dfSpinedq*s -dfSpinedqd*sd - dfSpinedqdd*sdd -dfSpinedp ...
+        - dfDragdqd*sd - dfDragdp ...
         - dfactTopdq*s -dfactTopdp - dfactBottomdq*s - dfactBottomdp;
    
     drdsdd = M - dfSpinedqdd;
-    drdsd = C - dfTaildqd - dfSpinedqd;
+    drdsd = C - dfTaildqd - dfSpinedqd - dfDragdqd;
     drds = K + dfintdq - dfTaildq - dfSpinedq - dfactTopdq - dfactBottomdq ;
       
 end

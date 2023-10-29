@@ -66,6 +66,7 @@ for el=1:nel
         end
     end   
 end
+
 % for l=1:length(nset)
 %     MeshNominal.set_essential_boundary_condition([nset{l}],2,0)   %
 %     fixed head
@@ -88,7 +89,7 @@ end
 
 % shape variations 
 [thinFish,shortFish,linearTail,longTail,shortTail,linearHead,longHead,shortHead] = shape_variations_2D(nodes,Lx,Ly);
-U = [linearTail];
+U = thinFish;
 
 % plot the two meshes
 xiPlot = ones(size(U,2),1)*0.6;
@@ -104,24 +105,48 @@ set(f1,'PaperPositionMode','auto');
 % set(f1,'PaperSize',[10 3.5]); % Canvas Size
 set(f1,'Units','centimeters');
 % 
+%%
+xiFinal = [0.5];
+df = U*xiFinal;                       % displacement field introduced by shape variations
+dd = [df(1:2:end) df(2:2:end)];   % rearrange as two columns matrix
+nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
+svMesh = Mesh(nodes_sv);
+svMesh.create_elements_table(elements,myElementConstructor);
 
-
+%%
+% plot the two meshes
+xiPlot = xiFinal;
+f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
+elementPlot = elements(:,1:3); hold on 
+PlotMesh(nodes, elementPlot, 0); 
+v1 = reshape(U*xiPlot, 2, []).';
+S = 1;
+hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
+set(f1,'PaperUnits','centimeters');
+set(f1,'PaperPositionMode','auto');
+% set(f1,'PaperSize',[10 3.5]); % Canvas Size
+set(f1,'Units','centimeters');
+% 
 
 %% OPTIMIZATION PARAMETERS
 dSwim = [1;0]; %swimming direction
 h = 0.01;
-tmax = 2.0;
+tmax = 1.5;
 
 %% OPTIMISATION TEST 1 ____________________________________________________
-A = [1 0;
-    -1 0;
-    0 1;
-    0 -1];
-b = [0.2;0.2;0.2;0.2];
+% A = [1 0;
+%     -1 0;
+%     0 1;
+%     0 -1];
+% b = [0.2;0.2;0.2;0.2];
+A = [1;
+    -1];
+b = [0.2;0.2];
 
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_2D(myElementConstructor,nset, ...
-    nodes,elements,U,dSwim,h,tmax,A,b,'maxIteration',15,'convCrit',0.002,'barrierParam',100,'gStepSize',0.01,'nRebuild',3);
+    nodes_sv,elements,U,dSwim,h,tmax,A,b,'maxIteration',15,'convCrit',0.002,'barrierParam',100,'gStepSize', 1e-60,'nRebuild',3);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
@@ -197,7 +222,7 @@ ylabel('Iterations')
 
 
 %% COST COMPUTATION ON FINAL ROM __________________________________________
-%xiStar4 = [0.2;0.1;0.5;0.2;0.1]
+xiStar = [0.2;0.2]
 xiFinal = xiStar;
 
 % tmax=4;

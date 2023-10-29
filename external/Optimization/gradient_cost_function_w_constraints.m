@@ -30,7 +30,7 @@
 %
 % Last modified: 15/10/2023, Mathieu Dubied, ETH Zürich
 
-function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,x0,eta,etad,etadd,s,sd,sdd,tailProperties,spineProperties,AConstraint,bConstraint,barrierParam)
+function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,x0,eta,etad,etadd,s,sd,sdd,tailProperties,spineProperties,AConstraint,bConstraint,barrierParam,V)
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
     nConstraints = size(bConstraint);
@@ -54,37 +54,58 @@ function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,x0,eta,e
    
     % spine change in momentum
     tensorsSpine = spineProperties.tensors;
-    
-    for t=N-100:N 
-        % tail pressure force
-        derTail = PROM_tail_pressure_derivatives(eta(:,t),etad(:,t),A,B,R,mTilde,wTail,x0Tail,xiRebuild,VTail,UTail); 
-        dfTaildq = derTail.dfdq;               
-        dfTaildqd = derTail.dfdqd;
-        dfTaildp = derTail.dfdp;
 
-        % spine change in momentum
-        derSpine = PROM_spine_momentum_derivatives(eta(:,t),etad(:,t),etadd(:,t),xiRebuild,tensorsSpine);        
-        dfSpinedq = derSpine.dfdq;  
-        dfSpinedqd = derSpine.dfdqd;
-        dfSpinedqdd = derSpine.dfdqdd;
-        dfSpinedp = derSpine.dfdp;
+
+    xDir = zeros(size(V,1),1);
+    xDir(1:2:end) = 1;
+    
+    for t=1:N-2 
+        % tail pressure force
+        % derTail = PROM_tail_pressure_derivatives(eta(:,t),etad(:,t),A,B,R,mTilde,wTail,x0Tail,xiRebuild,VTail,UTail); 
+        % dfTaildq = derTail.dfdq;               
+        % dfTaildqd = derTail.dfdqd;
+        % dfTaildp = derTail.dfdp;
+        % 
+        % % spine change in momentum
+        % derSpine = PROM_spine_momentum_derivatives(eta(:,t),etad(:,t),etadd(:,t),xiRebuild,tensorsSpine);        
+        % dfSpinedq = derSpine.dfdq;  
+        % dfSpinedqd = derSpine.dfdqd;
+        % dfSpinedqdd = derSpine.dfdqdd;
+        % dfSpinedp = derSpine.dfdp;
 
         % get gradient dfdxi_i (dfdp_i)         
+        % if size(xi,1)>1
+        %     s = double(s);
+        %     sd = double(sd);
+        %     sdd = double(sdd);
+        %     dfdxi_i = dfTaildp + dfTaildq*s(:,:,t) + dfTaildqd*sd(:,:,t) ...
+        %             + dfSpinedp + dfSpinedq*s(:,:,t) ...
+        %             + dfSpinedqd*sd(:,:,t) + dfSpinedqdd*sdd(:,:,t); 
+        %     % dLdxi_i = -[1;0;1;0;1;0].'*VTail*s(:,:,t);
+        % 
+        % else
+        %     dfdxi_i = dfTaildp + dfTaildq*s(:,t) + dfTaildqd*sd(:,t) ...
+        %             + dfSpinedp + dfSpinedq*s(:,t) ...
+        %             + dfSpinedqd*sd(:,t) + dfSpinedqdd*sdd(:,t); 
+        % 
+        %     % dLdxi_i = -[1;0;1;0;1;0].'*VTail*s(:,t);
+        % end
+
         if size(xi,1)>1
             s = double(s);
-            sd = double(sd);
-            sdd = double(sdd);
-            dfdxi_i = dfTaildp + dfTaildq*s(:,:,t) + dfTaildqd*sd(:,:,t) ...
-                    + dfSpinedp + dfSpinedq*s(:,:,t) ...
-                    + dfSpinedqd*sd(:,:,t) + dfSpinedqdd*sdd(:,:,t); 
-            % dLdxi_i = -[1;0;1;0;1;0].'*VTail*s(:,:,t);
+            % sd = double(sd);
+            % sdd = double(sdd);
+            % dfdxi_i = dfTaildp + dfTaildq*s(:,:,t) + dfTaildqd*sd(:,:,t) ...
+            %         + dfSpinedp + dfSpinedq*s(:,:,t) ...
+            %         + dfSpinedqd*sd(:,:,t) + dfSpinedqdd*sdd(:,:,t); 
+            dLdxi_i = -xDir.'*V*s(:,:,t);
 
         else
-            dfdxi_i = dfTaildp + dfTaildq*s(:,t) + dfTaildqd*sd(:,t) ...
-                    + dfSpinedp + dfSpinedq*s(:,t) ...
-                    + dfSpinedqd*sd(:,t) + dfSpinedqdd*sdd(:,t); 
+            % dfdxi_i = dfTaildp + dfTaildq*s(:,t) + dfTaildqd*sd(:,t) ...
+            %         + dfSpinedp + dfSpinedq*s(:,t) ...
+            %         + dfSpinedqd*sd(:,t) + dfSpinedqdd*sdd(:,t); 
 
-            % dLdxi_i = -[1;0;1;0;1;0].'*VTail*s(:,t);
+            dLdxi_i = -xDir.'*V*s(:,t);
         end
         
         
@@ -97,8 +118,9 @@ function nablaLr = gradient_cost_function_w_constraints(dr,xiRebuild,xi,x0,eta,e
         
 
         % final gradient
-        nablaLr = nablaLr - (dr.'*dfdxi_i).' + logBarrierDInTimeStep;
+        % nablaLr = nablaLr - (dr.'*dfdxi_i).' + logBarrierDInTimeStep;
         % nablaLr = nablaLr - dLdxi_i + logBarrierDInTimeStep;
+        nablaLr = nablaLr + dLdxi_i' + logBarrierDInTimeStep;
     end  
   
 end
