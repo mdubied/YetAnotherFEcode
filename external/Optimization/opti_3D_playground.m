@@ -39,6 +39,7 @@ filename = '3d_rectangle_660el';%'fish3_664el';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 
 nodes = nodes*0.01;
+nodes(:,2)=0.8*nodes(:,2);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -90,7 +91,7 @@ a = Lx*0.3;
 b = Lz*0.5;
 nodes_ellipse = nodes;
 zDif = zeros(size(nodes,1),1);
-for n = 1:size(nodes,1)
+for n = 1:size(nodes,1) 
     if nodes(n,1) <= elCenter(1)
         nodes_ellipse(n,:) = [nodes(n,1), nodes(n,2), sign(nodes(n,3)).*b/a.*sqrt(a^2-(nodes(n,1)-elCenter(1)).^2)];    % projection on ellipse
         zDif(n) = (nodes_ellipse(n,3) - max(nodes(:,3)).*sign(nodes(n,3))).*abs(nodes(n,3))/(Lz*0.5);       % z-difference projection vs nominal
@@ -116,10 +117,10 @@ fishHeadsv(3:3:end) = real(zDif);
 
 
 % shape variations basis
-U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
+U = [thinFish,smallFish];    % shape variations basis
 
 % plot the two meshes
-xiPlot = [0.6;-0.6;0.4];
+xiPlot = [0.4;-0.32];
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 % PlotMesh(nodes, elementPlot, 0); 
@@ -142,21 +143,30 @@ set(f1,'Units','centimeters');
 %% OPTIMIZATION PARAMETERS
 dSwim = [1;0;0]; %swimming direction
 h = 0.01;
-tmax = 1.0;
+tmax = 1.5;
 
 %% OPTIMISATION TEST 1 ____________________________________________________
-A = [1 0 0 ;
-    -1 0 0;
-    0 1 0;
-    0 -1 0;
-    0 0 1;
-    0 0 -1];
-b = [0.6;0.6;0.6;0.6;0.6;0.6];
-% A = [1 0;
-%     -1 0;
-%     0 1;
-%     0 -1];
-% b = [0.2;0.2;0.2;0.2];
+% A = [1 0 0 0;
+%     -1 0 0 0;
+%     0 1 0 0;
+%     0 -1 0 0;
+%     0 0 1 0;
+%     0 0 -1 0;
+%     0 0 0 1;
+%     0 0 0 -1];
+% b = [0.6;0.6;0.6;0.6;0.6;0.6;0.6;0.6];
+% A = [1 0 0 ;
+%     -1 0 0;
+%     0 1 0;
+%     0 -1 0;
+%     0 0 1;
+%     0 0 -1];
+% b = [0.6;0.6;0.6;0.6;0.6;0.6];
+A = [1 0;
+    -1 0;
+    0 1;
+    0 -1];
+b = [0.6;0.6;0.6;0.6];
 % A = [1;
 %     -1];
 % b = [0.2;0.2];
@@ -164,7 +174,7 @@ b = [0.6;0.6;0.6;0.6;0.6;0.6];
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,dSwim,h,tmax,A,b,'FORMULATION',FORMULATION,'VOLUME',VOLUME, ...
-    'maxIteration',22,'convCrit',0.002,'barrierParam',2,'gStepSize',0.00005,'nRebuild',5);
+    'maxIteration',22,'convCrit',0.002,'barrierParam',2,'gStepSize',0.0001,'nRebuild',5);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
@@ -172,7 +182,7 @@ fprintf('Computation time: %.2fmin\n',topti/60)
 %% VISUALIZATION __________________________________________________________
 
 % plot the two meshes
-xiPlot = xiStar;
+xiPlot = 5*xiStar;
 f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 % PlotMesh(nodes, elementPlot, 0); 

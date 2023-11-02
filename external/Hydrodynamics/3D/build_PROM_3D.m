@@ -88,7 +88,9 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [m1 m2 VMn MDn DS];
+    mSingle = [0 0 1];
+    m3 = repmat(mSingle,1,nNodes)';
+    V  = [m1 m2 m3 VMn MDn DS];
     V  = orth(V);
 
     % % plot
@@ -178,10 +180,14 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     spineProperties.zPos = matchedDorsalNodesZPos;
 
     % drag force (reduced order)
-    [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    % rho = 1000;
-    % tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
-    % dragProperties.tensors = tensors_drag;
+    [~,~,skinElements, skinElementFaces] = getSkin3D(elements);
+    headNode = find_node(0,0,0,nodes);
+    headxDOF = 3*headNode-2;
+    VHead = V(headxDOF,:);
+    rho = 1000;
+    kFactor = 1;
+    tensors_drag = compute_drag_tensors_PROM(PROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
+    dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
     dragProperties.skinElementFaces = skinElementFaces;
     

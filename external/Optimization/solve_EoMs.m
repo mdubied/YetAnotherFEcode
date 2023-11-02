@@ -43,7 +43,7 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=4; % k=400 for 3D
+    k=400; % k=400 for 3D
     
     actuSignalT = @(t) k/2*(1-(1+0.2*sin(t*2*pi)));    % to change below as well if needed
     actuSignalB = @(t) k/2*(1-(1-0.2*sin(t*2*pi)));

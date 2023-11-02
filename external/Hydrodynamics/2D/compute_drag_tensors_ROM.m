@@ -26,7 +26,7 @@
 %     
 %
 % Additional notes:
-%   - List of currently supported elements: TRI3
+%   - List of currently supported elements: TRI3, TET4
 %
 % Last modified: 27/10/2023, Mathieu Dubied, ETH Zurich
 

@@ -37,7 +37,7 @@
 % (3) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 22/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 30/10/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 
@@ -75,7 +75,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     tic 
     fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
-    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,h,tmax);                        
+    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
     toc
 
     uTail = zeros(3,tmax/h);
@@ -106,7 +106,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Solving sensitivity...\n') 
     TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly, ...
-       tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom, ...
+       tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
        TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
        h,tmax);
     toc
@@ -165,7 +165,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             tic 
             fprintf('____________________\n')
             fprintf('Solving EoMs...\n') 
-            TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom,h,tmax);
+            TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);
             toc
                 
             eta_k = TI_NL_PROM.Solution.q;
@@ -193,7 +193,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             fprintf('____________________\n')
             fprintf('Solving sensitivity...\n') 
             TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly, ...
-               tensors_PROM,tailProperties,spineProperties,actuTop,actuBottom, ...
+               tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
                TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
                h,tmax);
             toc 

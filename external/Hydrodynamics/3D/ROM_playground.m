@@ -145,14 +145,16 @@ fSpine = @(q,qd,qdd) double(Txx)*qdd ...
     + ttv(ttv(TxV,qd,3),qd,2) ...
     + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
 
-% fHydro = @(q,qd)  VTail.'*[0;-1;0;-1;0;-1]*0.2;
+% drag force
+T3 = dragProp.tensors.Tr3;
+fDrag = @(qd)  double(ttv(ttv(T3,qd,3),qd,2));
 
 % instantiate object for nonlinear time integration
 TI_NL_ROM = ImplicitNewmark('timestep',h1,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
 
 % modal nonlinear Residual evaluation function handle
 Residual_NL_red = @(q,qd,qdd,t)residual_reduced_nonlinear_actu_hydro(q,qd, ...
-    qdd,t,ROM_Assembly,tensors_ROM,fActu,fTail,fSpine,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,R,x0);
+    qdd,t,ROM_Assembly,tensors_ROM,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProp,spineProp,dragProp,R,x0);
   
 % nonlinear Time Integration
 TI_NL_ROM.Integrate(q0,qd0,qdd0,tmax,Residual_NL_red);
@@ -170,6 +172,7 @@ initialPosFOM = reshape(nodes.',[],1);
 figure(Position=[300,150,300,300])
 plot(initialPosFOM(tailNode*3-2)+TI_NL_ROM.Solution.u(tailNode*3-2,:))
 title('tail x position')
+
 figure(Position=[700,150,300,300])
 plot(TI_NL_ROM.Solution.ud(tailNode*3-2,:))
 title('tail x velocity')

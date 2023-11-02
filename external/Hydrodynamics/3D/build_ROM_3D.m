@@ -171,15 +171,18 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     spineProperties.dorsalNodeIdx = matchedDorsalNodesIdx;
     spineProperties.zPos = matchedDorsalNodesZPos;
      
-    % % drag force (reduced order)
-    % [~,~,skinElements, skinElementFaces] = getSkin2D(elements);
-    % rho = 1000;
-    % tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, rho) ;
-    % dragProperties.tensors = tensors_drag;
-    % dragProperties.skinElements = skinElements;
-    % dragProperties.skinElementFaces = skinElementFaces;
-    % 
-    % 
+    % drag force (reduced order)
+    [~,~,skinElements, skinElementFaces] = getSkin3D(elements);
+    headNode = find_node(0,0,0,nodes);
+    headxDOF = 3*headNode-2;
+    VHead = V(headxDOF,:);
+    rho = 1000;
+    kFactor = 0.5;
+    tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
+    dragProperties.tensors = tensors_drag;
+    dragProperties.skinElements = skinElements;
+    dragProperties.skinElementFaces = skinElementFaces;
+
     % ACTUATION FORCES ____________________________________________________
     if ACTUATION
         Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
@@ -213,8 +216,5 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
         actuTop = 0;
         actuBottom = 0;
     end
-
-    dragProperties = 0;
-
 
 end 
