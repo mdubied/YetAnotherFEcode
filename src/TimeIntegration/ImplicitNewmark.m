@@ -18,6 +18,7 @@ classdef ImplicitNewmark < handle
         NROpt = 3       % Maximum no. of N-R Iterations
         linear = false  % whether system is linear or not
         sens = false    % whether Implicit Newmark is used to solve a sensitivity ODE or not 
+        sensCombined = false    % solve the sensitivities in combination with the EoMs
     end
     
     methods
@@ -37,6 +38,7 @@ classdef ImplicitNewmark < handle
                 {'numeric'},{'nonempty'}) );
             addParameter(p,'ATS', TI.ATS, @(x)validateattributes(x,{'logical'},{'nonempty'}));
             addParameter(p,'sens', TI.sens, @(x)validateattributes(x,{'logical'},{'nonempty'}));
+            addParameter(p,'sensCombined', TI.sensCombined, @(x)validateattributes(x,{'logical'},{'nonempty'}));
             
             parse(p,varargin{:});
             
@@ -71,7 +73,10 @@ classdef ImplicitNewmark < handle
             qdd_old = xdd0;
             NR = 0;
             R = 0;
-            i = 1;            
+            i = 1;
+
+            % sensitivity if solved in the combined set up
+
             
             while t < tmax
                 t = t+obj.h;
@@ -79,95 +84,78 @@ classdef ImplicitNewmark < handle
                 [q_new,qd_new,qdd_new] = obj.Prediction(q_old,qd_old,qdd_old);                
                 
                 it = -1; % iteration counter
-                if obj.sens
-                    %% sensitivity - linear case
+                
+                %% linear case
+                if obj.linear 
                     it = it + 1; 
-                        [r, drdqdd, drdqd, drdq] = Residual(q_new,qd_new,qdd_new,t);
-                        S = drdqdd + obj.gamma * obj.h * drdqd + obj.beta * obj.h^2 * drdq;
-                        Da = -S\r;
-                        [q_new,qd_new,qdd_new] = obj.Correction(q_new,qd_new,qdd_new,Da);
-                        epsilon = 0;
-                else
-                    %% linear case
-                    if obj.linear 
-                        it = it + 1; 
-                        [r, drdqdd, drdqd, drdq] = Residual(q_new,qd_new,qdd_new,t);
-                        S = drdqdd + obj.gamma * obj.h * drdqd + obj.beta * obj.h^2 * drdq;
-                        Da = -S\r;
-                        [q_new,qd_new,qdd_new] = obj.Correction(q_new,qd_new,qdd_new,Da);
-                        epsilon = 0;
-                    %% Nonlinear case    
-                    else 
-                        %% Newton-Raphson iterations
-                        while true                         
-                            it = it + 1;
-                            
-                            %% Compute Residual and Tangent operators
-                            [r, drdqdd, drdqd, drdq, c0] = Residual(q_new,qd_new,qdd_new,t);                        
-                            
-                            %% Check convergence
-                            epsilon = norm(r)/c0;
-                            if it>cast(0.9*obj.MaxNRit,'int16')
-                                disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
-                            end
-                            if (epsilon<obj.tol)  % Error < Tolerance : break
-                                break;
-                            else % Error >= Tolerance : perform correction
-                                S = drdqdd + obj.gamma * obj.h * drdqd + obj.beta * obj.h^2 * drdq;
-                                Da = -S\r;
-                                [q_new,qd_new,qdd_new] = obj.Correction(q_new,qd_new,qdd_new,Da);
-                            end
-                            
-                            %% Adapt time step to maintain an optimal number (obj.NROpt) of N-R iterations 
-                            if obj.h > obj.hmin && obj.ATS
-                                obj.h = max(obj.h*obj.NROpt/it, obj.hmin);
-                            end
-                            
-                            %% When too many iterations
-                            if (it > obj.MaxNRit)
-                                warning('Max N-R iterations reached')                            
-                                if  epsilon > 1 
-                                    disp('Exiting time integration: Too high a residual')
-                                    soltime=toc;
-                                    obj.Solution.time = time;
-                                    obj.Solution.q = q;
-                                    obj.Solution.qd = qd;
-                                    obj.Solution.qdd = qdd;
-                                    obj.Solution.NR = NR;
-                                    obj.Solution.R = R;
-                                    obj.Solution.soltime = soltime;
-                                    return
-                                else
-                                    disp('Continuing iterations anyway since the residual is low')                            
-                                end
-                            end                    
-    
+                    [r, drdqdd, drdqd, drdq] = Residual(q_new,qd_new,qdd_new,t);
+                    S = drdqdd + obj.gamma * obj.h * drdqd + obj.beta * obj.h^2 * drdq;
+                    Da = -S\r;
+                    [q_new,qd_new,qdd_new] = obj.Correction(q_new,qd_new,qdd_new,Da);
+                    epsilon = 0;
+                %% Nonlinear case    
+                else 
+                    %% Newton-Raphson iterations
+                    while true                         
+                        it = it + 1;
+                        
+                        %% Compute Residual and Tangent operators
+                        [r, drdqdd, drdqd, drdq, c0] = Residual(q_new,qd_new,qdd_new,t);                        
+                        
+                        %% Check convergence
+                        epsilon = norm(r)/c0;
+                        if it>cast(0.9*obj.MaxNRit,'int16')
+                            disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
                         end
+                        if (epsilon<obj.tol)  % Error < Tolerance : break
+                            break;
+                        else % Error >= Tolerance : perform correction
+                            S = drdqdd + obj.gamma * obj.h * drdqd + obj.beta * obj.h^2 * drdq;
+                            Da = -S\r;
+                            [q_new,qd_new,qdd_new] = obj.Correction(q_new,qd_new,qdd_new,Da);
+                        end
+                        
+                        %% Adapt time step to maintain an optimal number (obj.NROpt) of N-R iterations 
+                        if obj.h > obj.hmin && obj.ATS
+                            obj.h = max(obj.h*obj.NROpt/it, obj.hmin);
+                        end
+                        
+                        %% When too many iterations
+                        if (it > obj.MaxNRit)
+                            warning('Max N-R iterations reached')                            
+                            if  epsilon > 1 
+                                disp('Exiting time integration: Too high a residual')
+                                soltime=toc;
+                                obj.Solution.time = time;
+                                obj.Solution.q = q;
+                                obj.Solution.qd = qd;
+                                obj.Solution.qdd = qdd;
+                                obj.Solution.NR = NR;
+                                obj.Solution.R = R;
+                                obj.Solution.soltime = soltime;
+                                return
+                            else
+                                disp('Continuing iterations anyway since the residual is low')                            
+                            end
+                        end                    
+
                     end
                 end
+                
                 %% Update solution
                 time = [time t];
                 NR = [NR it];
                 R = [R epsilon];
                 disp(['time integration completed: ', num2str(100* t/tmax), '%'])
                 
-                if obj.sens
-                    if size(q_new,2)>1
-                        q = cat(3,q,q_new);
-                        qd = cat(3,qd,qd_new);
-                        qdd = cat(3,qdd,qdd_new);
-                        q_old = q_new;
-                        qd_old = qd_new;
-                        qdd_old = qdd_new;
-                    else
-                        q = [q q_new];
-                        qd = [qd qd_new];
-                        qdd = [qdd qdd_new];
-                        q_old = q_new;
-                        qd_old = qd_new;
-                        qdd_old = qdd_new;
-                    end
-
+                
+                if size(q_new,2)>1
+                    q = cat(3,q,q_new);
+                    qd = cat(3,qd,qd_new);
+                    qdd = cat(3,qdd,qdd_new);
+                    q_old = q_new;
+                    qd_old = qd_new;
+                    qdd_old = qdd_new;
                 else
                     q = [q q_new];
                     qd = [qd qd_new];
@@ -177,6 +165,7 @@ classdef ImplicitNewmark < handle
                     qdd_old = qdd_new;
                 end
 
+                
                 
             end
             soltime = toc;
