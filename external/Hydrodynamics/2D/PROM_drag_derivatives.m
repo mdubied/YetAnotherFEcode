@@ -18,8 +18,9 @@
 % Additional notes:
 %   - q,qd, qdd should be understood as eta and dot{eta}, ddot{eta}.
 %
-% Last modified: 29/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 07/11/2023, Mathieu Dubied, ETH Zürich
 function der = PROM_drag_derivatives(qd,xi,tensors)
+
     % get tensors   
     T3 = tensors.Tr3;
     T4 = tensors.Tr4;
@@ -36,16 +37,17 @@ function der = PROM_drag_derivatives(qd,xi,tensors)
     % dfdqd _______________________________________________________________
     dfdqd = 2*ttv(T3,qd,3) ...
             + 2*ttv(ttv(T4,xi,2),qd,3) ...
-            + 2*ttv(ttv(ttv(T5,xi,2),xi,2),qd,3);
-            
+            + 2*ttv(ttv(ttv(T5,xi,2),xi,2),qd,3);      
 
     % dfdqdd ______________________________________________________________
     % zero
  
-    
+
     % store results in output struct ______________________________________
     der.dfdp = double(dfdp);
     der.dfdqd = double(dfdqd);
+
     
 
 end
+

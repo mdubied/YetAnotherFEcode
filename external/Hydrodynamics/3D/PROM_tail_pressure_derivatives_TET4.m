@@ -36,9 +36,9 @@
 %   - q and qd should be understood as eta and dot{eta} (ROM).
 %   - p should be understood as xi.
 %
-% Last modified: 24/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 06/11/2023, Mathieu Dubied, ETH Zürich
 function der = PROM_tail_pressure_derivatives_TET4(q,qd,A,B,R,w,x0Tail,xi,VTail,UTail,z0,Uz)
-    
+   
     mTilde = 0.25*pi*1000*((z0+Uz*xi)*2)^2;
     
     % dfdp ________________________________________________________________
@@ -58,6 +58,7 @@ function der = PROM_tail_pressure_derivatives_TET4(q,qd,A,B,R,w,x0Tail,xi,VTail,
 
     dfdp = 0.5*mTilde*w^3*VTail.'*(firstTerm + secondTerm) + thirdTerm;
 
+    
     % dfdq ________________________________________________________________
     firstTerm1 = A*VTail*qd;                                    % vector
     firstTerm2 = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q)); % scalar
@@ -75,10 +76,11 @@ function der = PROM_tail_pressure_derivatives_TET4(q,qd,A,B,R,w,x0Tail,xi,VTail,
     term2 = dot(A*VTail*qd,R*B*(x0Tail+UTail*xi+VTail*q));  % scalar
     term3 = B*(x0Tail+UTail*xi+VTail*q);                    % vector 
     dfdqd = 0.5*mTilde*w^3*VTail.'*term2*term3*term1B.';    % with outer-product
-    
+
     % store results in output struct ______________________________________
     der.dfdp = dfdp;
     der.dfdq = dfdq;
     der.dfdqd = dfdqd;
+   
 
 end

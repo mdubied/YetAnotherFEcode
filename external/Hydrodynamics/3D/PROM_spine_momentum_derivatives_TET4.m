@@ -22,9 +22,9 @@
 % Additional notes:
 %   - q,qd, qdd should be understood as eta and dot{eta}, ddot{eta}.
 %
-% Last modified: 13/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 06/11/2023, Mathieu Dubied, ETH Zürich
 function der = PROM_spine_momentum_derivatives_TET4(q,qd,qdd,xi,tensors)
-       
+           
     % get tensors   
     Txx = tensors.Txx.f0;
     TxV = tensors.TxV.f0;
@@ -86,7 +86,7 @@ function der = PROM_spine_momentum_derivatives_TET4(q,qd,qdd,xi,tensors)
             + ttv(ttv(ttv(TUV5,xi,5),qd,4),qd,2) ...
             + ttv(ttv(ttv(TUV5,qd,4),xi,3),qd,2) ...
             + ttv(ttv(ttv(TVV5,qd,4),q,3),qd,2);
-    
+   
     df2dp = ttv(ttv(Txx4,xi,4),qdd,2) ...
             + ttv(ttv(Txx4,xi,3),qdd,2) ...
             + ttv(ttv(ttv(TxV5,xi,5),qd,3),qdd,2) ...
@@ -105,7 +105,7 @@ function der = PROM_spine_momentum_derivatives_TET4(q,qd,qdd,xi,tensors)
             + ttv(ttv(ttv(ttv(TVV6,xi,5),qd,4),q,3),qd,2);
 
     dfdp = df0dp + df1dp + df2dp;
-    
+
     % dfdq ________________________________________________________________
     dfdq = ttv(TxV,qdd,2) ...
          + ttv(ttv(TUV,xi,3),qdd,2) ...
@@ -141,12 +141,12 @@ function der = PROM_spine_momentum_derivatives_TET4(q,qd,qdd,xi,tensors)
             + ttv(TVx,q,3) ...
             + ttv(ttv(TVU,xi,4),q,3) ...
             + ttv(ttv(TVV,q,4),q,3);
- 
-    
+       
     % store results in output struct ______________________________________
     der.dfdp = double(dfdp);
     der.dfdq = double(dfdq);
     der.dfdqd = double(dfdqd);
     der.dfdqdd = double(dfdqdd);
+   
    
 end

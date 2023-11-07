@@ -75,7 +75,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     tic 
     fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
-    TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
+    % TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);      
+    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
     toc
 
     uTail = zeros(3,tmax/h);
@@ -102,27 +103,32 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 
 
     % Solve sensitivity equation 
-    tic
-    fprintf('____________________\n')
-    fprintf('Solving sensitivity...\n') 
-    TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly, ...
-       tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
-       TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
-       h,tmax);
-    toc
+    % tic
+    % fprintf('____________________\n')
+    % fprintf('Solving sensitivity...\n') 
+    % TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly, ...
+    %    tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
+    %    TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
+    %    h,tmax);
+    % toc
     
     % Retrieving solutions    
     eta = TI_NL_PROM.Solution.q;
     etad = TI_NL_PROM.Solution.qd;
     etadd = TI_NL_PROM.Solution.qdd;
-    S = TI_sens.Solution.q;
-    Sd = TI_sens.Solution.qd;
-    Sdd = TI_sens.Solution.qdd;
+    % S = TI_sens.Solution.q;
+    % Sd = TI_sens.Solution.qd;
+    % Sdd = TI_sens.Solution.qdd;
+
+    S = TI_NL_PROM.Solution.s;
+    Sd = TI_NL_PROM.Solution.sd;
+    Sdd = TI_NL_PROM.Solution.sdd;
+    eta_0k = TI_NL_PROM.Solution.q;
     eta_k = eta;
     etad_k = etad;
     etadd_k = etadd;
 
-    nodes = PROM_Assembly.Mesh.nodes;
+    % nodes = PROM_Assembly.Mesh.nodes;
     x0 = reshape(nodes.',[],1);
     
     % computing initial cost function value
@@ -156,7 +162,25 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             % build PROM
             [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
                  build_PROM_3D(svMesh,nodes_defected,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);
-                                             
+
+            % Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
+            % Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
+            % Lz = abs(max(nodes(:,3))-min(nodes(:,3)));  % vertical length of airfoil
+            % f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
+            % elementPlot = elements(:,1:4); hold on 
+            % % PlotMesh(nodes, elementPlot, 0); 
+            % v1 = reshape(U*xi_k, 3, []).';
+            % S = 1;
+            % hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+            % L = [Lx,Ly,Lz];
+            % O = [-Lx,-Ly/2,-Lz/2];
+            % plotcube(L,O,.05,[0 0 0]);
+            % axis equal; grid on; box on; drawnow
+            % set(f1,'PaperUnits','centimeters');
+            % set(f1,'PaperPositionMode','auto');
+            % % set(f1,'PaperSize',[10 3.5]); % Canvas Size
+            % set(f1,'Units','centimeters');
+                                                         
             xiRebuild_k = zeros(size(U,2),1);   % reset local xi to 0 as we rebuild the ROM
             
             dr = reduced_constant_vector(d,V,3);
@@ -164,13 +188,17 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
             fprintf('____________________\n')
-            fprintf('Solving EoMs...\n') 
-            TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);
+            fprintf('Solving EoMs and sensitivity...\n') 
+            TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
             toc
                 
+            eta_0k = TI_NL_PROM.Solution.q;
             eta_k = TI_NL_PROM.Solution.q;
             etad_k = TI_NL_PROM.Solution.qd;
             etadd_k = TI_NL_PROM.Solution.qdd;
+            S = TI_NL_PROM.Solution.s;
+            Sd = TI_NL_PROM.Solution.sd;
+            Sdd = TI_NL_PROM.Solution.sdd;
     
             N = size(eta_k,2);
 
@@ -189,27 +217,27 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             drawnow
             
             % solve sensitivity equation 
-            tic
-            fprintf('____________________\n')
-            fprintf('Solving sensitivity...\n') 
-            TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly, ...
-               tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
-               TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
-               h,tmax);
-            toc 
-    
-            S = TI_sens.Solution.q;
-            Sd = TI_sens.Solution.qd;
-            Sdd = TI_sens.Solution.qdd;
+            % tic
+            % fprintf('____________________\n')
+            % fprintf('Solving sensitivity...\n') 
+            % TI_sens = solve_sensitivities(V,xiRebuild_k,PROM_Assembly, ...
+            %    tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom, ...
+            %    TI_NL_PROM.Solution.q,TI_NL_PROM.Solution.qd,TI_NL_PROM.Solution.qdd, ...
+            %    h,tmax);
+            % toc 
+            % 
+            % S = TI_sens.Solution.q;
+            % Sd = TI_sens.Solution.qd;
+            % Sdd = TI_sens.Solution.qdd;
         else
             % approximate new solution under new xi, using sensitivity
             fprintf('____________________\n')
             fprintf('Approximating solutions...\n')
             if size(xi_k,1)>1
                 S=tensor(S);
-                eta_k = eta_k + double(ttv(S,xiRebuild_k,2));
+                eta_k = eta_0k + double(ttv(S,xiRebuild_k,2));
             else
-                eta_k = eta_k + S*xiRebuild_k;
+                eta_k = eta_0k + S*xiRebuild_k;
             end
             
         end 

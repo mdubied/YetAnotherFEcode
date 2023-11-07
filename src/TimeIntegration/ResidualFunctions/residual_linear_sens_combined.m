@@ -20,30 +20,22 @@
 %                           present. See below for the parser function.
 %
 % OUTPUTS:
-% (1) [r, drdsdd, drdsd, drds]:     function handle describing the
-%                                   residual and its partial derivatives
-%     
+% (1) r:                    function handle describing the residual
 %
-% Last modified: 29/10/2023, Mathieu Dubied, ETH Zürich
-function [r, drdsdd, drdsd, drds] = ...
-residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
+% Last modified: 07/11/2023, Mathieu Dubied, ETH Zürich
+function r = residual_linear_sens_combined(s,sd,sdd,t, ...
+        qsol,qdsol,qddsol, drdqdd, drdqd, drdq, ...
         pd_fint,pd_tail,pd_spine,pd_drag,pd_actuTop,pd_actuBottom, ...
-        actuSignalTop,actuSignalBottom,h)
+        actuSignalTop,actuSignalBottom)
     
-    % compute current time step
-    it = cast(t/h,"int16");
 
     % number of shape variation parameters
     m = size(pd_fint(qsol(:,1)).dfdp,2);
 
-    % COLLECT DATA ________________________________________________________
-    M = ROMn_Assembly.DATA.M;
-    C = ROMn_Assembly.DATA.C;
-    K = ROMn_Assembly.DATA.K;
-    
-    qsolIt = qsol(:,it);
-    qdsolIt = qdsol(:,it);
-    qddsolIt = qddsol(:,it);
+    % COLLECT DATA ________________________________________________________   
+    qsolIt = qsol;
+    qdsolIt = qdsol;
+    qddsolIt = qddsol;
 
     % EVALUATE FUNCTION HANDLE ____________________________________________
     aTop = actuSignalTop(t);
@@ -55,10 +47,10 @@ residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
     der_drag = pd_drag(qdsolIt);
     der_actuTop = pd_actuTop(aTop);
     der_actuBottom = pd_actuBottom(aBottom);
+        
 
     % GATHER PARTIAL DERIVATIVES __________________________________________
     % internal forces (only a function of q and not qd)
-    dfintdq = der_fint.dfdq;
     dfintdp = der_fint.dfdp;
     if m == 1
         m1 = size(der_fint.dMdp,1);
@@ -70,35 +62,24 @@ residual_linear_sens(s,sd,sdd,t,ROMn_Assembly,qsol,qdsol,qddsol, ...
     end
 
     % tail pressure force
-    dfTaildq = der_tail.dfdq;
-    dfTaildqd = der_tail.dfdqd;
+
     dfTaildp = der_tail.dfdp;
 
     % spine change in momentum
-    dfSpinedq = der_spine.dfdq;
-    dfSpinedqd = der_spine.dfdqd;
-    dfSpinedqdd = der_spine.dfdqdd;
     dfSpinedp = der_spine.dfdp;
 
     % drag force
-    dfDragdqd = der_drag.dfdqd;
     dfDragdp = der_drag.dfdp;
 
     % actuation forces
-    dfactTopdq = der_actuTop.dfdq;
     dfactTopdp = der_actuTop.dfdp;
-    dfactBottomdq = der_actuBottom.dfdq;
     dfactBottomdp = der_actuBottom.dfdp;
 
+
     % COMPUTE RESIDUAL ____________________________________________________
-    r =  double(ttv(tensor(dMdp),qddsolIt,2)) + M*sdd + C*sd + K*s + dfintdq*s + dfintdp ...
-        - dfTaildq*s - dfTaildqd*sd -dfTaildp ...
-        - dfSpinedq*s -dfSpinedqd*sd - dfSpinedqdd*sdd -dfSpinedp ...
-        - dfDragdqd*sd - dfDragdp ...
-        - dfactTopdq*s -dfactTopdp - dfactBottomdq*s - dfactBottomdp;
-   
-    drdsdd = M - dfSpinedqdd;
-    drdsd = C - dfTaildqd - dfSpinedqd - dfDragdqd;
-    drds = K + dfintdq - dfTaildq - dfSpinedq - dfactTopdq - dfactBottomdq ;
-    
+    r =  drdqdd*sdd + drdqd*sd + drdq*s ...
+        + double(ttv(tensor(dMdp),qddsolIt,2)) +  dfintdp ...
+        -dfTaildp - dfSpinedp - dfDragdp ...
+        -dfactTopdp - dfactBottomdp;
+       
 end

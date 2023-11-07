@@ -49,8 +49,8 @@ function TI_sens = solve_sensitivities(V,xi_k,PROM_Assembly,tensors_PROM,tailPro
     
     % actuation
     k=400;
-    actuSignalT = @(t) k/2*(1-(1+0.4*sin(t*2*pi)));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(1-(1-0.4*sin(t*2*pi)));
+    actuSignalT = @(t) k/2*(1-(1+0.2*sin(t*2*pi)));    % to change below as well if needed
+    actuSignalB = @(t) k/2*(1-(1-0.2*sin(t*2*pi)));
     pd_actuTop = @(a)PROM_actu_derivatives(actuTop,a);
     pd_actuBottom = @(a)PROM_actu_derivatives(actuBottom,a);
 

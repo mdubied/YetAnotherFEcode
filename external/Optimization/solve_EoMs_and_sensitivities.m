@@ -1,10 +1,11 @@
-% solve_EoMs
+% solve_EoMs_and_sensitivities
 %
 % Synthax:
-% TI_NL_PROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,actuTop,actuBottom,h,tmax)
+% TI_NL_PROM = solve_EoMs_and_sensitivities(V,ROM_Assembly,tailProperties,spineProperties,actuTop,actuBottom,h,tmax)
 %
 % Description: Computes the solutions for eta,dot{eta}, ddot{eta} for 
-% [0,tmax] for a given ROM assembly and time step
+% [0,tmax] for a given ROM assembly and time step as well as the
+% corresponding sensitivities (in a combined fashion)
 %
 % INPUTS: 
 % (1) V:                    ROB   
@@ -25,9 +26,9 @@
 % (1) TI_NL_PROM:           struct containing the solutions and related
 %                           information
 %     
-% Last modified: 24/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 06/11/2023, Mathieu Dubied, ETH Zurich
 
-function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
+function TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
 
     fishDim = size(PROM_Assembly.Mesh.nodes,2);
 
@@ -36,7 +37,12 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     etad0 = zeros(size(V,2),1);
     etadd0 = zeros(size(V,2),1);
 
-    % FORCES: ACTUATION, REACTIVE FORCE, DRAG FORCE _______________________
+    U = PROM_Assembly.U;
+    s0 = zeros(size(V,2),size(U,2));
+    sd0 = zeros(size(V,2),size(U,2));
+    sdd0 = zeros(size(V,2),size(U,2));
+
+    % FORCES for EoMS: ACTUATION, REACTIVE FORCE, DRAG FORCE ______________
     % actuation force
     B1T = actuTop.B1;
     B1B = actuBottom.B1;
@@ -56,6 +62,9 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     R = tailProperties.R;
     wTail = tailProperties.w;
     VTail = tailProperties.V;
+    UTail = tailProperties.U;
+    nodes = PROM_Assembly.Mesh.nodes;
+    iDOFs = tailProperties.iDOFs;
 
     if fishDim == 3
         tailProperties.mTilde = 0.25*pi*1000*(tailProperties.z*2)^2;
@@ -102,17 +111,57 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     T3 = dragProperties.tensors.Tr3;
     fDrag = @(qd) double(ttv(ttv(T3,qd,3),qd,2));
 
+    % FORCES DERIVATIVES FOR SENSITIVITY ANALYSIS _________________________
+    % internal forces
+    pd_fint = @(eta)DpROM_derivatives_lightweight(eta,fIntTensors);
+
+    % actuation forces
+    pd_actuTop = @(a)PROM_actu_derivatives(actuTop,a);
+    pd_actuBottom = @(a)PROM_actu_derivatives(actuBottom,a);
+
+    % tail pressure force
+    xi=zeros(size(PROM_Assembly.U,2),1);
+
+    if fishDim == 3
+        z0 = tailProperties.z;
+        Uz = tailProperties.Uz;
+        pd_tail = @(eta,etad) PROM_tail_pressure_derivatives_TET4_lightweight(eta,etad,A,B,R,wTail,x0(iDOFs),VTail,UTail,z0,Uz);
+    else 
+        mTilde = tailProperties.mTilde;
+        pd_tail = @(eta,etad) PROM_tail_pressure_derivatives(eta,etad,A,B,R,mTilde,wTail,x0(iDOFs),xi,VTail,UTail);                                                           
+    end
+
+    % spine change in momentum
+    spineTensors = spineProperties.tensors;
+    if fishDim == 3
+        pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives_TET4_lightweight(eta,etad,etadd,spineTensors);
+    else
+        pd_spine = @(eta,etad,etadd)PROM_spine_momentum_derivatives(eta,etad,etadd,xi,spineTensors);
+    end
+
+    % drag force
+    dragTensors = dragProperties.tensors;
+    pd_drag = @(etad) PROM_drag_derivatives_lightweight(etad,dragTensors);
+
+
     % NONLINEAR TIME INTEGRATION __________________________________________
     
     % instantiate object for nonlinear time integration
-    TI_NL_ROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
+    TI_NL_PROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6,'combinedSensitivity',true);
     
     % modal nonlinear Residual evaluation function handle
     Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro_PROM(eta,etad,etadd, ...
         t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
 
+    % residual function handle
+    Residual_sens = @(s,sd,sdd,etaSol,etadSol,etaddSol,drdqdd, drdqd, drdq,t)residual_linear_sens_combined(s,sd,sdd,t, ...
+        etaSol,etadSol,etaddSol, drdqdd, drdqd, drdq,...
+        pd_fint,pd_tail,pd_spine,pd_drag,pd_actuTop,pd_actuBottom, ...
+        actuSignalT,actuSignalB);
+    
     % time integration 
-    TI_NL_ROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red);
-    TI_NL_ROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution
+    TI_NL_PROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red, ...
+        'ResidualSens',Residual_sens,'s0',s0,'sd0',sd0,'sdd0',sdd0);
+    TI_NL_PROM.Solution.u = V * TI_NL_PROM.Solution.q; % get full order solution
 
 end 

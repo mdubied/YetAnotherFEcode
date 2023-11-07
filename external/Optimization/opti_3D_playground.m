@@ -117,10 +117,10 @@ fishHeadsv(3:3:end) = real(zDif);
 
 
 % shape variations basis
-U = [thinFish,smallFish];    % shape variations basis
+U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
 
 % plot the two meshes
-xiPlot = [0.4;-0.32];
+xiPlot = [0.23;-0.39;0.1091];
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 % PlotMesh(nodes, elementPlot, 0); 
@@ -137,7 +137,14 @@ set(f1,'PaperPositionMode','auto');
 % set(f1,'PaperSize',[7 3.5]); % Canvas Size
 set(f1,'Units','centimeters');
 % 
-
+%%
+xiTest = [0.23;-0.39;0.1091];
+% shape-varied mesh 
+df = U*xiTest;                       % displacement field introduced by shape variations
+dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
+nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
+svMesh = Mesh(nodes_sv);
+svMesh.create_elements_table(elements,myElementConstructor);
 
 
 %% OPTIMIZATION PARAMETERS
@@ -155,18 +162,18 @@ tmax = 1.5;
 %     0 0 0 1;
 %     0 0 0 -1];
 % b = [0.6;0.6;0.6;0.6;0.6;0.6;0.6;0.6];
-% A = [1 0 0 ;
-%     -1 0 0;
-%     0 1 0;
-%     0 -1 0;
-%     0 0 1;
-%     0 0 -1];
-% b = [0.6;0.6;0.6;0.6;0.6;0.6];
-A = [1 0;
-    -1 0;
-    0 1;
-    0 -1];
-b = [0.6;0.6;0.6;0.6];
+A = [1 0 0 ;
+    -1 0 0;
+    0 1 0;
+    0 -1 0;
+    0 0 1;
+    0 0 -1];
+b = [0.4;0.4;0.4;0.4;0.4;0.4];
+% A = [1 0;
+%     -1 0;
+%     0 1;
+%     0 -1];
+% b = [0.6;0.6;0.6;0.6];
 % A = [1;
 %     -1];
 % b = [0.2;0.2];
@@ -174,7 +181,7 @@ b = [0.6;0.6;0.6;0.6];
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,dSwim,h,tmax,A,b,'FORMULATION',FORMULATION,'VOLUME',VOLUME, ...
-    'maxIteration',22,'convCrit',0.002,'barrierParam',2,'gStepSize',0.0001,'nRebuild',5);
+    'maxIteration',22,'convCrit',0.002,'barrierParam',4,'gStepSize',0.0001,'nRebuild',5);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
@@ -182,8 +189,8 @@ fprintf('Computation time: %.2fmin\n',topti/60)
 %% VISUALIZATION __________________________________________________________
 
 % plot the two meshes
-xiPlot = 5*xiStar;
-f1 = figure('units','centimeters','position',[3 3 15 7],'name','Shape-varied mesh');
+xiPlot = xiStar;
+f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 % PlotMesh(nodes, elementPlot, 0); 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -192,7 +199,7 @@ hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
 L = [Lx,Ly,Lz];
 O = [-Lx,-Ly/2,-Lz/2];
 plotcube(L,O,.05,[0 0 0]);
-axis equal; grid on; box on; set(hf{1},'FaceAlpha',.7); drawnow
+axis equal; grid on; box on; drawnow
 set(f1,'PaperUnits','centimeters');
 set(f1,'PaperPositionMode','auto');
 % set(f1,'PaperSize',[10 3.5]); % Canvas Size
