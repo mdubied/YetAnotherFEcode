@@ -42,7 +42,8 @@
 function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 
     % parse input
-    [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin{:});
+    [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,...
+        rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin{:});
     
     % NOMINAL SOLUTION ____________________________________________________
     fprintf('**************************************\n')
@@ -145,9 +146,14 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         fprintf('**************************************\n')
 
         % possible rebuilding of a PROM
-        if mod(k,nRebuild) == 0
+        if mod(k,nRebuild) == 0 || any(xiRebuild_k > rebuildThreshold)
             fprintf('____________________\n')
-            fprintf('Rebuilding PROM ... \n')
+            fprintf('Rebuilding PROM ')
+            if any(xiRebuild_k > rebuildThreshold)
+                fprintf('(xi > threshold) ... \n')
+            else
+                fprintf('(max lin. iterations) ... \n')
+            end
 
             % update defected mesh nodes
             df = U*xi_k;                       % displacement fields introduced by defects
@@ -279,12 +285,13 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 end
 
 % parse input
-function [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
+function [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
 defaultMaxIteration = 50;
 defaultConvCrit = 0.001;
 defaultBarrierParam = 500;
 defaultGStepSize = 0.1;
 defaultNRebuild = 10;
+defaultRebuildThreshold = 0.2;
 defaultFORMULATION = 'N1';
 defaultVOLUME = 1;
 defaultUSEJULIA = 0; 
@@ -298,6 +305,8 @@ addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
 addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'nRebuild',defaultNRebuild,@(x)validateattributes(x, ...
+                {'numeric'},{'nonempty','positive'}) );
+addParameter(p,'rebuildThreshold',defaultRebuildThreshold,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'FORMULATION',defaultFORMULATION,@(x)validateattributes(x, ...
                 {'char'},{'nonempty'}))
@@ -313,6 +322,7 @@ convCrit = p.Results.convCrit;
 barrierParam = p.Results.barrierParam;
 gStepSize = p.Results.gStepSize;
 nRebuild = p.Results.nRebuild;
+rebuildThreshold = p.Results.rebuildThreshold;
 FORMULATION = p.Results.FORMULATION;
 VOLUME = p.Results.VOLUME;
 USEJULIA = p.Results.USEJULIA;
