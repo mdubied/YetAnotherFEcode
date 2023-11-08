@@ -63,7 +63,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     end
 
     % build PROM
-    fprintf('____________________________\n')
+    fprintf('____________________\n')
     fprintf('Building PROM ... \n')
 
     mTilde = 10;
@@ -73,7 +73,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 
     % Solve EoMs
     tic 
-    fprintf('____________________________\n')
+    fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
     % TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);      
     TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
@@ -132,7 +132,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     x0 = reshape(nodes.',[],1);
     
     % computing initial cost function value
-    fprintf('____________________________\n')
+    fprintf('____________________\n')
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
     dr = reduced_constant_vector(d,V,3);
@@ -145,15 +145,9 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         fprintf('**************************************\n')
 
         % possible rebuilding of a PROM
-        if mod(k,nRebuild) == 0 || any(xi_Rebuild_k) > rebuildThreshold
-            fprintf('____________________________\n')
-            fprintf('Rebuilding PROM ')
-            if any(xi_Rebuild_k) > rebuildThreshold
-                fprintf('(parameter > threshold) ... \n')
-            else
-                fprintf('(nRebuild) ... \n')
-            end
-
+        if mod(k,nRebuild) == 0
+            fprintf('____________________\n')
+            fprintf('Rebuilding PROM ... \n')
 
             % update defected mesh nodes
             df = U*xi_k;                       % displacement fields introduced by defects
@@ -193,7 +187,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
-            fprintf('____________________________\n')
+            fprintf('____________________\n')
             fprintf('Solving EoMs and sensitivity...\n') 
             TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
             toc
@@ -237,7 +231,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             % Sdd = TI_sens.Solution.qdd;
         else
             % approximate new solution under new xi, using sensitivity
-            fprintf('____________________________\n')
+            fprintf('____________________\n')
             fprintf('Approximating solutions...\n')
             if size(xi_k,1)>1
                 S=tensor(S);
@@ -249,13 +243,13 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         end 
 
         % compute cost function and its gradient
-        fprintf('____________________________\n')
+        fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n') 
         nablaLr = gradient_cost_function_w_constraints_TET4(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam,V);
         LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta_k,etad_k,etadd_k,xiRebuild_k,xi_k,dr,A,b,barrierParam,V)];
         
         % update optimal parameter
-        fprintf('____________________________\n')
+        fprintf('____________________\n')
         fprintf('Updating optimal parameter...\n') 
         xi_k = xi_k - gStepSize*nablaLr
         xiRebuild_k = xiRebuild_k - gStepSize*nablaLr;
@@ -285,14 +279,12 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 end
 
 % parse input
-function [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,...
-    rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
+function [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
 defaultMaxIteration = 50;
 defaultConvCrit = 0.001;
 defaultBarrierParam = 500;
 defaultGStepSize = 0.1;
 defaultNRebuild = 10;
-defaultRebuildThreshold = 0.2;
 defaultFORMULATION = 'N1';
 defaultVOLUME = 1;
 defaultUSEJULIA = 0; 
@@ -306,8 +298,6 @@ addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
 addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'nRebuild',defaultNRebuild,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','positive'}) );
-addParameter(p,'rebuildThreshold',defaultRebuildThreshold,@(x)validateattributes(x, ...
                 {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'FORMULATION',defaultFORMULATION,@(x)validateattributes(x, ...
                 {'char'},{'nonempty'}))
@@ -323,7 +313,6 @@ convCrit = p.Results.convCrit;
 barrierParam = p.Results.barrierParam;
 gStepSize = p.Results.gStepSize;
 nRebuild = p.Results.nRebuild;
-rebuildThreshold = p.Results.rebuildThreshold;
 FORMULATION = p.Results.FORMULATION;
 VOLUME = p.Results.VOLUME;
 USEJULIA = p.Results.USEJULIA;

@@ -5,7 +5,7 @@
 %
 % ------------------------------------------------------------------------
 clear; 
-% close all; 
+close all; 
 clc
 
 elementType = 'TET4';
@@ -181,7 +181,7 @@ b = [0.4;0.4;0.4;0.4;0.4;0.4];
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,dSwim,h,tmax,A,b,'FORMULATION',FORMULATION,'VOLUME',VOLUME, ...
-    'maxIteration',22,'convCrit',0.002,'barrierParam',4,'gStepSize',0.0001,'nRebuild',5,'rebuildThreshold',0.1);
+    'maxIteration',22,'convCrit',0.002,'barrierParam',4,'gStepSize',0.0001,'nRebuild',5);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
