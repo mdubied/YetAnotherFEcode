@@ -32,10 +32,12 @@
 %
 % Additional notes: -
 %
-% Last modified: 10/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 10/11/2023, Mathieu Dubied, ETH Zürich
 
 function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA,ACTUATION)
+    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA)
+
+    startROMBuilding = tic;
     
     % 2D or 3D? ___________________________________________________________
     fishDim = size(nodes,2);
@@ -60,7 +62,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 4;
+    n_VMs = 3;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
@@ -89,18 +91,18 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     V  = orth(V);
 
     % plot
-    mod = 1;
-    if fishDim == 2
-        elementPlot = elements(:,1:3);  % plot only corners (otherwise it's a mess)
-        v1 = reshape(VMn(:,mod), 2, []).';
-    else
-        elementPlot = elements(:,1:4); 
-        v1 = reshape(VMn(:,mod), 3, []).';
-    end
-    figure('units','normalized','position',[.2 .1 .6 .8])
-    PlotMesh(nodes, elementPlot, 0);
-    PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
-    title(['\Phi_' num2str(mod)])
+    % mod = 1;
+    % if fishDim == 2
+    %     elementPlot = elements(:,1:3);  % plot only corners (otherwise it's a mess)
+    %     v1 = reshape(VMn(:,mod), 2, []).';
+    % else
+    %     elementPlot = elements(:,1:4); 
+    %     v1 = reshape(VMn(:,mod), 3, []).';
+    % end
+    % figure('units','normalized','position',[.2 .1 .6 .8])
+    % PlotMesh(nodes, elementPlot, 0);
+    % PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+    % title(['\Phi_' num2str(mod)])
 
     % reduced assembly
     ROM_Assembly = ReducedAssembly(MeshNominal, V);
@@ -160,6 +162,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     tailProperties.tailNode = tailNode;
     tailProperties.tailElement = tailElement;
     tailProperties.iDOFs = iDOFs;
+    tailProperties.zDOFIdx = matchedDorsalNodesIdx(spineElements==tailElement)*3;
     tailProperties.z = matchedDorsalNodesZPos(tailElement);
     
     % spine momentum change tensor (reduced order)
@@ -177,44 +180,42 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     headxDOF = 3*headNode-2;
     VHead = V(headxDOF,:);
     rho = 1000;
-    kFactor = 0.5;
+    kFactor = 1;
     tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
     dragProperties.skinElementFaces = skinElementFaces;
 
     % ACTUATION FORCES ____________________________________________________
-    if ACTUATION
-        Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
-        Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of the nominal fish
+    
+    Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
+    
+    nel = size(elements,1);
+    actuationDirection = [1;0;0;0;0;0];               %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
 
-        nel = size(elements,1);
-        actuationDirection = [1;0;0;0;0;0];               %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
-
-        % top muscle
-        topMuscle = zeros(nel,1);
-        for el=1:nel
-            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
-            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-            if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
-                topMuscle(el) = 1;
-            end    
-        end
-        actuTop = reduced_tensors_actuation_ROM(NominalAssembly, V, topMuscle, actuationDirection);
-
-        % bottom muscle
-        bottomMuscle = zeros(nel,1);
-        for el=1:nel
-            elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
-            elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-            if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
-                bottomMuscle(el) = 1;
-            end    
-        end
-        actuBottom = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
-    else
-        actuTop = 0;
-        actuBottom = 0;
+    % left muscle
+    topMuscle = zeros(nel,1);
+    for el=1:nel
+        elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+        elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+            topMuscle(el) = 1;
+        end    
     end
+    actuTop = reduced_tensors_actuation_ROM(NominalAssembly, V, topMuscle, actuationDirection);
+
+    % right muscle
+    bottomMuscle = zeros(nel,1);
+    for el=1:nel
+        elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+        elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+            bottomMuscle(el) = 1;
+        end    
+    end
+    actuBottom = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
+
+
+    fprintf('Time to build ROM: %.2fsec\n',toc(startROMBuilding))
 
 end 

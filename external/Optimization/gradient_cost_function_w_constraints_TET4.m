@@ -28,61 +28,23 @@
 % (1) nablaLr:          gradient of the reduced cost function
 %     
 %
-% Last modified: 24/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 10/11/2023, Mathieu Dubied, ETH Zürich
 
-function nablaLr = gradient_cost_function_w_constraints_TET4(dr,xiRebuild,xi,x0,eta,etad,etadd,s,sd,sdd,tailProperties,spineProperties,AConstraint,bConstraint,barrierParam,V)
+function nablaLr = gradient_cost_function_w_constraints_TET4(xi,eta,s,AConstraint,bConstraint,barrierParam,V)
     N = size(eta,2);
     nablaLr = zeros(size(xi,1),1);
     nConstraints = size(bConstraint);
- 
-    %barrierParam = 14000;%400; for C:400
-
-    % tail pressure force properties
-    A = tailProperties.A;
-    B = tailProperties.B;
-    R = tailProperties.R;     % 90 degrees rotation counterclock-wise
-    wTail = tailProperties.w;
-    VTail = tailProperties.V;
-    UTail = tailProperties.U;
-    z0 = tailProperties.z;
-    Uz = tailProperties.Uz;
-    x0Tail = x0(tailProperties.iDOFs);
-
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
-   
-    % spine change in momentum
-    % tensorsSpine = spineProperties.tensors;
     
     for t=1:N-2
-        % tail pressure force
-        % derTail = PROM_tail_pressure_derivatives_TET4(eta(:,t),etad(:,t),A,B,R,wTail,x0Tail,xiRebuild,VTail,UTail,z0,Uz); 
-        % dfTaildq = derTail.dfdq;               
-        % dfTaildqd = derTail.dfdqd;
-        % dfTaildp = derTail.dfdp;
-
-        % spine change in momentum
-        % derSpine = PROM_spine_momentum_derivatives_TET4(eta(:,t),etad(:,t),etadd(:,t),xiRebuild,tensorsSpine);        
-        % dfSpinedq = derSpine.dfdq;  
-        % dfSpinedqd = derSpine.dfdqd;
-        % dfSpinedqdd = derSpine.dfdqdd;
-        % dfSpinedp = derSpine.dfdp;
-
+       
         % get gradient dfdxi_i (dfdp_i)         
         if size(xi,1)>1
             s = double(s);
-            % sd = double(sd);
-            % sdd = double(sdd);
-            % dfdxi_i = dfTaildp + dfTaildq*s(:,:,t) + dfTaildqd*sd(:,:,t) ...
-            %         + dfSpinedp + dfSpinedq*s(:,:,t) ...
-            %         + dfSpinedqd*sd(:,:,t) + dfSpinedqdd*sdd(:,:,t); 
             dLdxi_i = -xDir.'*V*s(:,:,t);
 
         else
-            % dfdxi_i = dfTaildp + dfTaildq*s(:,t) + dfTaildqd*sd(:,t) ...
-            %         + dfSpinedp + dfSpinedq*s(:,t) ...
-            %         + dfSpinedqd*sd(:,t) + dfSpinedqdd*sdd(:,t); 
-
             dLdxi_i = -xDir.'*V*s(:,t);
         end
         
@@ -93,10 +55,8 @@ function nablaLr = gradient_cost_function_w_constraints_TET4(dr,xiRebuild,xi,x0,
         for i = 1:nConstraints 
             logBarrierDInTimeStep = logBarrierDInTimeStep - 1/barrierParam*1/(AConstraint(i,:)*xi-bConstraint(i))*AConstraint(i,:).';
         end
-        
 
         % final gradient
-        % nablaLr = nablaLr - (dr.'*dfdxi_i).' + logBarrierDInTimeStep;
         nablaLr = nablaLr + dLdxi_i' + logBarrierDInTimeStep;
     end  
   
