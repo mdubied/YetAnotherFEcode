@@ -42,7 +42,7 @@
 function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 
     % parse input
-    [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,...
+    [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,...
         rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin{:});
     
     % NOMINAL SOLUTION ____________________________________________________
@@ -139,6 +139,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     dr = reduced_constant_vector(d,V,3);
     Lr = reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam,V);  
     LrEvo = Lr;
+    nablaEvo = zeros(size(U,2),1);
+    lastRebuild = 0;
 
     for k = 1:maxIteration
         fprintf('**************************************\n')
@@ -146,14 +148,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         fprintf('**************************************\n')
 
         % possible rebuilding of a PROM
-        if mod(k,nRebuild) == 0 || any(xiRebuild_k > rebuildThreshold)
-            fprintf('____________________\n')
-            fprintf('Rebuilding PROM ')
-            if any(xiRebuild_k > rebuildThreshold)
-                fprintf('(xi > threshold) ... \n')
-            else
-                fprintf('(max lin. iterations) ... \n')
-            end
+        if check_cond_rebuild(k,lastRebuild,nRebuild,xiRebuild_k,rebuildThreshold,maxIteration)
+            lastRebuild = k;
 
             % update defected mesh nodes
             df = U*xi_k;                       % displacement fields introduced by defects
@@ -197,6 +193,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             fprintf('Solving EoMs and sensitivity...\n') 
             TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
             toc
+            
                 
             eta_0k = TI_NL_PROM.Solution.q;
             eta_k = TI_NL_PROM.Solution.q;
@@ -253,25 +250,38 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         fprintf('Computing cost function and its gradient...\n') 
         nablaLr = gradient_cost_function_w_constraints_TET4(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam,V);
         LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta_k,etad_k,etadd_k,xiRebuild_k,xi_k,dr,A,b,barrierParam,V)];
-        
+        nablaEvo = [nablaEvo,nablaLr];
+
         % update optimal parameter
         fprintf('____________________\n')
         fprintf('Updating optimal parameter...\n') 
-        xi_k = xi_k - gStepSize*nablaLr
-        xiRebuild_k = xiRebuild_k - gStepSize*nablaLr;
+        gradientWeights = adapt_learning_rate(nablaEvo);
+
+        xi_k = xi_k - gStepSize*diag(gradientWeights)*nablaLr
+        xiRebuild_k = xiRebuild_k - gStepSize*diag(gradientWeights)*nablaLr;
 
         xiEvo = [xiEvo,xi_k];
         
         % possible exit conditions
         if size(xi_k,1) >1
             if norm(xiEvo(:,end)-xiEvo(:,end-1))<convCrit
-                fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
+                fprintf('Convergence criterion of %.2g (parameters) fulfilled\n',convCrit)
                 break
+            elseif length(LrEvo)>5
+                if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
+                    fprintf('Convergence criterion of %.2g (cost) fulfilled\n',convCrit*100)
+                    break
+                end
             end
         else
             if norm(xiEvo(end)-xiEvo(end-1))<convCrit
-                fprintf('Convergence criterion of %.2g fulfilled\n',convCrit)
+                fprintf('Convergence criterion of %.2g (parameters) fulfilled\n',convCrit)
                 break
+            elseif length(LrEvo)>5
+                if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
+                    fprintf('Convergence criterion of %.2g (cost) fulfilled\n',convCrit*100)
+                    break
+                end
             end
         end
 
@@ -284,47 +294,86 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 
 end
 
-% parse input
-function [maxIteration,convCrit,barrierParam,gStepSize,nRebuild,rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
-defaultMaxIteration = 50;
-defaultConvCrit = 0.001;
-defaultBarrierParam = 500;
-defaultGStepSize = 0.1;
-defaultNRebuild = 10;
-defaultRebuildThreshold = 0.2;
-defaultFORMULATION = 'N1';
-defaultVOLUME = 1;
-defaultUSEJULIA = 0; 
-p = inputParser;
-addParameter(p,'maxIteration',defaultMaxIteration, @(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','integer','positive'}) );
-addParameter(p,'convCrit',defaultConvCrit,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','positive'}) );
-addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','positive'}) );
-addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','positive'}) );
-addParameter(p,'nRebuild',defaultNRebuild,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','positive'}) );
-addParameter(p,'rebuildThreshold',defaultRebuildThreshold,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty','positive'}) );
-addParameter(p,'FORMULATION',defaultFORMULATION,@(x)validateattributes(x, ...
-                {'char'},{'nonempty'}))
-addParameter(p,'VOLUME',defaultVOLUME,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty'}) );
-addParameter(p,'USEJULIA',defaultUSEJULIA,@(x)validateattributes(x, ...
-                {'numeric'},{'nonempty'}) );
-
-parse(p,varargin{:});
-
-maxIteration = p.Results.maxIteration;
-convCrit = p.Results.convCrit;
-barrierParam = p.Results.barrierParam;
-gStepSize = p.Results.gStepSize;
-nRebuild = p.Results.nRebuild;
-rebuildThreshold = p.Results.rebuildThreshold;
-FORMULATION = p.Results.FORMULATION;
-VOLUME = p.Results.VOLUME;
-USEJULIA = p.Results.USEJULIA;
-
+% Parse input _____________________________________________________________
+function [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
+    defaultMaxIteration = 50;
+    defaultConvCrit = 0.001;
+    defaultConvCritCost = 0.1;
+    defaultBarrierParam = 500;
+    defaultGStepSize = 0.1;
+    defaultNRebuild = 10;
+    defaultRebuildThreshold = 0.2;
+    defaultFORMULATION = 'N1';
+    defaultVOLUME = 1;
+    defaultUSEJULIA = 0; 
+    p = inputParser;
+    addParameter(p,'maxIteration',defaultMaxIteration, @(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','integer','positive'}) );
+    addParameter(p,'convCrit',defaultConvCrit,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'convCritCost',defaultConvCritCost,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'nRebuild',defaultNRebuild,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'rebuildThreshold',defaultRebuildThreshold,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'FORMULATION',defaultFORMULATION,@(x)validateattributes(x, ...
+                    {'char'},{'nonempty'}))
+    addParameter(p,'VOLUME',defaultVOLUME,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty'}) );
+    addParameter(p,'USEJULIA',defaultUSEJULIA,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty'}) );
+    
+    parse(p,varargin{:});
+    
+    maxIteration = p.Results.maxIteration;
+    convCrit = p.Results.convCrit;
+    convCritCost = p.Results.convCritCost;
+    barrierParam = p.Results.barrierParam;
+    gStepSize = p.Results.gStepSize;
+    nRebuild = p.Results.nRebuild;
+    rebuildThreshold = p.Results.rebuildThreshold;
+    FORMULATION = p.Results.FORMULATION;
+    VOLUME = p.Results.VOLUME;
+    USEJULIA = p.Results.USEJULIA;
 end
+
+% Check condition for rebuild _____________________________________________
+function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
+                                    rebuildThreshold,maxIteration)
+    cond = 0;
+
+    if mod(k-lastRebuild,nRebuild) == 0 
+        cond = 1;
+        fprintf('____________________\n')
+        fprintf('Rebuilding PROM (max lin. iterations) ...\n')
+    elseif any(xiRebuild_k > rebuildThreshold)
+        cond = 1;fprintf('____________________\n')
+        fprintf('Rebuilding PROM (xi>threshold) ...\n')
+    elseif maxIteration-k<0.25*maxIteration ...
+            && mod(k-lastRebuild,int16(nRebuild/2)) == 0
+        cond = 1;
+        fprintf('____________________\n')
+        fprintf('Rebuilding PROM (max lin. iteration - close to end) ...\n')
+    end
+    
+end
+
+% Adapt gradient __________________________________________________________
+function gradientWeights = adapt_learning_rate(nablaEvo)
+    nParam = size(nablaEvo,1);
+    gradientWeights = ones(1,nParam);
+    for p = 1:nParam
+        if sign(nablaEvo(p,end-1)) ~= sign(nablaEvo(p,end)) ...
+                && nablaEvo(p,end-1) ~= 0
+            fprintf('')
+            gradientWeights(p) = 0.5*gradientWeights(p);
+            fprintf('Adapting learning rate (change in gradient sign) - xi%d...\n',p)
+        end
+    end
+end
+

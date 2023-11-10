@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
 % 3D optimization of a fish.
 % 
-% Last modified: 22/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 08/11/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -138,7 +138,7 @@ set(f1,'PaperPositionMode','auto');
 set(f1,'Units','centimeters');
 % 
 %%
-xiTest = [0.23;-0.39;0.1091];
+xiTest = [0.1858;-0.1469;0.0195];
 % shape-varied mesh 
 df = U*xiTest;                       % displacement field introduced by shape variations
 dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
@@ -168,7 +168,7 @@ A = [1 0 0 ;
     0 -1 0;
     0 0 1;
     0 0 -1];
-b = [0.4;0.4;0.4;0.4;0.4;0.4];
+b = [0.45;0.45;0.5;0.5;0.5;0.5];
 % A = [1 0;
 %     -1 0;
 %     0 1;
@@ -181,8 +181,8 @@ b = [0.4;0.4;0.4;0.4;0.4;0.4];
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,dSwim,h,tmax,A,b,'FORMULATION',FORMULATION, ...
-    'VOLUME',VOLUME, 'maxIteration',22,'convCrit',0.002,'barrierParam',4, ...
-    'gStepSize',0.0001,'nRebuild',8, 'rebuildThreshold',0.15);
+    'VOLUME',VOLUME, 'maxIteration',40,'convCrit',0.002,'convCritCost',0.8,'barrierParam',20, ...
+    'gStepSize',0.0001,'nRebuild',8, 'rebuildThreshold',0.2);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
@@ -218,27 +218,7 @@ grid on
 ylabel('$$L_r$$','Interpreter','latex')
 xlabel('Iterations')
 
-%% PLOT XI PARAMATER OVER ITERATIONS ______________________________________
 
-figure
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot3(xiEvo(1,:),xiEvo(2,:),linspace(1,size(xiEvo,2),size(xiEvo,2)));
-grid on
-xlabel('$$\xi_1$$','Interpreter','latex')
-ylabel('$$\xi_2$$','Interpreter','latex')
-zlabel('Iterations')
-
-%%
-figure
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot(xiEvo(2,:));
-grid on
-xlabel('$$\xi_1$$','Interpreter','latex')
-ylabel('Iterations')
 
 
 %%
@@ -263,6 +243,27 @@ xlabel('Iterations')
 grid on
 
 
+%% PLOT XI PARAMATER OVER ITERATIONS ______________________________________
+
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot3(xiEvo(1,:),xiEvo(2,:),linspace(1,size(xiEvo,2),size(xiEvo,2)));
+grid on
+xlabel('$$\xi_1$$','Interpreter','latex')
+ylabel('$$\xi_2$$','Interpreter','latex')
+zlabel('Iterations')
+
+%%
+figure
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+plot(xiEvo(2,:));
+grid on
+xlabel('$$\xi_1$$','Interpreter','latex')
+ylabel('Iterations')
 
 
 
