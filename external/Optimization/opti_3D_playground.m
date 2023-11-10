@@ -79,12 +79,13 @@ end
 
 % shape variations basis
 % U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
-U = [y_thinFish,z_tail, z_head, y_head,y_ellipseFish];    % shape variations basis
+% U = [y_thinFish,z_tail, z_head, y_head,y_ellipseFish];    % shape variations basis
 % U = fishEllipseYZ;
+U = [z_tail,y_linLongTail,y_head];
 
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
-xiPlot = [0.2;-0.6;0.3;0.4;0.4];
+xiPlot = [-0.6;0.6;0.6];
 % xiPlot = 0.5;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
@@ -96,7 +97,7 @@ O = [-Lx,-Ly/2,-Lz/2];
 plotcube(L,O,.05,[0 0 0]);
 axis equal; grid on; box on; 
 set(f1,'PaperUnits','centimeters');
-set(f1,'PaperPositionMode','auto');
+% set(f1,'PapeyPositionMode','auto');
 % set(f1,'PaperSize',[7 3.5]); % Canvas Size
 set(f1,'Units','centimeters');
 % 
