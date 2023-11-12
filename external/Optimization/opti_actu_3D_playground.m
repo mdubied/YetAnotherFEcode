@@ -86,7 +86,7 @@ b = [0.8;1.2];
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset, ...
     nodes,elements,dSwim,h,tmax,A,b, 'maxIteration',40,'convCrit',0.002,'convCritCost',0.8,'barrierParam',20, ...
-    'gStepSize',0.0001,'nResolve',8, 'resolveThreshold',0.2);
+    'gStepSize',0.001,'nResolve',8, 'resolveThreshold',0.2);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 

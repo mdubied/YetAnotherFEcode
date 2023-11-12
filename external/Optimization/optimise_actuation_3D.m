@@ -50,10 +50,11 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
     fprintf('Solving for the nominal actuation...\n')
     fprintf('**************************************\n')
 
-    p_k = ones(size(A,2),1,1);
-    pResolve_k = ones(size(A,2),1,1);
+    p_k = ones(size(A,2),1);
+    pResolve_k = ones(size(A,2),1);
+    deltaP_k = p_k - pResolve_k;
     pEvo = p_k;
-
+   
     % Mesh
             
     MeshNominal = Mesh(nodes);
@@ -133,9 +134,9 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
         fprintf('**************************************\n')
 
         % possible resolve
-        if check_cond_resolve(k,lastResolve,nResolve,pResolve_k,resolveThreshold,maxIteration)
+        if check_cond_resolve(k,lastResolve,nResolve,deltaP_k,resolveThreshold,maxIteration)
             lastResolve = k;      
-            pResolve_k = ;
+            pResolve_k = p_k;
                                                             
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
@@ -174,11 +175,12 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
             % approximate new solution under new xi, using sensitivity
             fprintf('____________________\n')
             fprintf('Approximating solutions...\n')
+            deltaP_k = p_k - pResolve_k;
             if size(p_k,1)>1
                 S=tensor(S);
-                eta_k = eta_0k + double(ttv(S,pResolve_k,2));
+                eta_k = eta_0k + double(ttv(S,deltaP_k,2));
             else
-                eta_k = eta_0k + S*pResolve_k;
+                eta_k = eta_0k + S*deltaP_k;
             end
             
         end 
@@ -196,8 +198,7 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
         gradientWeights = adapt_learning_rate(nablaEvo);
 
         p_k = p_k - gStepSize*diag(gradientWeights)*nablaLr
-        pResolve_k = pResolve_k - gStepSize*diag(gradientWeights)*nablaLr;
-
+        
         pEvo = [pEvo,p_k];
         
         % possible exit conditions
