@@ -50,10 +50,14 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
     fprintf('Solving for the nominal actuation...\n')
     fprintf('**************************************\n')
 
-    p_k = ones(size(A,2),1);
-    pResolve_k = ones(size(A,2),1);
+    %p_k = ones(size(A,2),1);
+    p_k = [1;0;0];
+
+    pResolve_k = p_k;
     deltaP_k = p_k - pResolve_k;
     pEvo = p_k;
+    nParam = length(p_k);
+    gradientWeights = ones(1,nParam);
    
     % Mesh
             
@@ -175,7 +179,6 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
             % approximate new solution under new xi, using sensitivity
             fprintf('____________________\n')
             fprintf('Approximating solutions...\n')
-            deltaP_k = p_k - pResolve_k;
             if size(p_k,1)>1
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,deltaP_k,2));
@@ -195,30 +198,33 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
         % update optimal parameter
         fprintf('____________________\n')
         fprintf('Updating optimal parameter...\n') 
-        gradientWeights = adapt_learning_rate(nablaEvo);
+        gradientWeights = adapt_learning_rate(nablaEvo,gradientWeights);
 
         p_k = p_k - gStepSize*diag(gradientWeights)*nablaLr
-        
+
+        p_k = clip_infeasible_parameters(p_k,A,b);
+
+        deltaP_k = p_k - pResolve_k;    
         pEvo = [pEvo,p_k];
         
         % possible exit conditions
         if size(p_k,1) >1
             if norm(pEvo(:,end)-pEvo(:,end-1))<convCrit
-                fprintf('Convergence criterion of %.2g (parameters) fulfilled\n',convCrit)
+                fprintf('Convergence criterion of %.3f (parameters) fulfilled\n',convCrit)
                 break
             elseif length(LrEvo)>5
                 if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
-                    fprintf('Convergence criterion of %.2g (cost) fulfilled\n',convCrit*100)
+                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCrit*100)
                     break
                 end
             end
         else
             if norm(pEvo(end)-pEvo(end-1))<convCrit
-                fprintf('Convergence criterion of %.2g (parameters) fulfilled\n',convCrit)
+                fprintf('Convergence criterion of %.3f (parameters) fulfilled\n',convCrit)
                 break
             elseif length(LrEvo)>5
                 if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
-                    fprintf('Convergence criterion of %.2g (cost) fulfilled\n',convCrit*100)
+                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCrit*100)
                     break
                 end
             end
@@ -289,30 +295,59 @@ function cond = check_cond_resolve(k,lastRebuild,nRebuild, xiRebuild_k, ...
     if mod(k-lastRebuild,nRebuild) == 0 
         cond = 1;
         fprintf('____________________\n')
-        fprintf('Resolving ROM (max lin. iterations) ...\n')
+        fprintf('Resolving EoMs (max lin. iterations) ...\n')
     elseif any(xiRebuild_k > rebuildThreshold)
-        cond = 1;fprintf('____________________\n')
-        fprintf('Resolving ROM (xi>threshold) ...\n')
+        cond = 1;
+        fprintf('____________________\n')
+        fprintf('Resolving EoMs (xi>threshold) ...\n')
     elseif maxIteration-k<0.25*maxIteration ...
             && mod(k-lastRebuild,int16(nRebuild/2)) == 0
         cond = 1;
         fprintf('____________________\n')
-        fprintf('Resolving ROM (max lin. iteration - close to end) ...\n')
+        fprintf('Resolving EoMs (max lin. iteration - close to end) ...\n')
     end
     
 end
 
 % Adapt gradient __________________________________________________________
-function gradientWeights = adapt_learning_rate(nablaEvo)
+function gradientWeights = adapt_learning_rate(nablaEvo,currentGradientWeights)
     nParam = size(nablaEvo,1);
-    gradientWeights = ones(1,nParam);
+    gradientWeights = currentGradientWeights;
     for p = 1:nParam
         if sign(nablaEvo(p,end-1)) ~= sign(nablaEvo(p,end)) ...
                 && nablaEvo(p,end-1) ~= 0
             fprintf('')
-            gradientWeights(p) = 0.5*gradientWeights(p);
+            gradientWeights(p) = 0.5*currentGradientWeights(p);
             fprintf('Adapting learning rate (change in gradient sign) - xi%d...\n',p)
         end
     end
 end
+
+% Clip infeasible parameters ______________________________________________
+% Note: only work for constraint containing a single parameter
+function param = clip_infeasible_parameters(p,A,b)
+
+    param = p;
+
+    % check if problem is infeasible
+    if ~all(A*p<b)
+        constrIdxToClip = find(A*p>b);   
+        
+        % iterate over violated constraints
+        for i = 1:length(constrIdxToClip)
+            constrIdx = constrIdxToClip(i);
+
+            % only consider constraints containing a single parameter
+            if length(find(A(constrIdx,:))) == 1
+                paramIdxToClip = find(A(constrIdx,:));
+                param(paramIdxToClip) = b(constrIdx) - sign(A(constrIdx,paramIdxToClip))*0.05*b(constrIdx);
+                fprintf('Clipping  parameter %d to the value %d \n',paramIdxToClip,param(paramIdxToClip))
+            end
+        end
+    end
+ end
+
+
+
+
 

@@ -75,40 +75,35 @@ end
 
 %% OPTIMIZATION PARAMETERS
 dSwim = [1;0;0]; %swimming direction
-h = 0.01;
-tmax = 0.5;
+h = 0.005;
+tmax = 1.0;
 
 %% OPTIMISATION TEST 1 ____________________________________________________
 
-A = [1;-1];
-b = [0.8;1.2];
+% A = [1;-1];
+% b = [0.8;1.2];
+A = [1 0 0;
+    -1 0 0;
+    0 1 0;
+    0 -1 0;
+    0 0 1;
+    0 0 -1];
+b = [1.2;-0.8;0.5;0.1;0.2;0.1];
 
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset, ...
-    nodes,elements,dSwim,h,tmax,A,b, 'maxIteration',40,'convCrit',0.002,'convCritCost',0.8,'barrierParam',20, ...
-    'gStepSize',0.001,'nResolve',8, 'resolveThreshold',0.2);
+    nodes,elements,dSwim,h,tmax,A,b, ...
+    'maxIteration',10, ...
+    'convCrit',0.001, ...
+    'convCritCost',0.01, ...
+    'barrierParam',40, ...
+    'gStepSize',0.0002, ...
+    'nResolve',8, ...
+    'resolveThreshold',0.1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
 
-%% VISUALIZATION __________________________________________________________
-
-% plot the two meshes
-xiPlot = xiStar;
-f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
-elementPlot = elements(:,1:4); hold on 
-v1 = reshape(U*xiPlot, 3, []).';
-S = 1;
-hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
-L = [Lx,Ly,Lz];
-O = [-Lx,-Ly/2,-Lz/2];
-plotcube(L,O,.05,[0 0 0]);
-axis equal; grid on; box on; drawnow
-set(f1,'PaperUnits','centimeters');
-set(f1,'PaperPositionMode','auto');
-% set(f1,'PaperSize',[10 3.5]); % Canvas Size
-set(f1,'Units','centimeters');
-% 
 
 %% PLOT COST FUNCTION OVER ITERATIONS _____________________________________
 
@@ -129,17 +124,17 @@ set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
 subplot(1,3,1)
 plot(xiEvo(1,:));
-ylabel('$$\xi_1$$','Interpreter','latex')
+ylabel('$$p_1$$','Interpreter','latex')
 xlabel('Iterations')
 grid on
 subplot(1,3,2)
 plot(xiEvo(2,:));
-ylabel('$$\xi_2$$','Interpreter','latex')
+ylabel('$$p_2$$','Interpreter','latex')
 xlabel('Iterations')
 grid on
 subplot(1,3,3)
 plot(xiEvo(3,:));
-ylabel('$$\xi_3$$','Interpreter','latex')
+ylabel('$$p_3$$','Interpreter','latex')
 xlabel('Iterations')
 grid on
 
