@@ -35,11 +35,12 @@
 % (1) xiStar:       optimal shape parameter(s) (scalar or vector)
 % (2) xiEvo:        evolution of the optimal shape parameter(s)
 % (3) LrEvo:        evolution of the cost function values
+% (4) LwoBEvo:      evolution of the cost function values without barriers
 %     
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 12/11/2023, Mathieu Dubied, ETH Zurich
 
-function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,nodes,elements,d,h,tmax,A,b,varargin)
+function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset,nodes,elements,d,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nResolve,...
@@ -127,8 +128,9 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
     dr = reduced_constant_vector(d,V,3);
-    Lr = reduced_cost_function_w_constraints_TET4(N,eta,p_k,A,b,barrierParam,V);  
-    LrEvo = Lr;
+    [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V);  
+    LEvo = L;
+    LwoBEvo = LwoB;
     nablaEvo = zeros(size(A,2),1);
     lastResolve = 0;
 
@@ -192,7 +194,9 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
         fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n')   
         nablaLr = gradient_cost_function_w_constraints_TET4(p_k,eta_k,S,A,b,barrierParam,V);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,eta,p_k,A,b,barrierParam,V)];
+        [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V);
+        LEvo = [LEvo, L];
+        LwoBEvo = [LwoBEvo, LwoB];
         nablaEvo = [nablaEvo,nablaLr];
 
         % update optimal parameter
@@ -212,8 +216,8 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
             if norm(pEvo(:,end)-pEvo(:,end-1))<convCrit
                 fprintf('Convergence criterion of %.3f (parameters) fulfilled\n',convCrit)
                 break
-            elseif length(LrEvo)>5
-                if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
+            elseif length(LEvo)>5
+                if norm(LEvo(end) - mean(LEvo(end-4:end))) < convCritCost
                     fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCrit*100)
                     break
                 end
@@ -222,8 +226,8 @@ function [xiStar,pEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,n
             if norm(pEvo(end)-pEvo(end-1))<convCrit
                 fprintf('Convergence criterion of %.3f (parameters) fulfilled\n',convCrit)
                 break
-            elseif length(LrEvo)>5
-                if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
+            elseif length(LEvo)>5
+                if norm(LEvo(end) - mean(LEvo(end-4:end))) < convCritCost
                     fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCrit*100)
                     break
                 end

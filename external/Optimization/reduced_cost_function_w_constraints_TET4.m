@@ -26,13 +26,14 @@
 %                   
 %
 % OUTPUTS:
-% (1) Lr:   reduced cost function value    
+% (1) L:   reduced cost function value
+% (2) LwoB: cost function without barrier function
 %     
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 12/11/2023, Mathieu Dubied, ETH Zurich
 
-function Lr = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstraint,bConstraint,barrierParam,V)
-    Lr = 0;
+function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstraint,bConstraint,barrierParam,V)
+    L = 0;
     LwoB = 0;
     nConstraints = size(bConstraint);
     xDir = zeros(size(V,1),1);
@@ -50,11 +51,11 @@ function Lr = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstraint,bCon
         end
 
         % final cost function at time step t       
-        Lr = Lr - xDir.'*V*eta_i + logBarrierInTimeStep;
+        L = L - xDir.'*V*eta_i + logBarrierInTimeStep;
         LwoB = LwoB - xDir.'*V*eta_i;
     end
 
     % print cost function without part stemming from barrier functions
     fprintf('Partial cost (w/o barrier): %.4f\n',LwoB)
-    fprintf('Full cost (with barrier): %.4f\n',Lr)
+    fprintf('Full cost (with barrier): %.4f\n',L)
 end
