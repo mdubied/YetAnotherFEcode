@@ -3,8 +3,8 @@
 % Synthax:
 % [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
 %
-% Description: Implementation of the optimization pipeline 4 presented in
-% the paper, based on Newton's method. 
+% Description: Implementation of the (shape) optimisation pipeline
+% presented in the paper
 %
 % INPUTS: 
 % (1) myElementConstructor: defines the type of element and material
@@ -13,23 +13,22 @@
 % (3) nodes:                nodes and their coordinates
 % (4) elements:             elements described by their nodes
 % (5) U:                    shape variation basis
-% (6) d:                    forward swimming direction
-% (7) h:                    time step for time integration
-% (8) tmax:                 simulation for [0,tmax]
-% (9)-(10) A,b              constraints on xi of the form Axi<b
+% (6) h:                    time step for time integration
+% (7) tmax:                 simulation for [0,tmax]
+% (8)-(9) A,b               constraints on xi of the form Axi<b
 %
 % possible additional name-value pair arguments
-% (11) maxIteration:maximum number of iterations
-% (12) convCrit:    convergence criterium. Norm between two successive
+% (10) maxIteration:maximum number of iterations
+% (11) convCrit:    convergence criterium. Norm between two successive
 %                   optimal paramter vectors
-% (13) FORMULATION: order of the Neumann approximation (N0/N1/N1t)
-% (14) VOLUME:      integration over defected (1) or nominal volume (0)
-% (15) USEJULIA:    use of JULIA (1) for the computation of internal forces
+% (12) FORMULATION: order of the Neumann approximation (N0/N1/N1t)
+% (13) VOLUME:      integration over defected (1) or nominal volume (0)
+% (14) USEJULIA:    use of JULIA (1) for the computation of internal forces
 %                   tensors
-% (16) barrierParam:parameter to scale the barrier function for the 
+% (15) barrierParam:parameter to scale the barrier function for the 
 %                   constraints (1/barrierParam)
-% (17) gStepSize:   step size used in the gradient descent algorithm
-% (18) nRebuild:    number of step between each re-build of a PROM
+% (16) gStepSize:   step size used in the gradient descent algorithm
+% (17) nRebuild:    number of step between each re-build of a PROM
 %
 % OUTPUTS:
 % (1) xiStar:       optimal shape parameter(s) (scalar or vector)
@@ -37,9 +36,9 @@
 % (3) LrEvo:        evolution of the cost function values
 %     
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 12/11/2023, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
+function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,...
@@ -67,9 +66,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Building PROM ... \n')
 
-    mTilde = 10;
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);      
+    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION);      
     
 
     % Solve EoMs
@@ -115,29 +113,22 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     
     % Retrieving solutions    
     eta = TI_NL_PROM.Solution.q;
-    etad = TI_NL_PROM.Solution.qd;
-    etadd = TI_NL_PROM.Solution.qdd;
+    % etad = TI_NL_PROM.Solution.qd;
+    % etadd = TI_NL_PROM.Solution.qdd;
     % S = TI_sens.Solution.q;
     % Sd = TI_sens.Solution.qd;
     % Sdd = TI_sens.Solution.qdd;
 
     S = TI_NL_PROM.Solution.s;
-    Sd = TI_NL_PROM.Solution.sd;
-    Sdd = TI_NL_PROM.Solution.sdd;
     eta_0k = TI_NL_PROM.Solution.q;
     eta_k = eta;
-    etad_k = etad;
-    etadd_k = etadd;
-
-    % nodes = PROM_Assembly.Mesh.nodes;
-    x0 = reshape(nodes.',[],1);
     
     % computing initial cost function value
     fprintf('____________________\n')
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
-    dr = reduced_constant_vector(d,V,3);
-    Lr = reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta,etad,etadd,xiRebuild_k,xi_k,dr,A,b,barrierParam,V);  
+    Lr = reduced_cost_function_w_constraints_TET4(N,eta,xi_k,A,b,barrierParam,V);  
+                                                   
     LrEvo = Lr;
     nablaEvo = zeros(size(U,2),1);
     lastRebuild = 0;
@@ -163,7 +154,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 
             % build PROM
             [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-                 build_PROM_3D(svMesh,nodes_defected,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION);
+                 build_PROM_3D(svMesh,nodes_defected,elements,U,USEJULIA,VOLUME,FORMULATION);
 
             % Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
             % Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
@@ -184,9 +175,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
             % set(f1,'Units','centimeters');
                                                          
             xiRebuild_k = zeros(size(U,2),1);   % reset local xi to 0 as we rebuild the ROM
-            
-            dr = reduced_constant_vector(d,V,3);
-    
+              
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
             fprintf('____________________\n')
@@ -197,11 +186,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
                 
             eta_0k = TI_NL_PROM.Solution.q;
             eta_k = TI_NL_PROM.Solution.q;
-            etad_k = TI_NL_PROM.Solution.qd;
-            etadd_k = TI_NL_PROM.Solution.qdd;
             S = TI_NL_PROM.Solution.s;
-            Sd = TI_NL_PROM.Solution.sd;
-            Sdd = TI_NL_PROM.Solution.sdd;
     
             N = size(eta_k,2);
 
@@ -248,8 +233,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         % compute cost function and its gradient
         fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n') 
-        nablaLr = gradient_cost_function_w_constraints_TET4(dr,xiRebuild_k,xi_k,x0,eta_k,etad_k,etadd_k,S,Sd,Sdd,tailProperties,spineProperties,A,b,barrierParam,V);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,tailProperties,spineProperties,x0,eta_k,etad_k,etadd_k,xiRebuild_k,xi_k,dr,A,b,barrierParam,V)];
+        nablaLr = gradient_cost_function_w_constraints_TET4(xi_k,eta_k,S,A,b,barrierParam,V);
+        LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,eta,xi_k,A,b,barrierParam,V)];
         nablaEvo = [nablaEvo,nablaLr];
 
         % update optimal parameter

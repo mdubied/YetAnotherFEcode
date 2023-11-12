@@ -1,27 +1,27 @@
 % build_PROM_3D
 %
 % Synthax:
-% [V,ROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-%    build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION)
+% [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
+%   build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION)
 %
-% Description: Builds a ROM based on the nominal mesh
+% Description: Builds a PROM based on the nominal mesh, for the given shape
+% variations U
 %
 % INPUTS: 
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
 % (2) nodes:        nodes and their coordinates
 % (3) elements:     elements described by corresponding nodes' index
-% (4) mTilde:       virtual mass linear density of the fish + water
-% (5) U:            shape variation matrix/vector
-% (6) USEJULIA:     use of JULIA (1) for the computation of internal forces
+% (4) U:            shape variation matrix/vector
+% (5) USEJULIA:     use of JULIA (1) for the computation of internal forces
 %                   tensors - not tested, but was present as parameter in
 %                   the DpROM branch
-% (7) VOLUME:       integration over defected (1) or nominal volume (0)
-% (8) FORMULATION:  N1/N1t/N0, Newman expansion of internal forces
+% (6) VOLUME:       integration over defected (1) or nominal volume (0)
+% (7) FORMULATION:  N1/N1t/N0, Newman expansion of internal forces
 %
 % OUTPUTS:
 % (1) V:                    ROB    
-% (2) ROM_Assembly:         ROM assembly
-% (3) tensors_ROM:          (reduced) tensors for the internal forces 
+% (2) PROM_Assembly:        PROM assembly
+% (3) tensors_PROM:         (reduced) tensors for the internal forces 
 % (4) tailProperties:       properties of the tail pressure force
 %                           (matrices, tail elements etc.)
 % (5) spineProperties:      properties of the spine change in momentum
@@ -35,10 +35,10 @@
 %
 % Additional notes: -
 %
-% Last modified: 22/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
 
 function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM_3D(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION)
+    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION)
 
     startPROMBuilding = tic;
     
@@ -157,7 +157,6 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     % tail pressure force: group tail quantities in a struct
     tailProperties.A = A;
     tailProperties.B = B;
-    tailProperties.mTilde = mTilde;
     tailProperties.w = wTail;
     tailProperties.V = VTail;
     tailProperties.U = UTail;
@@ -167,6 +166,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     tailProperties.iDOFs = iDOFs;
     tailProperties.zDOFIdx = matchedDorsalNodesIdx(spineElements==tailElement)*3;
     tailProperties.z = matchedDorsalNodesZPos(tailElement);
+    tailProperties.mTilde = 0.25*pi*1000*(tailProperties.z*2)^2;
     tailProperties.Uz = U(tailProperties.zDOFIdx,:);
 
     % spine momentum change tensor (reduced order)

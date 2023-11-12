@@ -112,7 +112,6 @@ svMesh.create_elements_table(elements,myElementConstructor);
 
 
 %% OPTIMIZATION PARAMETERS
-dSwim = [1;0;0]; %swimming direction
 h = 0.01;
 tmax = 1.5;
 
@@ -144,7 +143,7 @@ b = [0.45;0.45;0.5;0.5;0.5;0.5];
 
 tStart = tic;
 [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,dSwim,h,tmax,A,b,'FORMULATION',FORMULATION, ...
+    nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, 'maxIteration',40,'convCrit',0.002,'convCritCost',0.8,'barrierParam',20, ...
     'gStepSize',0.0001,'nRebuild',8, 'rebuildThreshold',0.2);
 topti = toc(tStart);

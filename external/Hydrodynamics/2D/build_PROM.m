@@ -4,7 +4,8 @@
 % [V,ROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
 %    build_PROM(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION)
 %
-% Description: Builds a ROM based on the nominal mesh
+% Description: Builds a PROM based on the nominal mesh and the shape
+% variations U
 %
 % INPUTS: 
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
@@ -35,7 +36,7 @@
 %
 % Additional notes: -
 %
-% Last modified: 15/10/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
 
 function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_PROM(MeshNominal,nodes,elements,mTilde,U,USEJULIA,VOLUME,FORMULATION)

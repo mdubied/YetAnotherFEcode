@@ -2,7 +2,7 @@
 %
 % Synthax:
 % [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-%    build_ROM_non_optimisation(MeshNominal,nodes,elements,mTilde,USEJULIA,ACTUATION)
+%    build_ROM_non_optimisation(MeshNominal,nodes,elements,USEJULIA)
 %
 % Description: Builds a ROM based on the nominal mesh
 %
@@ -10,11 +10,8 @@
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
 % (2) nodes:        nodes and their coordinates
 % (3) elements:     elements and corresponding nodes
-% (4) mTilde:       virtual mass linear density of the fish + water
-% (5) USEJULIA:     use of JULIA (1) for the computation of internal forces
-%                   tensors - not tested, but was present as parameter in
-%                   the DpROM branch
-% (6) ACTUATION:    1 if actuation forces are considered, 0 else
+% (4) USEJULIA:     use of JULIA (1) for the computation of internal forces
+%                   tensors 
 %
 % OUTPUTS:
 % (1) V:                    ROB    
@@ -24,15 +21,16 @@
 %                           (matrices, tail elements etc.)
 % (5) spineProperties:      properties of the spine change in momentum
 %                           (tensor, spine elements etc.)
-% (6) actuTop:              vectors and matrices related to the actuation
+% (6) draProperties         properties of the form drag forces
+% (7) actuTop:              vectors and matrices related to the actuation
 %                           muscle at the top
-% (7) actuBottom:           vectors and matrices related to the actuation
+% (8) actuBottom:           vectors and matrices related to the actuation
 %                           muscle at the bottom
 %     
 %
 % Additional notes: -
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
 
 function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_ROM_3D(MeshNominal,nodes,elements,USEJULIA)
