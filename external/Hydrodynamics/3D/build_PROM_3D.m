@@ -71,9 +71,13 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
     [f0n,ind] = sort(sqrt(diag(om))/2/pi);
     VMn = VMn(:,ind);
+    
+    
     for ii = 1:n_VMs
         VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
     end
+    % to delete when done with test:
+    % VMn = [VMn(:,1),VMn(:,4)];
     VMn = NominalAssembly.unconstrain_vector(VMn);
 
     % modal derivatives
@@ -88,17 +92,17 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
-    mSingle = [0 0 1];
-    m3 = repmat(mSingle,1,nNodes)';
-    V  = [m1 m2 m3 VMn MDn DS];
+    % mSingle = [0 0 1];
+    % m3 = repmat(mSingle,1,nNodes)';
+    V  = [m1 m2 VMn MDn DS];
     V  = orth(V);
 
     % % plot
     % mod = 2;
-    % elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+    % elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
     % figure('units','normalized','position',[.2 .1 .6 .8])
     % PlotMesh(nodes, elementPlot, 0);
-    % v1 = reshape(VMn(:,mod), 2, []).';
+    % v1 = reshape(VMn(:,mod), 3, []).';
     % PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
     % title(['\Phi_' num2str(mod)])
 

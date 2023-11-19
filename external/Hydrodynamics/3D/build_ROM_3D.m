@@ -60,7 +60,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 3;
+    n_VMs = 2;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
@@ -84,8 +84,9 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-    V  = [m1 m2 VMn MDn];
-    % V = [VMn MDn]
+    mSingle = [0 0 1];
+    m3 = repmat(mSingle,1,nNodes)';
+    V  = [m1 m2 m3 VMn MDn];
     V  = orth(V);
 
     % plot

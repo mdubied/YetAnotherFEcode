@@ -81,11 +81,11 @@ end
 % U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
 % U = [y_thinFish,z_tail, z_head, y_head,y_ellipseFish];    % shape variations basis
 % U = fishEllipseYZ;
-U = [z_tail,y_linLongTail,y_head];
+U = [z_tail,y_thinFish,z_head];
 
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
-xiPlot = [-0.6;0.6;0.6];
+xiPlot = [-0.4;0.2;0.4];
 % xiPlot = 0.5;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
@@ -100,9 +100,10 @@ set(f1,'PaperUnits','centimeters');
 % set(f1,'PapeyPositionMode','auto');
 % set(f1,'PaperSize',[7 3.5]); % Canvas Size
 set(f1,'Units','centimeters');
-% 
+
+
 %%
-xiTest = [0.1858;-0.1469;0.0195];
+xiTest = [-0.4;0.2;0.4];
 % shape-varied mesh 
 df = U*xiTest;                       % displacement field introduced by shape variations
 dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
@@ -111,6 +112,13 @@ svMesh = Mesh(nodes_sv);
 svMesh.create_elements_table(elements,myElementConstructor);
 
 
+%%
+nNodes = size(nodes,1);
+matrix_inp = [linspace(1,nNodes,nNodes)',nodes_sv];
+matrix_inp(:,1) = cast(matrix_inp(:,1),"uint8");
+disp(matrix_inp)
+writematrix(matrix_inp,'M.csv')
+ 
 %% OPTIMIZATION PARAMETERS
 h = 0.01;
 tmax = 1.5;
