@@ -10,8 +10,8 @@ clc
 
 elementType = 'TET4';
 
-FORMULATION = 'N0'; % N1/N1t/N0
-VOLUME = 0;         % integration over defected (1) or nominal volume (0)
+FORMULATION = 'N1t'; % N1/N1t/N0
+VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
 USEJULIA = 0;
 
@@ -75,6 +75,8 @@ end
 % U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
 % U = [y_thinFish,z_tail, z_head, y_head,y_ellipseFish];    % shape variations basis
 % U = fishEllipseYZ;
+
+% SO1
 U = [z_tail,z_head,y_thinFish];
 
 % plot the two meshes
@@ -114,62 +116,26 @@ disp(matrix_inp)
 writematrix(matrix_inp,'M.csv')
  
 %% OPTIMIZATION PARAMETERS
-h = 0.01;
-tmax = 1.5;
+h = 0.005
+tmax = 2.0;
 
-%% OPTIMISATION TEST 1 ____________________________________________________
-% A = [1 0 0 0;
-%     -1 0 0 0;
-%     0 1 0 0;
-%     0 -1 0 0;
-%     0 0 1 0;
-%     0 0 -1 0;
-%     0 0 0 1;
-%     0 0 0 -1];
-% b = [0.6;0.6;0.6;0.6;0.6;0.6;0.6;0.6];
+%% OPTIMISATION SO1 _______________________________________________________
 A = [1 0 0 ;
     -1 0 0;
     0 1 0;
     0 -1 0;
     0 0 1;
     0 0 -1];
-b = [0.45;0.45;0.5;0.5;0.5;0.5];
-% A = [1 0;
-%     -1 0;
-%     0 1;
-%     0 -1];
-% b = [0.6;0.6;0.6;0.6];
-% A = [1;
-%     -1];
-% b = [0.2;0.2];
+b = [0.5;0.5;0.5;0.5;0.5;0.5];
 
 tStart = tic;
-[xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset, ...
+[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
-    'VOLUME',VOLUME, 'maxIteration',40,'convCrit',0.002,'convCritCost',0.8,'barrierParam',20, ...
-    'gStepSize',0.0001,'nRebuild',8, 'rebuildThreshold',0.2);
+    'VOLUME',VOLUME, 'maxIteration',25,'convCrit',0.004,'convCritCost',0.8,'barrierParam',10, ...
+    'gStepSize',0.002,'nRebuild',6, 'rebuildThreshold',0.15);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
-
-%% VISUALIZATION __________________________________________________________
-
-% plot the two meshes
-xiPlot = xiStar;
-f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
-elementPlot = elements(:,1:4); hold on 
-v1 = reshape(U*xiPlot, 3, []).';
-S = 1;
-hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
-L = [Lx,Ly,Lz];
-O = [-Lx,-Ly/2,-Lz/2];
-plotcube(L,O,.05,[0 0 0]);
-axis equal; grid on; box on; drawnow
-set(f1,'PaperUnits','centimeters');
-set(f1,'PaperPositionMode','auto');
-% set(f1,'PaperSize',[10 3.5]); % Canvas Size
-set(f1,'Units','centimeters');
-% 
 
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
@@ -233,18 +199,33 @@ axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO1_shapes_test.pdf','Resolution',600)
+exportgraphics(f1,'SO1_shapes_V0.pdf','Resolution',600)
 
-%% PLOT COST FUNCTION OVER ITERATIONS _____________________________________
+%% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
+f2 = figure('units','centimeters','position',[3 3 9 5]);
+t = tiledlayout(1,2);
+t.TileSpacing = 'loose';
+t.Padding = 'tight';
 
-figure
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot(LrEvo)
+% cost function
+ax1 = nexttile;
+plot(LEvo)
 grid on
-ylabel('$$L_r$$','Interpreter','latex')
+ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
+
+% Parameters
+ax2 = nexttile;
+plot(xiEvo(1,:),LineStyle="-");
+hold on
+plot(xiEvo(2,:),LineStyle="--");
+plot(xiEvo(3,:),LineStyle="-.");
+grid on
+ylabel('$$\xi$$','Interpreter','latex')
+xlabel('Iterations')
+legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
+    'Position',[0.75 0.35 0.2 0.2])
+exportgraphics(f2,'SO1_evo_V0.pdf','Resolution',600)
 
 
 %% PLOT PARAMETERS' EVOLUTION OVER ITERATIONS _____________________________

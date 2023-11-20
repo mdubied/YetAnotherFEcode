@@ -168,7 +168,9 @@ classdef ImplicitNewmark < handle
                 time = [time t];
                 NR = [NR it];
                 R = [R epsilon];
-                disp(['time integration completed: ', num2str(100* t/tmax), '%'])
+                if mod(100* t/tmax,20) < 0.35
+                    disp(['time integration completed: ', num2str(100* t/tmax), '%'])
+                end
                 
                 % needed when solving sensitivity as a separated linear
                 % problem

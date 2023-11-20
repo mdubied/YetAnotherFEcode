@@ -38,11 +38,12 @@
 %
 % Last modified: 12/11/2023, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,h,tmax,A,b,varargin)
+function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,...
         rebuildThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin{:});
+    rebuildThresholdSwitch = 0;
     
     % NOMINAL SOLUTION ____________________________________________________
     fprintf('**************************************\n')
@@ -52,6 +53,9 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     xi_k = zeros(size(U,2),1);
     xiRebuild_k = zeros(size(U,2),1);
     xiEvo = xi_k;
+
+    nParam = length(xi_k);
+    gradientWeights = ones(1,nParam);
 
     % Mesh
             
@@ -75,7 +79,8 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
     % TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);      
-    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
+    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+                
     toc
 
     uTail = zeros(3,tmax/h);
@@ -127,10 +132,11 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
     fprintf('____________________\n')
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
-    Lr = reduced_cost_function_w_constraints_TET4(N,eta,xi_k,A,b,barrierParam,V);  
-                                                   
-    LrEvo = Lr;
-    nablaEvo = zeros(size(U,2),1);
+    [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,xi_k,A,b,barrierParam,V);  
+    LEvo = L;
+    LwoBEvo = LwoB;
+    nablaEvo = zeros(size(A,2),1);
+
     lastRebuild = 0;
 
     for k = 1:maxIteration
@@ -141,7 +147,7 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
         % possible rebuilding of a PROM
         if check_cond_rebuild(k,lastRebuild,nRebuild,xiRebuild_k,rebuildThreshold,maxIteration)
             lastRebuild = k;
-
+         
             % update defected mesh nodes
             df = U*xi_k;                       % displacement fields introduced by defects
             ddf = [df(1:3:end) df(2:3:end) df(3:3:end)]; 
@@ -232,39 +238,59 @@ function [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,node
 
         % compute cost function and its gradient
         fprintf('____________________\n')
-        fprintf('Computing cost function and its gradient...\n') 
+        fprintf('Computing cost function and its gradient...\n')   
         nablaLr = gradient_cost_function_w_constraints_TET4(xi_k,eta_k,S,A,b,barrierParam,V);
-        LrEvo = [LrEvo, reduced_cost_function_w_constraints_TET4(N,eta,xi_k,A,b,barrierParam,V)];
+        [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,xi_k,A,b,barrierParam,V);
+
+        LEvo = [LEvo, L];
+        LwoBEvo = [LwoBEvo, LwoB];
         nablaEvo = [nablaEvo,nablaLr];
 
         % update optimal parameter
         fprintf('____________________\n')
         fprintf('Updating optimal parameter...\n') 
-        gradientWeights = adapt_learning_rate(nablaEvo);
+        updatedGradientWeights = adapt_learning_rate(nablaEvo,gradientWeights);
+
+        if ~all(gradientWeights == updatedGradientWeights) 
+            if  rebuildThresholdSwitch ==0
+                rebuildThreshold = rebuildThreshold/2;
+                rebuildThresholdSwitch = 1;
+            end
+            gradientWeights = updatedGradientWeights;
+            
+        end
 
         xi_k = xi_k - gStepSize*diag(gradientWeights)*nablaLr
         xiRebuild_k = xiRebuild_k - gStepSize*diag(gradientWeights)*nablaLr;
+
+        xi_k_clipped = clip_infeasible_parameters(xi_k,A,b);
+        if ~all(xi_k_clipped == xi_k)
+            disp('CLIPPING\n')
+            xiRebuild_k = xiRebuild_k + (xi_k_clipped - xi_k);
+            xi_k = xi_k_clipped;
+        end
+
 
         xiEvo = [xiEvo,xi_k];
         
         % possible exit conditions
         if size(xi_k,1) >1
             if norm(xiEvo(:,end)-xiEvo(:,end-1))<convCrit
-                fprintf('Convergence criterion of %.2g (parameters) fulfilled\n',convCrit)
+                fprintf('Convergence criterion of %.3f (parameters) fulfilled\n',convCrit)
                 break
-            elseif length(LrEvo)>5
-                if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
-                    fprintf('Convergence criterion of %.2g (cost) fulfilled\n',convCrit*100)
+            elseif length(LEvo)>7
+                if var(LEvo(end-6:end)) < convCritCost
+                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCritCost)
                     break
                 end
             end
         else
             if norm(xiEvo(end)-xiEvo(end-1))<convCrit
-                fprintf('Convergence criterion of %.2g (parameters) fulfilled\n',convCrit)
+                fprintf('Convergence criterion of %.3f(parameters) fulfilled\n',convCrit)
                 break
-            elseif length(LrEvo)>5
-                if norm(LrEvo(end) - mean(LrEvo(end-4:end))) < convCritCost
-                    fprintf('Convergence criterion of %.2g (cost) fulfilled\n',convCrit*100)
+            elseif length(LEvo)>7
+                if var(LEvo(end-6:end)) < convCritCost
+                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCritCost)
                     break
                 end
             end
@@ -336,11 +362,11 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
         cond = 1;
         fprintf('____________________\n')
         fprintf('Rebuilding PROM (max lin. iterations) ...\n')
-    elseif any(xiRebuild_k > rebuildThreshold)
+    elseif any(abs(xiRebuild_k) > rebuildThreshold)
         cond = 1;fprintf('____________________\n')
         fprintf('Rebuilding PROM (xi>threshold) ...\n')
-    elseif maxIteration-k<0.25*maxIteration ...
-            && mod(k-lastRebuild,int16(nRebuild/2)) == 0
+    elseif maxIteration-k<0.2*maxIteration ...
+            && mod(k-lastRebuild,int16(nRebuild/1.33)) == 0
         cond = 1;
         fprintf('____________________\n')
         fprintf('Rebuilding PROM (max lin. iteration - close to end) ...\n')
@@ -349,16 +375,40 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
 end
 
 % Adapt gradient __________________________________________________________
-function gradientWeights = adapt_learning_rate(nablaEvo)
+function gradientWeights = adapt_learning_rate(nablaEvo,currentGradientWeights)
     nParam = size(nablaEvo,1);
-    gradientWeights = ones(1,nParam);
+    gradientWeights = currentGradientWeights;
     for p = 1:nParam
         if sign(nablaEvo(p,end-1)) ~= sign(nablaEvo(p,end)) ...
                 && nablaEvo(p,end-1) ~= 0
             fprintf('')
-            gradientWeights(p) = 0.5*gradientWeights(p);
-            fprintf('Adapting learning rate (change in gradient sign) - xi%d...\n',p)
+            gradientWeights(p) = 0.5*currentGradientWeights(p);
+            fprintf('Adapting learning rate for xi%d to %.3f...\n',p,gradientWeights(p))
         end
     end
 end
+
+% Clip infeasible parameters ______________________________________________
+% Note: only work for constraint containing a single parameter
+function param = clip_infeasible_parameters(p,A,b)
+
+    param = p;
+
+    % check if problem is infeasible
+    if ~all(A*p<b)
+        constrIdxToClip = find(A*p>b);   
+        
+        % iterate over violated constraints
+        for i = 1:length(constrIdxToClip)
+            constrIdx = constrIdxToClip(i);
+
+            % only consider constraints containing a single parameter
+            if length(find(A(constrIdx,:))) == 1
+                paramIdxToClip = find(A(constrIdx,:));
+                param(paramIdxToClip) = sign(A(constrIdx,paramIdxToClip))*b(constrIdx) - sign(A(constrIdx,paramIdxToClip))*0.05*b(constrIdx);
+                fprintf('Clipping  parameter %d to the value %d \n',paramIdxToClip,param(paramIdxToClip))
+            end
+        end
+    end
+ end
 
