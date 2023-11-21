@@ -10,7 +10,7 @@ clc
 
 elementType = 'TET4';
 
-FORMULATION = 'N1t'; % N1/N1t/N0
+FORMULATION = 'N0'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
 USEJULIA = 0;
@@ -79,9 +79,13 @@ end
 % SO1
 U = [z_tail,z_head,y_thinFish];
 
+% SO2
+U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish];
+
+
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
-xiPlot = [-0.4;0.2;0.4];
+xiPlot = [-0.6;0.3;0.5;0.3;0.5];
 % xiPlot = 0.5;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
@@ -116,7 +120,7 @@ disp(matrix_inp)
 writematrix(matrix_inp,'M.csv')
  
 %% OPTIMIZATION PARAMETERS
-h = 0.005
+h = 0.005;
 tmax = 2.0;
 
 %% OPTIMISATION SO1 _______________________________________________________
@@ -137,6 +141,37 @@ topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
 
+%% OPTIMISATION SO2 _______________________________________________________
+
+% [z_tail,z_head,y_thinFish,y_linLongTail,y_head,y_ellipseFish];
+% Constraints
+nParam = 5;
+A = zeros(2 * nParam, nParam);
+for i = 1:nParam
+    A(2*i-1:2*i,i) =[1;-1];
+end
+yTotConstr = [0 0 1 0 1;0 0  -1 0 -1;
+              0 0 0 1 1;0 0  0 -1 -1];
+A = [A;yTotConstr];
+disp(A);
+b = [0.6;0.6;
+    0.6;0.6;
+    0.5;0.5;
+    0.5;0.5;
+    0.5;0.5;
+    0.8;0.8;
+    0.8;0.8];
+
+%%
+
+tStart = tic;
+[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
+    'VOLUME',VOLUME, 'maxIteration',25,'convCrit',0.004,'convCritCost',0.8,'barrierParam',1, ...
+    'gStepSize',0.001,'nRebuild',6, 'rebuildThreshold',0.15);
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
 elementPlot = elements(:,1:4); hold on
@@ -152,35 +187,35 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,1);
+subU = U(:,3);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
 dm = PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_1=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_4=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,2);
+subU = U(:,4);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v2, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_2=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_5=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,3);
+subU = U(:,5);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v3, 'factor', 1); 
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_3=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_6=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
@@ -199,7 +234,7 @@ axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO1_shapes_V0.pdf','Resolution',600)
+exportgraphics(f1,'SO2_shapes_V0.pdf','Resolution',600)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 f2 = figure('units','centimeters','position',[3 3 9 5]);
@@ -220,12 +255,19 @@ plot(xiEvo(1,:),LineStyle="-");
 hold on
 plot(xiEvo(2,:),LineStyle="--");
 plot(xiEvo(3,:),LineStyle="-.");
+plot(xiEvo(4,:),LineStyle="-");
+plot(xiEvo(5,:),LineStyle="--");
+% plot(xiEvo(6,:),LineStyle="-.");
+
 grid on
 ylabel('$$\xi$$','Interpreter','latex')
 xlabel('Iterations')
 legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
     'Position',[0.75 0.35 0.2 0.2])
-exportgraphics(f2,'SO1_evo_V0.pdf','Resolution',600)
+
+legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
+    'Position',[0.35 0.64 0.2 0.35])
+exportgraphics(f2,'SO2_evo_V0.pdf','Resolution',600)
 
 
 %% PLOT PARAMETERS' EVOLUTION OVER ITERATIONS _____________________________

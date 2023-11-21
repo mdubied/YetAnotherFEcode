@@ -128,7 +128,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     fprintf('Computing cost function...\n') 
     N = size(eta,2);
     dr = reduced_constant_vector(d,V,3);
-    [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V);  
+    [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));  
     LEvo = L;
     LwoBEvo = LwoB;
     nablaEvo = zeros(size(A,2),1);
@@ -193,8 +193,8 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
         % compute cost function and its gradient
         fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n')   
-        nablaLr = gradient_cost_function_w_constraints_TET4(p_k,eta_k,S,A,b,barrierParam,V);
-        [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V);
+        nablaLr = gradient_cost_function_w_constraints_TET4(p_k,eta_k,S,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));
+        [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));
         LEvo = [LEvo, L];
         LwoBEvo = [LwoBEvo, LwoB];
         nablaEvo = [nablaEvo,nablaLr];
