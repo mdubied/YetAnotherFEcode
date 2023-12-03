@@ -53,7 +53,9 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
 
     %p_k = ones(size(A,2),1);
     % p_k = [1;0;0];    % actuation_force_2
-    p_k = [0.8;2*pi;0];   % actuation_force_3
+    % p_k = [0.8;2*pi;0];   % actuation_force_3
+    p_k = [1;0;0;1];    % actuation_force_4
+
 
     pResolve_k = p_k;
     deltaP_k = p_k - pResolve_k;
