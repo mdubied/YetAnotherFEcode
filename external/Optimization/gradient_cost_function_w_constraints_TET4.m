@@ -28,7 +28,7 @@
 % (1) nablaLr:          gradient of the reduced cost function
 %     
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 03/12/2023, Mathieu Dubied, ETH Zürich
 
 function nablaLr = gradient_cost_function_w_constraints_TET4(xi,eta,s,AConstraint,bConstraint,barrierParam,V)
     N = size(eta,2);

@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
-% 3D actuation signal optimization of a fish.
+% 3D actuation signal optimisation of a fish.
 % 
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 03/12/2023, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -35,11 +35,11 @@ end
 % MESH ____________________________________________________________________
 
 % nominal mesh
-filename = '3d_rectangle_660el';%'fish3_664el';
+filename = '3d_fish_for_mike';%'3d_rectangle_660el';%'fish3_664el';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 
-nodes = nodes*0.01;
-nodes(:,2)=0.8*nodes(:,2);
+% nodes = nodes*0.01;
+% nodes(:,2)=0.8*nodes(:,2);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -78,26 +78,30 @@ dSwim = [1;0;0]; %swimming direction
 h = 0.005;
 tmax = 1.0;
 
-%% OPTIMISATION TEST 1 ____________________________________________________
+%% OPTIMISATION ___________________________________________________________
+% The actuation force needs to be chosen in the following script:
+%   solve_EoMs_and_sensitivities_actu
+% The initial conditions should be changed in the following script:
+%   optimise_actuation_3D
+% Cost function and gradient: over all simulated time step
 
-% A = [1;-1];
-% b = [0.8;1.2];
+% AO 1
 A = [1 0 0;
     -1 0 0;
     0 1 0;
     0 -1 0;
     0 0 1;
     0 0 -1];
-b = [1.1;-0.8;0.5;0.1;0.2;0.1];
+b = [1.2;-0.4;2.2*pi;-1.8*pi;0.1;0.1];
 
 tStart = tic;
-[xiStar,xiEvo,LrEvo, ~] = optimise_actuation_3D(myElementConstructor,nset, ...
+[xiStar,xiEvo,LEvo, ~] = optimise_actuation_3D(myElementConstructor,nset, ...
     nodes,elements,dSwim,h,tmax,A,b, ...
     'maxIteration',18, ...
     'convCrit',0.001, ...
     'convCritCost',0.0001, ...
-    'barrierParam',20, ...
-    'gStepSize',0.02, ...
+    'barrierParam',1000, ...
+    'gStepSize',0.2, ...
     'nResolve',8, ...
     'resolveThreshold',0.1);
 topti = toc(tStart);
@@ -111,9 +115,9 @@ figure
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot(LrEvo)
+plot(LEvo)
 grid on
-ylabel('$$L_r$$','Interpreter','latex')
+ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
 
 
@@ -140,66 +144,3 @@ xlabel('Iterations')
 grid on
 
 
-%% COST COMPUTATION ON FINAL ROM __________________________________________
-%xiStar4 = [0.2;0.1;0.5;0.2;0.1]
-xiFinal = xiStar;
-
-% tmax=4;
-% h=0.0025
-
-% shape-varied mesh 
-df = U*xiFinal;                       % displacement field introduced by shape variations
-dd = [df(1:2:end) df(2:2:end)];   % rearrange as two columns matrix
-nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
-svMesh = Mesh(nodes_sv);
-svMesh.create_elements_table(elements,myElementConstructor);
-svMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
-
-% (P)ROM creation
-FORMULATION = 'N1';VOLUME = 1; USEJULIA = 0;FOURTHORDER = 0; ACTUATION = 1;
-[V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
-        build_PROM(svMesh,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
-       
-% solve EoMs
-TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax, ...
-     'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
-% TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
-eta = TI_NL_PROM.Solution.q;
-etad = TI_NL_PROM.Solution.qd;
-N = size(eta,2);
-
-% compute cost Lr without barrier functions (no constraints, to obtain the
-% the cost stemming from the hydrodynamic force only)
-dr = reduced_constant_vector(dSwim,V);
-AFinal = [];     % no constraint
-bFinal= [];      % no constraint
-barrierParam = 10;
-Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiFinal,dr,AFinal,bFinal,barrierParam);
-%fprintf('The cost function w/o constraint is: %.4f\n',Lr)
-
-%% PLOTs __________________________________________________________________
-
-% find a specific result node and corresponding DOF
-tailNodeDOFS = MeshNominal.get_DOF_from_location([Lx, 0]);
-tailNodeDOF = tailNodeDOFS(1); % y-direction
-% time axis
-tplot=linspace(0,tmax,tmax/h+1);
-
-% plot
-figure('units','normalized','position',[.1 .1 .8 .6],'name','Vertical displacement of the tail node')
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-
-plot(tplot,TI_NL_PROM.Solution.u(tailNodeDOF,1:end-1)*100, "--")
-
-ylabel('$$u_y \mbox{ [cm]}$$','Interpreter','latex')
-xlabel('Time [s]')
-set(gca,'FontName','ComputerModern');
-grid on
-%legend({'FOM','FOM-t','ROM','PROM'}, 'Location', 'eastoutside','Orientation','vertical')
-hold off
-
-
-
-%% ANIMATIONS _____________________________________________________________

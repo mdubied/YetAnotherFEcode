@@ -1,7 +1,7 @@
 % residual_linear_sens_combined_actu
 %
 % Synthax:
-% r = residual_linear_sens_combined_actu(s,sd,sdd,t,qsol,drdqdd,drdqd,drdq,pd_actu)
+% r = residual_linear_sens_combined_actu(s,sd,sdd,t,qsol,drdqdd,drdqd,drdq,pd_actu,p)
 %
 % Description: as for the other residuals, this function is used as handle
 % for the Newmark integration scheme. It is used to solve the ODE for the
@@ -13,16 +13,17 @@
 % (2) qsol:                 solutions of the simulations
 % (3) drdqdd,drdqd,drdq:    derivatives of the EoMs residual
 % (4) pd_actu:              partial derivatives of the actuation force
+% (5) p:                    current value of the parameters
 %
 % OUTPUTS:
 % (1) r:                    function handle describing the residual
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 03/12/2023, Mathieu Dubied, ETH Zürich
 function r = residual_linear_sens_combined_actu(s,sd,sdd,t, ...
-        qsol,drdqdd,drdqd,drdq,pd_actu)
+        qsol,drdqdd,drdqd,drdq,pd_actu,p)
     
     % EVALUATE FUNCTION HANDLE ____________________________________________   
-    der_actu = pd_actu(t,qsol);
+    der_actu = pd_actu(t,qsol,p);
        
     % GATHER PARTIAL DERIVATIVES __________________________________________
     dfactdp = der_actu.dfdp;

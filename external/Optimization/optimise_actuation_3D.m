@@ -1,4 +1,4 @@
-% optimise_actuatino_3D
+% optimise_actuation_3D
 %
 % Synthax:
 % [xiStar,xiEvo,LrEvo] = optimise_actuation_3D(myElementConstructor,nset,nodes,elements,d,h,tmax,A,b,varargin)
@@ -38,7 +38,7 @@
 % (4) LwoBEvo:      evolution of the cost function values without barriers
 %     
 %
-% Last modified: 12/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 03/12/2023, Mathieu Dubied, ETH Zurich
 
 function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset,nodes,elements,d,h,tmax,A,b,varargin)
 
@@ -52,7 +52,8 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     fprintf('**************************************\n')
 
     %p_k = ones(size(A,2),1);
-    p_k = [1;0;0];
+    % p_k = [1;0;0];    % actuation_force_2
+    p_k = [0.8;2*pi;0];   % actuation_force_3
 
     pResolve_k = p_k;
     deltaP_k = p_k - pResolve_k;
@@ -344,7 +345,7 @@ function param = clip_infeasible_parameters(p,A,b)
             % only consider constraints containing a single parameter
             if length(find(A(constrIdx,:))) == 1
                 paramIdxToClip = find(A(constrIdx,:));
-                param(paramIdxToClip) = b(constrIdx) - sign(A(constrIdx,paramIdxToClip))*0.05*b(constrIdx);
+                param(paramIdxToClip) = sign(A(constrIdx,paramIdxToClip))*b(constrIdx) - sign(A(constrIdx,paramIdxToClip))*0.05*b(constrIdx);
                 fprintf('Clipping  parameter %d to the value %d \n',paramIdxToClip,param(paramIdxToClip))
             end
         end
