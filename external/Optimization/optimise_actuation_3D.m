@@ -218,7 +218,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
                 break
             elseif length(LEvo)>5
                 if norm(LEvo(end) - mean(LEvo(end-4:end))) < convCritCost
-                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCrit*100)
+                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCritCost)
                     break
                 end
             end
@@ -228,7 +228,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
                 break
             elseif length(LEvo)>5
                 if norm(LEvo(end) - mean(LEvo(end-4:end))) < convCritCost
-                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCrit*100)
+                    fprintf('Convergence criterion of %.3f (cost) fulfilled\n',convCritCost)
                     break
                 end
             end

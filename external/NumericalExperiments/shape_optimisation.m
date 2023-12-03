@@ -136,7 +136,7 @@ tStart = tic;
 [xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, 'maxIteration',25,'convCrit',0.004,'convCritCost',0.8,'barrierParam',10, ...
-    'gStepSize',0.002,'nRebuild',6, 'rebuildThreshold',0.15);
+    'gStepSize',0.002,'nRebuild',6, 'rebuildThreshold',0.15,'USEJULIA',0);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
@@ -251,12 +251,12 @@ xlabel('Iterations')
 
 % Parameters
 ax2 = nexttile;
-plot(xiEvo(1,:),LineStyle="-");
+plot(xiEvo(1,:),LineStyle,"-");
 hold on
-plot(xiEvo(2,:),LineStyle="--");
-plot(xiEvo(3,:),LineStyle="-.");
-plot(xiEvo(4,:),LineStyle="-");
-plot(xiEvo(5,:),LineStyle="--");
+plot(xiEvo(2,:),LineStyle,"--");
+plot(xiEvo(3,:),LineStyle,"-.");
+plot(xiEvo(4,:),LineStyle,"-");
+plot(xiEvo(5,:),LineStyle,"--");
 % plot(xiEvo(6,:),LineStyle="-.");
 
 grid on
