@@ -54,7 +54,14 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     %p_k = ones(size(A,2),1);
     % p_k = [1;0;0];    % actuation_force_2
     % p_k = [0.8;2*pi;0];   % actuation_force_3
-    p_k = [1;0;0;1];    % actuation_force_4
+    % p_k = [1;0;0;1];    % actuation_force_4
+
+    % actuation_force_5:
+    nParam = size(A,2);
+    p_k = 0.5*ones(nParam,1);
+    for i = 1:nParam
+        p_k(i,1) = sin((i-1)*h*2*pi);
+    end
 
 
     pResolve_k = p_k;
@@ -200,6 +207,10 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
         [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));
         LEvo = [LEvo, L];
         LwoBEvo = [LwoBEvo, LwoB];
+
+        % specific for AO2
+        nablaLr(1:int32(tmax/h*0.2)) = 0;
+
         nablaEvo = [nablaEvo,nablaLr];
 
         % update optimal parameter

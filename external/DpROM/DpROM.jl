@@ -576,6 +576,9 @@ function Gselector(nDIM,ndofs)
         if ndofs == 24
             # 8-noded hexaedra
             G_FUN = G_HEX8
+        elseif ndofs == 12
+            # 4-noded tetrahedra
+            G_FUN = G_TET4
         elseif ndofs == 30
             # 10-noded tetrahedra
             G_FUN = G_TET10
@@ -631,6 +634,25 @@ function G_Q8(ISO,xy)
     G = zeros(4,16)
     G[1:2,1:2:end] = dH;
     G[3:4,2:2:end] = dH;
+    # return
+    G, detJ
+end
+# shape functions derivatives for TET4 (4-noded tetrahedra)
+function G_TET4(ISO,xyz)
+    g, h, r = ISO
+    # shape function derivatives in natural coordinates
+    dHn = [-1 1 0 0;-1 0 1 0;-1 0 0 1];
+    # jacobian
+    J = dHn*xyz;
+    J1 = inv(J);
+    detJ = det(J);
+    # derivatives in physical coordinates
+    dH = J1*dHn; # 3x4 matrix, [dNi_dx; dNi_dy; dNi_dz] with i = 1...4
+    # rearrange
+    G =  zeros(9,12)
+    G[1:3,1:3:12] = dH;
+    G[4:6,2:3:12] = dH;
+    G[7:9,3:3:12] = dH;
     # return
     G, detJ
 end

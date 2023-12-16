@@ -13,7 +13,7 @@ elementType = 'TET4';
 FORMULATION = 'N0'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
-USEJULIA = 0;
+USEJULIA = 1;
 
 %% PREPARE MODEL                                                    
 
@@ -31,6 +31,8 @@ myMaterial.PLANE_STRESS = true;	    % set "false" for plane_strain
 switch elementType
     case 'TET4'
         myElementConstructor = @()Tet4Element(myMaterial);
+    case 'TET10'
+        myElementConstructor = @()Tet10Element(myMaterial);
 end
 % MESH ____________________________________________________________________
 
@@ -168,7 +170,7 @@ tStart = tic;
 [xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, 'maxIteration',25,'convCrit',0.004,'convCritCost',0.8,'barrierParam',1, ...
-    'gStepSize',0.001,'nRebuild',6, 'rebuildThreshold',0.15);
+    'gStepSize',0.001,'nRebuild',6, 'rebuildThreshold',0.15,'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 

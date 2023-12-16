@@ -243,7 +243,7 @@ classdef ImplicitNewmark < handle
         function[q,qd,qdd] = Prediction(obj,q0,qd0,qdd0)
             qd = qd0 + obj.h * (1 - obj.gamma) * qdd0;
             q = q0 + obj.h * qd0 + (0.5-obj.beta) * obj.h^2 * qdd0;
-            qdd = zeros(length(q0),1);
+            qdd = zeros(size(q0));
         end
         function [q,qd,qdd] = Correction(obj,q,qd,qdd,Da)
             q = q + obj.beta * obj.h^2 * Da;
