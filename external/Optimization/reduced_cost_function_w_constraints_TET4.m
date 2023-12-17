@@ -30,7 +30,7 @@
 % (2) LwoB: cost function without barrier function
 %     
 %
-% Last modified: 03/12/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 17/12/2023, Mathieu Dubied, ETH Zurich
 
 function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstraint,bConstraint,barrierParam,V)
     L = 0;
@@ -39,7 +39,7 @@ function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstrain
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
     
-    for t=1:N-2
+    for t=N-5:N-2
         eta_i = eta(:,t);
         
         % constraints (log barriers) to be included in the cost function

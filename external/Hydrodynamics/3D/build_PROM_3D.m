@@ -117,7 +117,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     V, U, FORMULATION, VOLUME, USEJULIA)  ;
     
     % HYDRODYNAMIC FORCES _________________________________________________
-    disp(' REDUCED REACTIVE FORCE/TENSORS (PROM):')
+    disp(' REDUCED REACTIVE FORCE/TENSORS (PROM)')
     
     % find spine and tail elements
     if fishDim == 2

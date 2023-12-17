@@ -227,6 +227,9 @@ if USEJULIA== 1
     tensors.Q5dd = Q5dd;
     tensors.Q6dd = Q6dd;
     tensors.time = time;
+    tensors.Q3t = tensors.Q3n{1} + permute(tensors.Q3n{1}, [1 3 2]); 
+    tensors.Q4t = tensors.Q4n{1} + permute(tensors.Q4n{1}, [1 3 2 4]) + permute(tensors.Q4n{1}, [1 4 2 3]);
+    tensors.M = DpROM.ParametricMass();
     sftw = 'julia';
 else
     disp([' REDUCED TENSORS (' FORMULATION ' ~ using Matlab):'])
