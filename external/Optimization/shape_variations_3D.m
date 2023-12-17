@@ -13,11 +13,11 @@
 % (4) Lz:       size of the nominal shape in the z-direction
 %
 % OUTPUTS:
-% (1) [...]:    9 shape variations
+% (1) [...]:    10 shape variations
 %     
 %
-% Last modified: 10/11/2023, Mathieu Dubied, ETH Zurich
-function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail,...
+% Last modified: 17/12/2023, Mathieu Dubied, ETH Zurich
+function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch, ...
     y_tail,y_head,y_linLongTail,y_ellipseFish] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz)
 
@@ -78,8 +78,30 @@ function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail,...
     end
     z_linLongTail = zeros(numel(nodes),1);
     z_linLongTail(3:3:end) = real(zDif);
+    
+    % (6) notch before the tail (z direction)
+    xFront = -0.3*Lx;
+    xBack = -0.9*Lx;
+    xNotch = -Lx*0.7;
+    slopeFront = 0.5*Lz/(xFront-xNotch);
+    slopeBack = -0.5*Lz/(xBack-xNotch);
+    interceptFront = 0.5*Lz-xFront*slopeFront;
+    interceptBack = 0.5*Lz-xBack*slopeBack;
+    nodes_proj = nodes;
+    zDif = zeros(size(nodes,1),1);
+    for n = 1:size(nodes,1) 
+        if nodes(n,1) <= xNotch && nodes(n,1)> xBack
+            nodes_proj(n,:) = [nodes(n,1), nodes(n,2), slopeBack*nodes(n,1)+interceptBack];                         % projection on linear curve
+            zDif(n) = abs(nodes_proj(n,3) - max(nodes(:,3))).*-sign(nodes(n,3)).*abs(nodes(n,3))/(Lz*0.5);  % z-difference projection vs nominal
+        elseif nodes(n,1) > xNotch && nodes(n,1)< xFront
+            nodes_proj(n,:) = [nodes(n,1), nodes(n,2), slopeFront*nodes(n,1)+interceptFront];                         % projection on linear curve
+            zDif(n) = abs(nodes_proj(n,3) - max(nodes(:,3))).*-sign(nodes(n,3)).*abs(nodes(n,3))/(Lz*0.5);  % z-difference projection vs nominal
+        end 
+    end
+    z_notch = zeros(numel(nodes),1);
+    z_notch(3:3:end) = real(zDif);
 
-    % (6) smaller fish tail (y direction)
+    % (7) smaller fish tail (y direction)
     elCenter = [-Lx*0.7;0];
     a = Lx*0.3;
     b = Ly*0.5;
@@ -94,7 +116,7 @@ function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail,...
     y_tail = zeros(numel(nodes),1);
     y_tail(2:3:end) = real(yDif);
     
-    % (7) smaller fish head (y direction)
+    % (8) smaller fish head (y direction)
     elCenter = [-Lx*0.3;0];
     a = Lx*0.3;
     b = Ly*0.5;
@@ -109,7 +131,7 @@ function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail,...
     y_head = zeros(numel(nodes),1);
     y_head(2:3:end) = real(yDif);
        
-    % (8) smaller linear long fish tail(y direction)
+    % (9) smaller linear long fish tail(y direction)
     xStart = -Lx*0.3;
     slope = 0.5*Ly/(0.7*Lx);
     intercept = 0.5*Ly+0.3*Lx*slope;
@@ -124,7 +146,7 @@ function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail,...
     y_linLongTail = zeros(numel(nodes),1);
     y_linLongTail(2:3:end) = real(yDif);
     
-    % (9) ellipse in yz plane over whole fish
+    % (10) ellipse in yz plane over whole fish
     elCenter = [0;0];
     a = Lz*0.5;
     b = Ly*0.5;

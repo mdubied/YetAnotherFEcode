@@ -69,7 +69,7 @@ end
 
 %% SHAPE VARIATIONS _______________________________________________________
 
-[y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail,...
+[y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_tail,y_head,y_linLongTail,y_ellipseFish] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz);
 
@@ -84,11 +84,13 @@ U = [z_tail,z_head,y_thinFish];
 % SO2
 U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish];
 
+U = z_notch;
+
 
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
 xiPlot = [-0.6;0.3;0.5;0.3;0.5];
-% xiPlot = 0.5;
+xiPlot = 0.5;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 v1 = reshape(U*xiPlot, 3, []).';
