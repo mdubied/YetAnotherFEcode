@@ -677,7 +677,13 @@ classdef ReducedAssembly < Assembly
                 Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
 
                 % augment original tensor for head velocity and reduce it
-                Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                TeVHead = ttt(tensor(Te),tensor(VHead'));   % ne x 1 x m x 1
+                TeVHead = ttv(TeVHead,1,4);                 % ne x 1 x m
+                TeVVHead = ttt(TeVHead,tensor(VHead'));     % ne x 1 x m x m x 1
+                Te = ttv(TeVVHead,1,5);                     % ne x 1 x m x m
+                       
+                %Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                
                 Te = ttv(tensor(Te),1,2);    % from ne x 1 x m x m to ne x m x m
                 Ter = einsum('iI,iJK->IJK',Ve,double(Te));
 

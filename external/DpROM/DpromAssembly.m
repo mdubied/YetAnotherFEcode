@@ -344,9 +344,19 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,x0);  % will be of size m x m, as the two last dimensions of 1 will not appear in Ter
                 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));    % outer product
+                TerUz = ttv(TerUz,1,4);                 % get rid of 4th dimension of size 1
+                TerUzUz = ttt(TerUz,tensor(Uz'));               % outer product
+                TerUzUz = ttv(TerUzUz,1,5);             % get rid of 5th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(Ter,Uz');  % outer product
-                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(Ter,Uz'),Uz');  % outer product
+                %Tf1Double = Tf1Double +
+                %8*inputs{3}(j)*tensorprod(Ter,Uz');  % outer product, only
+                %work with Matlab >= 2022a
+                %Tf2Double = Tf2Double + 4*tensorprod(tensorprod(Ter,Uz'),Uz');  % outer product
+                
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                Tf2Double = Tf2Double + 4*double(TerUzUz);  
             end
 
             T.f0 = tensor(Tf0Double);
@@ -396,9 +406,17 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,5);                 % get rid of 5th dimension of size 1
+                TerUzUz = ttt(TerUz,tensor(Uz'));       % outer product
+                TerUzUz = ttv(TerUzUz,1,6);             % get rid of 6th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                Tf2Double = Tf2Double + 4*double(TerUzUz);  
+
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                %Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
             end
 
             T.f0 = tensor(Tf0Double);
@@ -447,9 +465,17 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,x0); % will be of size m x m x m, as the forth dimension of 1 will not appear in Ter
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,5);                 % get rid of 5th dimension of size 1
+                TerUzUz = ttt(TerUz,tensor(Uz'));       % outer product
+                TerUzUz = ttv(TerUzUz,1,6);             % get rid of 6th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                Tf2Double = Tf2Double + 4*double(TerUzUz);
+
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                %Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
             end
 
             T.f0 = tensor(Tf0Double);
@@ -498,9 +524,17 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,6);                 % get rid of 6th dimension of size 1
+                TerUzUz = ttt(TerUz,tensor(Uz'));       % outer product
+                TerUzUz = ttv(TerUzUz,1,7);             % get rid of 7th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
-                Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                Tf2Double = Tf2Double + 4*double(TerUzUz);
+
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                %Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
             end
             
             T.f0 = tensor(Tf0Double);
@@ -550,8 +584,17 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,Ve);
  
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,6);                 % get rid of 6th dimension of size 1
+                %TerUzUz = ttt(TerUz,tensor(Uz'));       % outer product
+                %TerUzUz = ttv(TerUzUz,1,7);             % get rid of 7th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                %Tf2Double = Tf2Double + 4*double(TerUzUz);
+
+
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
                 % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
 
             end
@@ -602,8 +645,16 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ue);
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,6);                 % get rid of 6th dimension of size 1
+                %TerUzUz = ttt(TerUz,tensor(Uz'));      % outer product
+                %TerUzUz = ttv(TerUzUz,1,7);            % get rid of 7th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                %Tf2Double = Tf2Double + 4*double(TerUzUz);
+
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
                 % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
  
             end
@@ -708,15 +759,23 @@ classdef DpromAssembly < ReducedAssembly
                 Uz = self.U(inputs{4}(j)*3,:); % row vector
                                 
                 Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
-                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ue);
+                Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ue);  % will be of dimension m x m x 1 x md
 
-                if md ~=1   % if md=1, Ter is m x m and we do not need this
-                    Ter = ttv(tensor(Ter),1,3); % from mxmx1xmd to mxmxmd
+                if md ~=1   % if md=1, Ter is m x m and we do not need the following
+                    Ter = ttv(tensor(Ter),1,3); % from mxmx1xmd to m x m x md
                 end
 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,5);                 % get rid of 5th dimension of size 1
+                %TerUzUz = ttt(TerUz,tensor(Uz'));       % outer product
+                %TerUzUz = ttv(TerUzUz,1,6);             % get rid of 6th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                %Tf2Double = Tf2Double + 4*double(TerUzUz);
+                
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
                 % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
                 
                                                
@@ -771,8 +830,16 @@ classdef DpromAssembly < ReducedAssembly
                 Ter = einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ue,x0);
                 
                 Tf0Double = Tf0Double + 4*inputs{3}(j)^2*Ter;
+                
+                TerUz = ttt(tensor(Ter),tensor(Uz'));   % outer product
+                TerUz = ttv(TerUz,1,5);                 % get rid of 5th dimension of size 1
+                %TerUzUz = ttt(TerUz,tensor(Uz'));       % outer product
+                %TerUzUz = ttv(TerUzUz,1,6);             % get rid of 6th dimension of size 1
 
-                Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
+                Tf1Double = Tf1Double + 8*inputs{3}(j)*double(TerUz);  
+                %Tf2Double = Tf2Double + 4*double(TerUzUz);
+
+                %Tf1Double = Tf1Double + 8*inputs{3}(j)*tensorprod(double(Ter),Uz');  % outer product
                 % Tf2Double = Tf2Double + 4*tensorprod(tensorprod(double(Ter),Uz'),Uz');  % outer product
                 
             end
@@ -818,7 +885,12 @@ classdef DpromAssembly < ReducedAssembly
                 Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
 
                 % augment original tensor for head velocity and reduce it
-                Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                TeVHead = ttt(tensor(Te),tensor(VHead'));   % ne x ne x m x 1
+                TeVHead = ttv(TeVHead,1,4);                 % ne x ne x m
+                TeVVHead = ttt(TeVHead,tensor(VHead'));     % ne x ne x m x m x 1
+                Te = ttv(TeVVHead,1,5);                     % ne x ne x m x m
+                
+                % Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
                 Ter = einsum('iI,ijKL,jJ->IJKL',Ve,double(Te),Ue);
 
                 T = T + Ter;    
@@ -852,7 +924,11 @@ classdef DpromAssembly < ReducedAssembly
                 Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
 
                 % augment original tensor for head velocity and reduce it
-                Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                TeVHead = ttt(tensor(Te),tensor(VHead'));   % ne x ne x ne x m x 1
+                TeVHead = ttv(TeVHead,1,5);                 % ne x ne x ne x m
+                TeVVHead = ttt(TeVHead,tensor(VHead'));     % ne x ne x ne x m x m x 1
+                Te = ttv(TeVVHead,1,6);                     % ne x ne x ne x m x m
+                %Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
                 Ter = einsum('iI,ijkLM,jJ,kK->IJKLM',Ve,double(Te),Ue,Ue);
 
                 T = T + Ter;    

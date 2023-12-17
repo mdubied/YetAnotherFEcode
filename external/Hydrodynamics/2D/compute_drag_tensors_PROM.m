@@ -43,7 +43,7 @@ function tensors = compute_drag_tensors_PROM(PROMAssembly, skinElements, skinEle
     md = size(PROMAssembly.U,2);
     
     % compute reduced tensors
-    disp(' REDUCED HYDRODYNAMIC TENSORS:')
+    disp(' REDUCED DRAG TENSORS:')
     fprintf(' Assembling %d elements ...\n', nel)
 
     tic;
