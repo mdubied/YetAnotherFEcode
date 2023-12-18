@@ -84,13 +84,17 @@ U = [z_tail,z_head,y_thinFish];
 % SO2
 U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish];
 
-U = z_notch;
+% SO3
+
+U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+    y_head,y_linLongTail,y_ellipseFish];
 
 
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
-xiPlot = [-0.6;0.3;0.5;0.3;0.5];
-xiPlot = 0.5;
+% xiPlot = [-0.6;0.3;0.5;0.3;0.5];
+xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
+% xiPlot = 0.5;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -176,6 +180,68 @@ tStart = tic;
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
+%% OPTIMISATION SO5 _______________________________________________________
+
+% [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+%    y_tail,y_head,y_linLongTail,y_ellipseFish]
+% Constraints
+nParam = 10;
+A = zeros(2 * nParam, nParam);
+for i = 1:nParam
+    A(2*i-1:2*i,i) =[1;-1];
+end
+yTotConstr = [1 0 0 0 0 0 1 0 1 1;-1 0 0 0 0 0 -1 0 -1 -1;
+              1 0 0 0 0 0 0 1 0 1;-1 0 0 0 0 0 0 -1 0 -1];
+A = [A;yTotConstr];
+disp(A);
+b = [0.2;0.2;
+    0.3;0.3;
+    0.6;0.4;
+    0.5;0.5;
+    0.3;0.3;
+    0.5;0.5;
+    0.4;0.4;
+    0.4;0.4;
+    0.2;0.2;
+    0.4;0.4;
+    0.8;0.8;
+    0.8;0.8];
+
+%% OPTIMISATION SO5 _______________________________________________________
+
+% [,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+%    y_head,y_linLongTail,y_ellipseFish]
+% Constraints
+nParam = 8;
+A = zeros(2 * nParam, nParam);
+for i = 1:nParam
+    A(2*i-1:2*i,i) =[1;-1];
+end
+yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
+              0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
+A = [A;yTotConstr];
+disp(A);
+b = [0.3;0.3;
+    0.6;0.4;
+    0.5;0.5;
+    0.3;0.3;
+    0.5;0.5;
+    0.4;0.4;
+    0.5;0.5;
+    0.4;0.4;
+    0.9;0.9;
+    0.9;0.9];
+
+%%
+
+tStart = tic;
+[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
+    'VOLUME',VOLUME, 'maxIteration',32,'convCrit',0.004,'convCritCost',1,'barrierParam',4, ...
+    'gStepSize',0.0008,'nRebuild',10, 'rebuildThreshold',0.15,'USEJULIA',1);
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
 elementPlot = elements(:,1:4); hold on
@@ -255,12 +321,12 @@ xlabel('Iterations')
 
 % Parameters
 ax2 = nexttile;
-plot(xiEvo(1,:),LineStyle,"-");
+plot(xiEvo(1,:));%,LineStyle,"-");
 hold on
-plot(xiEvo(2,:),LineStyle,"--");
-plot(xiEvo(3,:),LineStyle,"-.");
-plot(xiEvo(4,:),LineStyle,"-");
-plot(xiEvo(5,:),LineStyle,"--");
+plot(xiEvo(2,:));%,LineStyle,"--");
+plot(xiEvo(3,:));%,LineStyle,"-.");
+plot(xiEvo(4,:));%,LineStyle,"-");
+plot(xiEvo(5,:));%,LineStyle,"--");
 % plot(xiEvo(6,:),LineStyle="-.");
 
 grid on

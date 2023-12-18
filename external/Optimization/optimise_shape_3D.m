@@ -265,7 +265,6 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
 
         xi_k_clipped = clip_infeasible_parameters(xi_k,A,b);
         if ~all(xi_k_clipped == xi_k)
-            disp('CLIPPING\n')
             xiRebuild_k = xiRebuild_k + (xi_k_clipped - xi_k);
             xi_k = xi_k_clipped;
         end
@@ -363,7 +362,8 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
         fprintf('____________________\n')
         fprintf('Rebuilding PROM (max lin. iterations) ...\n')
     elseif any(abs(xiRebuild_k) > rebuildThreshold)
-        cond = 1;fprintf('____________________\n')
+        cond = 1;
+        fprintf('____________________\n')
         fprintf('Rebuilding PROM (xi>threshold) ...\n')
     elseif maxIteration-k<0.2*maxIteration ...
             && mod(k-lastRebuild,int16(nRebuild/1.33)) == 0
