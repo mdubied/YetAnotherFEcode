@@ -202,7 +202,7 @@ b = [0.2;0.2;
     0.5;0.5;
     0.4;0.4;
     0.4;0.4;
-    0.2;0.2;
+    0.4;0.4;
     0.4;0.4;
     0.8;0.8;
     0.8;0.8];
@@ -222,7 +222,7 @@ yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
 A = [A;yTotConstr];
 disp(A);
 b = [0.3;0.3;
-    0.6;0.4;
+    0.5;0.5;
     0.5;0.5;
     0.3;0.3;
     0.5;0.5;
@@ -237,11 +237,10 @@ b = [0.3;0.3;
 tStart = tic;
 [xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
-    'VOLUME',VOLUME, 'maxIteration',32,'convCrit',0.004,'convCritCost',1,'barrierParam',4, ...
-    'gStepSize',0.0008,'nRebuild',10, 'rebuildThreshold',0.15,'USEJULIA',1);
+    'VOLUME',VOLUME, 'maxIteration',40,'convCrit',0.004,'convCritCost',1,'barrierParam',3, ...
+    'gStepSize',0.0006,'nRebuild',12, 'rebuildThreshold',0.15,'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
-
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
 elementPlot = elements(:,1:4); hold on
@@ -257,13 +256,13 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,3);
+subU = U(:,1);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
 dm = PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_4=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_7=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
@@ -274,7 +273,7 @@ xiPlot = 0.5;
 v2 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v2, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_5=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_8=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
@@ -285,7 +284,7 @@ xiPlot = 0.5;
 v3 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v3, 'factor', 1); 
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_6=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_9=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
@@ -304,7 +303,7 @@ axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO2_shapes_V0.pdf','Resolution',600)
+exportgraphics(f1,'SO5_shapes_V0.pdf','Resolution',600)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 f2 = figure('units','centimeters','position',[3 3 9 5]);
