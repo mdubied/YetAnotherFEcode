@@ -58,16 +58,16 @@ classdef ImplicitNewmark < handle
             %% Input parsing
             p = inputParser;
             defaultResidualSens = 0;
-            defaultActu = false;
+            defaultActuOnly = false;
             defaultSens0 = 0;
             addParameter(p,'ResidualSens',defaultResidualSens);
-            addParameter(p,'actu',defaultActu,@(x)validateattributes(x,{'logical'},{'nonempty'}));
+            addParameter(p,'actuOnly',defaultActuOnly,@(x)validateattributes(x,{'logical'},{'nonempty'}));
             addParameter(p,'s0',defaultSens0);
             addParameter(p,'sd0',defaultSens0);
             addParameter(p,'sdd0',defaultSens0);
             parse(p,varargin{:});
             ResidualSens = p.Results.ResidualSens;
-            actu = p.Results.actu;
+            actuOnly = p.Results.actuOnly;
             s0 = p.Results.s0;
             sd0 = p.Results.sd0;
             sdd0 = p.Results.sdd0;
@@ -193,7 +193,7 @@ classdef ImplicitNewmark < handle
                 % solve the sensitivity as a combined problem
                 if obj.combinedSensitivity
                     [s_new,sd_new,sdd_new] = obj.Prediction(s_old,sd_old,sdd_old); 
-                    if actu  
+                    if actuOnly  
                         rSens = ResidualSens(s_new,sd_new,sdd_new,t,q_new,drdqdd, drdqd, drdq);
                     else
                         rSens = ResidualSens(s_new,sd_new,sdd_new,q_new,qd_new,qdd_new,drdqdd, drdqd, drdq,t);

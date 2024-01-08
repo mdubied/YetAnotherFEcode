@@ -109,7 +109,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
     
     % time integration 
     TI_NL_PROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red, ...
-        'ResidualSens',Residual_sens,'s0',s0,'sd0',sd0,'sdd0',sdd0,'actu',true);
+        'ResidualSens',Residual_sens,'s0',s0,'sd0',sd0,'sdd0',sdd0,'actuOnly',true);
     TI_NL_PROM.Solution.u = V * TI_NL_PROM.Solution.q; % get full order solution
 
 end 
