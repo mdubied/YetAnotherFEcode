@@ -55,19 +55,18 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
 
     % shape parameters
     xi_k = zeros(size(U,2),1);
-    xiRebuild_k = zeros(size(U,2),1);
-    xiEvo = xi_k;
+    xiAtLastRebuild = zeros(size(U,2),1);
+    deltaXi_k = xi_k - xiAtLastRebuild;
     
     % actuation parameters
     pActu_k = [1;0;0;1];    % actuation_force_4
-    pResolveActu_k = pActu_k;
-    deltaPActu_k = pActu_k - pResolveActu_k;
-    pActuEvo = pActu_k;
+    pActuAtLastResolve = pActu_k;
+    deltaPActu_k = pActu_k - pActuAtLastResolve;
     
     % merging parameters
     nParam = nPShape + nPActu;
     p_k = [xi_k; pActu_k];
-    deltaP_k = [xi_k;deltaPActu_k];
+    deltaP_k = [deltaXi_k;deltaPActu_k];
     pEvo = p_k;
     gradientWeights = ones(1,nParam);
 
@@ -145,7 +144,7 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
         fprintf('**************************************\n')
 
         % possible rebuilding of a PROM
-        if check_cond_rebuild(k,lastRebuild,nRebuild,xiRebuild_k,rebuildThreshold,maxIteration)
+        if check_cond_rebuild(k,lastRebuild,nRebuild,deltaXi_k,rebuildThreshold,maxIteration)
             lastRebuild = k;
             lastResolve = k;
             maxItACTIVE = 0;
@@ -163,9 +162,8 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             % build PROM
             [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
                  build_PROM_3D(svMesh,nodes_defected,elements,U,USEJULIA,VOLUME,FORMULATION);
-                                                         
-            xiRebuild_k = zeros(size(U,2),1);   % reset local xi to 0 as we rebuild the ROM      
-            pResolveActu_k = p_k(nPShape+1:end);
+            
+            xiAtLastRebuild = xi_k;      
               
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
@@ -173,11 +171,12 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             fprintf('Solving EoMs and sensitivity...\n') 
             TI_NL_PROM = solve_EoMs_and_sensitivities_co(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax,pActu_k);                        
             toc
-            
-                
+             
             eta_0k = TI_NL_PROM.Solution.q;
             eta_k = TI_NL_PROM.Solution.q;
             S = TI_NL_PROM.Solution.s;
+            
+            pActuAtLastResolve = p_k(nPShape+1:end);
     
             N = size(eta_k,2);
 
@@ -198,7 +197,7 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
         % possible resolve of the EoMs (without rebuilding the PROM)
         elseif check_cond_resolve(k,lastResolve,nResolve,deltaPActu_k,resolveThreshold,maxIteration,maxItACTIVE)
             lastResolve = k;      
-            pResolveActu_k = p_k(nPShape+1:end);
+            pActuAtLastResolve = p_k(nPShape+1:end);
                                                             
             % solve EoMs to get updated nominal solutions eta and dot{eta} (on the deformed mesh
             tic 
@@ -210,11 +209,7 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             % get solutions
             eta_0k = TI_NL_PROM.Solution.q;
             eta_k = TI_NL_PROM.Solution.q;
-            etad_k = TI_NL_PROM.Solution.qd;
-            etadd_k = TI_NL_PROM.Solution.qdd;
             S = TI_NL_PROM.Solution.s;
-            Sd = TI_NL_PROM.Solution.sd;
-            Sdd = TI_NL_PROM.Solution.sdd;
     
             N = size(eta_k,2);
 
@@ -282,29 +277,29 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             
         end
         
-   
+        % update parameter
         updateVector = gStepSize*diag(gradientWeights)*nablaLr;
         p_k = p_k - updateVector
-        
-        % update shape parameter
-        xi_k = xi_k - updateVector(1:nPShape);
-        xiRebuild_k = xiRebuild_k - updateVector(1:nPShape);
-        
+               
         p_k_clipped = clip_infeasible_parameters(p_k,A,b);
         if ~all(p_k_clipped == p_k)
-            xiRebuild_k = xiRebuild_k + (p_k_clipped(1:nPShape) - xi_k);
-            if ~all(p_k_clipped(1:nPShape) == p_k(1:nPShape))
-                %rebuildThreshold = rebuildThreshold/2;
-            end
+%             xiAtLastRebuild = xiAtLastRebuild + (p_k_clipped(1:nPShape) - xi_k);
+%             if ~all(p_k_clipped(1:nPShape) == p_k(1:nPShape))
+%                 %rebuildThreshold = rebuildThreshold/2;
+%             end
             p_k = p_k_clipped;
         end
+         
+        % update shape parameter
+        xi_k = p_k(1:nPShape);
+        deltaXi_k = xi_k - xiAtLastRebuild;
         
         % update actuation parameters
         pActu_k = p_k(nPShape+1:end);
-        deltaPActu_k = pActu_k - pResolveActu_k;
+        deltaPActu_k = pActu_k - pActuAtLastResolve;
         
         % difference with the last rebuild/resolve
-        deltaP_k = [xiRebuild_k;deltaPActu_k];
+        deltaP_k = [deltaXi_k;deltaPActu_k];
         
         % overall evolution
         pEvo = [pEvo,p_k];
@@ -401,7 +396,7 @@ function [maxIteration,convCrit,convCritCost,barrierParam,gStepSize, ...
 end
 
 % Check conditions for rebuild ____________________________________________
-function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
+function cond = check_cond_rebuild(k,lastRebuild,nRebuild, deltaXi_k, ...
                                     rebuildThreshold,maxIteration)
     cond = 0;
 
@@ -409,11 +404,11 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
         cond = 1;
         fprintf('____________________\n')
         fprintf('Rebuilding PROM (max lin. iterations) ...\n')
-    elseif any(abs(xiRebuild_k) > rebuildThreshold)
+    elseif any(abs(deltaXi_k) > rebuildThreshold)
         cond = 1;
-        criticalParams = find(abs(xiRebuild_k) > rebuildThreshold);
+        criticalParams = find(abs(deltaXi_k) > rebuildThreshold);
         fprintf('____________________\n')
-        fprintf('Rebuilding PROM (xi>threshold) for \n') 
+        fprintf('Rebuilding PROM (delta xi>threshold) for \n') 
         fprintf(' xi%.0f \n', criticalParams) 
     elseif maxIteration-k<0.2*maxIteration ...
             && mod(k-lastRebuild,int16(nRebuild/1.33)) == 0
@@ -437,7 +432,7 @@ function cond = check_cond_resolve(k,lastResolve,nResolve, deltaPActu_k, ...
     elseif any(abs(deltaPActu_k) > resolveThreshold)
         cond = 1;
         fprintf('____________________\n')
-        fprintf('Resolving EoMs(pActu>threshold) ...\n')
+        fprintf('Resolving EoMs(delta pActu>threshold) ...\n')
     elseif maxIteration-k<0.2*maxIteration ...
             && mod(k-lastResolve,int16(nResolve/1.33)) == 0 ...
             && maxItACTIVE == 1
