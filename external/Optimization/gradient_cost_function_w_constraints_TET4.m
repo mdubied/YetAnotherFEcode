@@ -37,7 +37,7 @@ function nablaLr = gradient_cost_function_w_constraints_TET4(xi,eta,s,AConstrain
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
     
-    for t=N-5:N-2
+    for t=1:N-2
        
         % get gradient dfdxi_i (dfdp_i)         
         if size(xi,1)>1

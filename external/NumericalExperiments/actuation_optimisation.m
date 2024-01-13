@@ -187,6 +187,6 @@ plot(timePlot,actuStar)
 grid on
 ylabel('Actuation signal','Interpreter','latex')
 xlabel('Time [s]')
-legend('Initial','Optimised','Interpreter','latex',Location='northoutside',Orientation='horizontal')
+legend('Initial','Optimised','Interpreter','latex')%Location='northoutside',Orientation='horizontal'
 hold off
 exportgraphics(f1,'AO1_signal_V0.pdf','Resolution',600)

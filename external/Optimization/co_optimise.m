@@ -196,7 +196,7 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             drawnow
           
         % possible resolve of the EoMs (without rebuilding the PROM)
-        elseif check_cond_resolve(k,lastResolve,nResolve,deltaP_k,resolveThreshold,maxIteration,maxItACTIVE)
+        elseif check_cond_resolve(k,lastResolve,nResolve,deltaPActu_k,resolveThreshold,maxIteration,maxItACTIVE)
             lastResolve = k;      
             pResolveActu_k = p_k(nPShape+1:end);
                                                             
@@ -239,6 +239,19 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             if size(p_k,1)>1
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,deltaP_k,2));
+                uTail = zeros(3,tmax/h);
+                for a=1:tmax/h
+                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+                end 
+                subplot(2,1,1);
+                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
+
+                subplot(2,1,2);
+                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
             else
                 eta_k = eta_0k + S*deltaP_k;
             end
@@ -280,15 +293,18 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
         p_k_clipped = clip_infeasible_parameters(p_k,A,b);
         if ~all(p_k_clipped == p_k)
             xiRebuild_k = xiRebuild_k + (p_k_clipped(1:nPShape) - xi_k);
+            if ~all(p_k_clipped(1:nPShape) == p_k(1:nPShape))
+                %rebuildThreshold = rebuildThreshold/2;
+            end
             p_k = p_k_clipped;
         end
         
         % update actuation parameters
-        p_Actu_k = p_k(nPShape+1:end);
+        pActu_k = p_k(nPShape+1:end);
         deltaPActu_k = pActu_k - pResolveActu_k;
         
         % difference with the last rebuild/resolve
-        deltaP_k = [xi_k;deltaPActu_k];
+        deltaP_k = [xiRebuild_k;deltaPActu_k];
         
         % overall evolution
         pEvo = [pEvo,p_k];
@@ -395,8 +411,10 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
         fprintf('Rebuilding PROM (max lin. iterations) ...\n')
     elseif any(abs(xiRebuild_k) > rebuildThreshold)
         cond = 1;
+        criticalParams = find(abs(xiRebuild_k) > rebuildThreshold);
         fprintf('____________________\n')
-        fprintf('Rebuilding PROM (xi>threshold) ...\n')
+        fprintf('Rebuilding PROM (xi>threshold) for \n') 
+        fprintf(' xi%.0f \n', criticalParams) 
     elseif maxIteration-k<0.2*maxIteration ...
             && mod(k-lastRebuild,int16(nRebuild/1.33)) == 0
         cond = 1;
@@ -407,7 +425,7 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
 end
 
 % Check conditions for resolve ____________________________________________
-function cond = check_cond_resolve(k,lastResolve,nResolve, pActuResolve_k, ...
+function cond = check_cond_resolve(k,lastResolve,nResolve, deltaPActu_k, ...
                                     resolveThreshold,maxIteration, ...
                                     maxItACTIVE)
     cond = 0;
@@ -416,7 +434,7 @@ function cond = check_cond_resolve(k,lastResolve,nResolve, pActuResolve_k, ...
         cond = 1;
         fprintf('____________________\n')
         fprintf('Resolving EoMs (max lin. iterations) ...\n')
-    elseif any(abs(pActuResolve_k) > resolveThreshold)
+    elseif any(abs(deltaPActu_k) > resolveThreshold)
         cond = 1;
         fprintf('____________________\n')
         fprintf('Resolving EoMs(pActu>threshold) ...\n')

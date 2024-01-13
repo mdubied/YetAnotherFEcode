@@ -54,14 +54,14 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     %p_k = ones(size(A,2),1);
     % p_k = [1;0;0];    % actuation_force_2
     % p_k = [0.8;2*pi;0];   % actuation_force_3
-    % p_k = [1;0;0;1];    % actuation_force_4
+    p_k = [1;0;0;1];    % actuation_force_4
 
-    % actuation_force_5:
-    nParam = size(A,2);
-    p_k = 0.5*ones(nParam,1);
-    for i = 1:nParam
-        p_k(i,1) = sin((i-1)*h*2*pi);
-    end
+%     % actuation_force_5:
+%     nParam = size(A,2);
+%     p_k = 0.5*ones(nParam,1);
+%     for i = 1:nParam
+%         p_k(i,1) = sin((i-1)*h*2*pi);
+%     end
 
 
     pResolve_k = p_k;
@@ -194,6 +194,20 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
             if size(p_k,1)>1
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,deltaP_k,2));
+                % plot solution
+                uTail = zeros(3,tmax/h);
+                for a=1:tmax/h
+                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+                end 
+                subplot(2,1,1);
+                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
+
+                subplot(2,1,2);
+                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
             else
                 eta_k = eta_0k + S*deltaP_k;
             end
@@ -209,7 +223,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
         LwoBEvo = [LwoBEvo, LwoB];
 
         % specific for AO2
-        nablaLr(1:int32(tmax/h*0.2)) = 0;
+        %nablaLr(1:int32(tmax/h*0.2)) = 0;
 
         nablaEvo = [nablaEvo,nablaLr];
 

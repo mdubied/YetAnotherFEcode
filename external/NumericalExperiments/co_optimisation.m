@@ -76,18 +76,21 @@ end
 % shape variation basis U
 % SO3
 
-U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-    y_head,y_linLongTail,y_ellipseFish];
+
 
 % for testing
 U = [z_tail,y_head];
+
+% CO1
+U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+    y_head,y_linLongTail,y_ellipseFish];
 
 
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
 % xiPlot = [-0.6;0.3;0.5;0.3;0.5];
-%xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
-xiPlot = [0.5;0.5];
+xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
+% xiPlot = [0.5;0.5];
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -150,21 +153,21 @@ b = [bShape;bActu];
 
 
 
-%% OPTIMISATION SO5 _______________________________________________________
+%% OPTIMISATION CO1 _______________________________________________________
 
 % [,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
 %    y_head,y_linLongTail,y_ellipseFish]
 % Constraints
-nParam = 8;
-A = zeros(2 * nParam, nParam);
-for i = 1:nParam
-    A(2*i-1:2*i,i) =[1;-1];
+nPShape = 8;
+nPActu = 4;
+AShape = zeros(2 * nPShape, nPShape);
+for i = 1:nPShape
+    AShape(2*i-1:2*i,i) =[1;-1];
 end
 yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
               0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
-A = [A;yTotConstr];
-disp(A);
-b = [0.3;0.3;
+AShape = [AShape;yTotConstr];
+bShape = [0.3;0.3;
     0.5;0.5;
     0.5;0.5;
     0.3;0.3;
@@ -175,23 +178,38 @@ b = [0.3;0.3;
     0.9;0.9;
     0.9;0.9];
 
+AActu = [1 0 0 0;
+        -1 0 0 0;
+        0 1 0 0;
+        0 -1 0 0;
+        0 0 1 0;
+        0 0 -1 0;
+        0 0 0 1;
+        0 0 0 -1];
+bActu = [1.15;-0.75;0.4;0.4;0.2;0.2;1.3;-0.7];
+
+A = [AShape,zeros(size(AShape,1),size(AActu,2));
+    zeros(size(AActu,1),size(AShape,2)),AActu];
+b = [bShape;bActu];
+
 %%
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b,nPShape,nPActu, ...
-    'FORMULATION',FORMULATION, ...
+[pStar,pEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b,nPShape,nPActu,...
+    'FORMULATION',FORMULATION,...
     'VOLUME',VOLUME, ...
-    'maxIteration',12, ...
+    'maxIteration',8, ...
     'convCrit',0.004, ...
     'convCritCost',1, ...
-    'barrierParam',3, ...
-    'gStepSize',0.0006, ...
+    'barrierParam',2, ...
+    'gStepSize',0.0002, ...
     'nRebuild',12, ...
     'rebuildThreshold',0.15, ...
-    'nResolve',8, ...
+    'nResolve',4, ...
     'resolveThreshold',0.1, ...
     'USEJULIA',1);
+
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
@@ -220,7 +238,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,4);
+subU = U(:,2);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -231,7 +249,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,5);
+subU = U(:,1);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -242,8 +260,8 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
-xiPlot = xiStar;
-xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
+xiPlot = pStar(1:nPShape);
+xiPlotName = strcat('[',num2str(pStar(1)),', ',num2str(pStar(2)),', ',num2str(pStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
@@ -256,7 +274,33 @@ axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO5_shapes_V0.pdf','Resolution',600)
+exportgraphics(f1,'CO_shapes_V0.pdf','Resolution',600)
+
+%% PLOT ACTUATION SIGNAL _____________________________________
+
+f1 = figure('units','centimeters','position',[3 3 9 4]);
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+timePlot = linspace(0,tmax-h,tmax/h);
+p0 = [1;0;0;1];
+k=350;
+actu0 = zeros(1,length(timePlot));
+actuStar = zeros(1,length(timePlot));
+for i = 1:length(timePlot)
+    actu0(i) = actuation_signal_4(k,timePlot(i),p0);
+    actuStar(i) = actuation_signal_4(k,timePlot(i),pStar(nPShape+1:end));
+end
+plot(timePlot,actu0,'--')
+hold on
+plot(timePlot,actuStar)
+grid on
+ylabel('Actuation signal','Interpreter','latex')
+xlabel('Time [s]')
+legend('Initial','Optimised','Interpreter','latex')
+hold off
+exportgraphics(f1,'AO1_signal_V0.pdf','Resolution',600)
+
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 f2 = figure('units','centimeters','position',[3 3 9 5]);
@@ -273,12 +317,12 @@ xlabel('Iterations')
 
 % Parameters
 ax2 = nexttile;
-plot(xiEvo(1,:));%,LineStyle,"-");
+plot(pEvo(1,:));%,LineStyle,"-");
 hold on
-plot(xiEvo(2,:));%,LineStyle,"--");
-plot(xiEvo(3,:));%,LineStyle,"-.");
-plot(xiEvo(4,:));%,LineStyle,"-");
-plot(xiEvo(5,:));%,LineStyle,"--");
+plot(pEvo(2,:));%,LineStyle,"--");
+plot(pEvo(3,:));%,LineStyle,"-.");
+plot(pEvo(4,:));%,LineStyle,"-");
+plot(pEvo(5,:));%,LineStyle,"--");
 % plot(xiEvo(6,:),LineStyle="-.");
 
 grid on
