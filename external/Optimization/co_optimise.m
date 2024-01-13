@@ -234,19 +234,19 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
             if size(p_k,1)>1
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,deltaP_k,2));
-                uTail = zeros(3,tmax/h);
-                for a=1:tmax/h
-                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
-                end 
-                subplot(2,1,1);
-                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
-                legend
-                drawnow
-
-                subplot(2,1,2);
-                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
-                legend
-                drawnow
+%                 uTail = zeros(3,tmax/h);
+%                 for a=1:tmax/h
+%                     uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+%                 end 
+%                 subplot(2,1,1);
+%                 plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+%                 legend
+%                 drawnow
+% 
+%                 subplot(2,1,2);
+%                 plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+%                 legend
+%                 drawnow
             else
                 eta_k = eta_0k + S*deltaP_k;
             end
@@ -269,10 +269,10 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
         updatedGradientWeights = adapt_learning_rate(nablaEvo,gradientWeights);
 
         if ~all(gradientWeights == updatedGradientWeights)  
-            if  rebuildThresholdSwitch ==0 && k>20
-                rebuildThreshold = rebuildThreshold/2;
-                rebuildThresholdSwitch = 1;
-            end
+%             if  rebuildThresholdSwitch ==0 && k>20
+%                 rebuildThreshold = rebuildThreshold/2;
+%                 rebuildThresholdSwitch = 1;
+%             end
             gradientWeights = updatedGradientWeights;
             
         end
