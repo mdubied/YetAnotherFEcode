@@ -230,6 +230,21 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
             if size(xi_k,1)>1
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,xiRebuild_k,2));
+                
+                uTail = zeros(3,tmax/h);
+                for a=1:tmax/h
+                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+                end 
+                subplot(2,1,1);
+                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
+
+                subplot(2,1,2);
+                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
+
             else
                 eta_k = eta_0k + S*xiRebuild_k;
             end

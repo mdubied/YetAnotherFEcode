@@ -10,7 +10,7 @@ clc
 
 elementType = 'TET4';
 
-FORMULATION = 'N0'; % N1/N1t/N0
+FORMULATION = 'N1t'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 
 USEJULIA = 1;
@@ -267,7 +267,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,4);
+subU = U(:,2);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -278,7 +278,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,5);
+subU = U(:,3);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -324,8 +324,8 @@ plot(xiEvo(1,:));%,LineStyle,"-");
 hold on
 plot(xiEvo(2,:));%,LineStyle,"--");
 plot(xiEvo(3,:));%,LineStyle,"-.");
-plot(xiEvo(4,:));%,LineStyle,"-");
-plot(xiEvo(5,:));%,LineStyle,"--");
+%plot(xiEvo(4,:));%,LineStyle,"-");
+%plot(xiEvo(5,:));%,LineStyle,"--");
 % plot(xiEvo(6,:),LineStyle="-.");
 
 grid on
