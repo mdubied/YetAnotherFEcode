@@ -90,14 +90,14 @@ U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
 % xiPlot = [0.23;-0.39;0.1091];
 % xiPlot = [-0.6;0.3;0.5;0.3;0.5];
 xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
-xiPlot = [-0.1233;
+xiPlot = [0.16;
    -0.4831;
-    0.2193;
+    0.045;
    -0.2801;
-    0.0338;
-    0.3227;
-    0.6844;
-    0.3363];
+    0.2;
+    0.2;
+    0.475;
+    0.26];
 % xiPlot = [0.5;0.5];
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
@@ -159,49 +159,6 @@ A = [AShape,zeros(size(AShape,1),size(AActu,2));
     zeros(size(AActu,1),size(AShape,2)),AActu];
 b = [bShape;bActu];
 
-
-
-%% OPTIMISATION CO1 _______________________________________________________
-
-% [,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-%    y_head,y_linLongTail,y_ellipseFish]
-% Constraints
-nPShape = 8;
-nPActu = 4;
-AShape = zeros(2 * nPShape, nPShape);
-for i = 1:nPShape
-    AShape(2*i-1:2*i,i) =[1;-1];
-end
-yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
-              0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
-AShape = [AShape;yTotConstr];
-bShape = [0.3;0.3;
-    0.5;0.5;
-    0.5;0.5;
-    0.3;0.3;
-    0.5;0.5;
-    0.4;0.4;
-    0.5;0.5;
-    0.4;0.4;
-    0.9;0.9;
-    0.9;0.9];
-
-AActu = [1 0 0 0;
-        -1 0 0 0;
-        0 1 0 0;
-        0 -1 0 0;
-        0 0 1 0;
-        0 0 -1 0;
-        0 0 0 1;
-        0 0 0 -1];
-bActu = [1.15;-0.75;0.4;0.4;0.2;0.2;1.3;-0.7];
-
-A = [AShape,zeros(size(AShape,1),size(AActu,2));
-    zeros(size(AActu,1),size(AShape,2)),AActu];
-b = [bShape;bActu];
-
-%%
-
 tStart = tic;
 [pStar,pEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,nPShape,nPActu,...
@@ -215,6 +172,67 @@ tStart = tic;
     'nRebuild',10, ...
     'rebuildThreshold',0.12, ...
     'nResolve',10, ...
+    'resolveThreshold',0.1, ...
+    'USEJULIA',1);
+
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
+
+
+
+%% OPTIMISATION CO1 _______________________________________________________
+
+% [,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+%    y_head,y_linLongTail,y_ellipseFish]
+% Constraints
+nPShape = 8;
+nPActu = 4;
+AShape = zeros(2 * nPShape, nPShape);
+for i = 1:nPShape
+    AShape(2*i-1:2*i,i) =[1;-1];
+end
+% yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
+%               0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
+% AShape = [AShape;yTotConstr];
+bShape = [0.2;0.2;
+    0.5;0.5;
+    0.3;0.3;
+    0.3;0.3;
+    0.2;0.2;
+    0.4;0.4;
+    0.5;0.5;
+    0.4;0.1];
+
+AActu = [1 0 0 0;
+        -1 0 0 0;
+        0 1 0 0;
+        0 -1 0 0;
+        0 0 1 0;
+        0 0 -1 0;
+        0 0 0 1;
+        0 0 0 -1];
+bActu = [1.15;-0.85;0.2;0.2;0.2;0.2;1.3;-0.7];
+
+A = [AShape,zeros(size(AShape,1),size(AActu,2));
+    zeros(size(AActu,1),size(AShape,2)),AActu];
+b = [bShape;bActu];
+
+%%
+
+tStart = tic;
+[pStar,pEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b,nPShape,nPActu,...
+    'FORMULATION',FORMULATION,...
+    'VOLUME',VOLUME, ...
+    'maxIteration',30, ...
+    'convCrit',0.004, ...
+    'convCritCost',0.75, ...
+    'barrierParam',0.01, ...
+    'gStepSize',0.00001, ...
+    'nRebuild',12, ...
+    'rebuildThreshold',0.12, ...
+    'nResolve',12, ...
     'resolveThreshold',0.1, ...
     'USEJULIA',1);
 
@@ -268,7 +286,14 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
-xiPlot = pStar(1:nPShape);
+xiPlot = [0;
+   -0.375;
+    0;
+   0;
+    0;
+    0;
+    0;
+    0.3116];%pStar(1:nPShape);
 xiPlotName = strcat('[',num2str(pStar(1)),', ',num2str(pStar(2)),', ',num2str(pStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -318,7 +343,7 @@ t.Padding = 'tight';
 
 % cost function
 ax1 = nexttile;
-plot(LEvo)
+plot(LwoBEvo)
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
@@ -331,16 +356,23 @@ plot(pEvo(2,:));%,LineStyle,"--");
 plot(pEvo(3,:));%,LineStyle,"-.");
 plot(pEvo(4,:));%,LineStyle,"-");
 plot(pEvo(5,:));%,LineStyle,"--");
+plot(pEvo(6,:));%,LineStyle,"--");
+plot(pEvo(7,:));%,LineStyle,"-.");
+plot(pEvo(8,:));%,LineStyle,"-");
+plot(pEvo(9,:));%,LineStyle,"--");
+plot(pEvo(10,:));%,LineStyle,"--");
+plot(pEvo(11,:));%,LineStyle,"--");
+plot(pEvo(12,:));%,LineStyle,"--");
 % plot(xiEvo(6,:),LineStyle="-.");
 
 grid on
 ylabel('$$\xi$$','Interpreter','latex')
 xlabel('Iterations')
-legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
-    'Position',[0.75 0.35 0.2 0.2])
-
-legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
-    'Position',[0.35 0.64 0.2 0.35])
+% legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
+%     'Position',[0.75 0.35 0.2 0.2])
+% 
+% legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
+%     'Position',[0.35 0.64 0.2 0.35])
 exportgraphics(f2,'SO2_evo_V0.pdf','Resolution',600)
 
 

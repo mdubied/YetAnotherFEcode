@@ -30,7 +30,7 @@
 % (2) LwoB: cost function without barrier function
 %     
 %
-% Last modified: 17/12/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 19/01/2023, Mathieu Dubied, ETH Zurich
 
 function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstraint,bConstraint,barrierParam,V)
     L = 0;
@@ -39,21 +39,23 @@ function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstrain
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
     
-    for t=N-5:N-2
+    for t=N-40:N-2
         eta_i = eta(:,t);
-        
-        % constraints (log barriers) to be included in the cost function
-        logBarrierInTimeStep = 0;
-        if nConstraints ~= 0
-            for i = 1:nConstraints 
-                logBarrierInTimeStep = logBarrierInTimeStep - 1/barrierParam*log(-AConstraint(i,:)*xi+bConstraint(i));
-            end
-        end
-
-        % final cost function at time step t       
-        L = L - xDir.'*V*eta_i + logBarrierInTimeStep;
-        LwoB = LwoB - xDir.'*V*eta_i;
+        % add cost function at time step t to overall cost L       
+        L = L - xDir.'*V*eta_i ;
     end
+    
+    % constraints (log barriers) to be included in the cost function
+    logBarrier = 0;
+    if nConstraints ~= 0
+        for i = 1:nConstraints 
+            logBarrier = logBarrier - 1/barrierParam*log(-AConstraint(i,:)*xi+bConstraint(i));
+        end
+    end
+    
+    % final cost
+    LwoB = L;
+    L = L + logBarrier;
 
     % print cost function without part stemming from barrier functions
     fprintf('Partial cost (w/o barrier): %.4f\n',LwoB)

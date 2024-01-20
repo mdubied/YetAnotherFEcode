@@ -17,3 +17,5 @@ disp(' | |_| | (_| |  _| | |__| (__ ')
 disp('  \__, |\__,_|_|   |_____\___|')
 disp('  |___/       YetAnotherFEcode')
 fprintf('\n\n') 
+
+tbxmanager_ampc restorepath

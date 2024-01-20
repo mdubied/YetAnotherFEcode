@@ -54,12 +54,13 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
     fprintf('**************************************\n')
 
     % shape parameters
-    xi_k = zeros(size(U,2),1);
-    xiAtLastRebuild = zeros(size(U,2),1);
+    xi_k = zeros(size(U,2),1);%[-0.0694;-0.487;0.2420;-0.287;0.058;0.3603;0.475;0.2852];%zeros(size(U,2),1);
+    xi_k(8) = 0.2;
+    xiAtLastRebuild = xi_k;%zeros(size(U,2),1);
     deltaXi_k = xi_k - xiAtLastRebuild;
     
     % actuation parameters
-    pActu_k = [1;0;0;1];    % actuation_force_4
+    pActu_k = [1.0240;0.0852;0.1689;1.2457];%[1.1;0.0;0.18;1.20];%[1;0;0;1];    % actuation_force_4
     pActuAtLastResolve = pActu_k;
     deltaPActu_k = pActu_k - pActuAtLastResolve;
     
@@ -69,7 +70,7 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
     deltaP_k = [deltaXi_k;deltaPActu_k];
     pEvo = p_k;
     gradientWeights = ones(1,nParam);
-
+%[0.5,0.125,1,0.125,0.25,0.250,1,0.25,0.5,0.5,1,0.063];%
     % Mesh
             
     MeshNominal = Mesh(nodes);
@@ -78,13 +79,23 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
     for l=1:length(nset)
         MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)   
     end
+    
+    % to test
+    df = U*xi_k;                       % displacement fields introduced by defects
+    ddf = [df(1:3:end) df(2:3:end) df(3:3:end)]; 
+    nodes_defected = nodes + ddf;    % nominal + d ---> defected 
+    svMesh = Mesh(nodes_defected);
+    svMesh.create_elements_table(elements,myElementConstructor);
+    for l=1:length(nset)
+        svMesh.set_essential_boundary_condition([nset{l}],1:3,0)   
+    end
 
     % build PROM
     fprintf('____________________\n')
     fprintf('Building PROM ... \n')
 
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION);      
+    build_PROM_3D(svMesh,nodes_defected,elements,U,USEJULIA,VOLUME,FORMULATION);      
     
 
     % Solve EoMs
@@ -287,6 +298,15 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
 %             if ~all(p_k_clipped(1:nPShape) == p_k(1:nPShape))
 %                 %rebuildThreshold = rebuildThreshold/2;
 %             end
+           idxToChange = find(p_k~=p_k_clipped);
+           for idx = 1:length(idxToChange)
+               gradientWeights(idxToChange(idx)) = ...
+                   0.5*gradientWeights(idxToChange(idx));
+               fprintf('Adapting learning rate for xi%d to %.3f...\n',...
+                   idxToChange(idx),gradientWeights(idxToChange(idx)))
+               
+           end
+            
             p_k = p_k_clipped;
         end
          

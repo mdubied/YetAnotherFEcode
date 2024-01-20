@@ -50,7 +50,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_co(V,PROM_Assembly,fIntTensor
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=350; 
+    k=200; 
     
     actuSignalT = @(t) actuation_signal_4(k,t,pActu);    
     actuSignalB = @(t) -actuation_signal_4(k,t,pActu);
