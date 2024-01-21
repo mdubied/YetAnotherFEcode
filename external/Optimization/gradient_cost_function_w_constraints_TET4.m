@@ -37,7 +37,7 @@ function nablaLr = gradient_cost_function_w_constraints_TET4(xi,eta,s,AConstrain
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
     
-    for t=N-40:N-2
+    for t=1:N-2
         % get gradient dfdxi_i (dfdp_i) a time step t        
         if size(xi,1)>1
             s = double(s);
@@ -53,7 +53,12 @@ function nablaLr = gradient_cost_function_w_constraints_TET4(xi,eta,s,AConstrain
     % part stemming from log barrier functions
     logBarrierD = zeros(size(xi,1),1);
     for i = 1:nConstraints 
-        logBarrierD = logBarrierD - 1/barrierParam*1/(AConstraint(i,:)*xi-bConstraint(i))*AConstraint(i,:).';
+        if i>=9
+            barrierP = 100;
+        else
+            barrierP = barrierParam;
+        end
+        logBarrierD = logBarrierD - 1/barrierP*1/(AConstraint(i,:)*xi-bConstraint(i))*AConstraint(i,:).';
     end
 
     % final gradient

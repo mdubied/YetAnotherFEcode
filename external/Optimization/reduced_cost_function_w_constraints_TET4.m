@@ -39,7 +39,7 @@ function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstrain
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
     
-    for t=N-40:N-2
+    for t=1:N-2
         eta_i = eta(:,t);
         % add cost function at time step t to overall cost L       
         L = L - xDir.'*V*eta_i ;
@@ -48,8 +48,13 @@ function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstrain
     % constraints (log barriers) to be included in the cost function
     logBarrier = 0;
     if nConstraints ~= 0
-        for i = 1:nConstraints 
-            logBarrier = logBarrier - 1/barrierParam*log(-AConstraint(i,:)*xi+bConstraint(i));
+        for i = 1:nConstraints
+            if i>=9
+                barrierP = 100;
+            else
+                barrierP = barrierParam;
+            end
+            logBarrier = logBarrier - 1/barrierP*log(-AConstraint(i,:)*xi+bConstraint(i));
         end
     end
     
