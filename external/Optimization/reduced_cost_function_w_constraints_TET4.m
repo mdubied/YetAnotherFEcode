@@ -39,7 +39,7 @@ function [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta,xi,AConstrain
     xDir = zeros(size(V,1),1);
     xDir(1:3:end) = 1;
     
-    for t=1:N-2
+    for t=100:N-2
         eta_i = eta(:,t);
         % add cost function at time step t to overall cost L       
         L = L - xDir.'*V*eta_i ;

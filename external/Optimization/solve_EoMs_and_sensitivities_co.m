@@ -52,10 +52,10 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_co(V,PROM_Assembly,fIntTensor
     B2B = actuBottom.B2;
     k=200; 
     
-    actuSignalT = @(t) actuation_signal_4(k,t,pActu);    
-    actuSignalB = @(t) -actuation_signal_4(k,t,pActu);
+    actuSignalT = @(t) actuation_signal_6(k,t,pActu);    
+    actuSignalB = @(t) -actuation_signal_6(k,t,pActu);
     
-    fActu = @(t,q) actuation_force_4(k,t,q,B1T,B2T, B1B,B2B,pActu);
+    fActu = @(t,q) actuation_force_6(k,t,q,B1T,B2T, B1B,B2B,pActu);
 
     % tail pressure force properties
     A = tailProperties.A;
@@ -119,7 +119,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_co(V,PROM_Assembly,fIntTensor
     % actuation forces
     pd_shape_actuTop = @(a)PROM_actu_derivatives(actuTop,a);
     pd_shape_actuBottom = @(a)PROM_actu_derivatives(actuBottom,a);
-    pd_actu_actu = @(t,q,pActu)derivatives_actuation_force_4(k,t,q,B1T,B2T, B1B,B2B,pActu);
+    pd_actu_actu = @(t,q,pActu)derivatives_actuation_force_6(k,t,q,B1T,B2T, B1B,B2B,pActu);
 
     % tail pressure force
     xi=zeros(size(PROM_Assembly.U,2),1);

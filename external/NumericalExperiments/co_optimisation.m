@@ -138,22 +138,20 @@ tmax = 2.0;
 %% OPTIMISATION TEST ______________________________________________________
 % 2 shape variations, 4 signal parameters: total of 5 parameters
 nPShape = 2;
-nPActu = 4;
+nPActu = 3;
 
 AShape = [1 0;
          -1 0;
          0 1;
          0 -1];
 bShape = [0.4;0.4;0.4;0.4];
-AActu = [1 0 0 0;
-        -1 0 0 0;
-        0 1 0 0;
-        0 -1 0 0;
-        0 0 1 0;
-        0 0 -1 0;
-        0 0 0 1;
-        0 0 0 -1];
-bActu = [1.15;-0.75;0.4;0.4;0.2;0.2;1.3;-0.7];
+AActu = [1 0 0;
+        -1 0 0;
+        0 1 0;
+        0 -1 0;
+        0 0 1;
+        0 0 -1];
+bActu = [0.25;-0.15;2.6;-1.4;1.05;-0.05];
 
 A = [AShape,zeros(size(AShape,1),size(AActu,2));
     zeros(size(AActu,1),size(AShape,2)),AActu];
@@ -166,9 +164,9 @@ tStart = tic;
     'VOLUME',VOLUME, ...
     'maxIteration',60, ...
     'convCrit',0.004, ...
-    'convCritCost',0.75, ...
-    'barrierParam',0.1, ...
-    'gStepSize',0.0001, ...
+    'convCritCost',1, ...
+    'barrierParam',50, ...
+    'gStepSize',0.002, ...
     'nRebuild',10, ...
     'rebuildThreshold',0.12, ...
     'nResolve',10, ...
@@ -316,13 +314,13 @@ set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
 timePlot = linspace(0,tmax-h,tmax/h);
-p0 = [1;0;0;1];
+p0 = [1;2;0];
 k=350;
 actu0 = zeros(1,length(timePlot));
 actuStar = zeros(1,length(timePlot));
 for i = 1:length(timePlot)
-    actu0(i) = actuation_signal_4(k,timePlot(i),p0);
-    actuStar(i) = actuation_signal_4(k,timePlot(i),pStar(nPShape+1:end));
+    actu0(i) = actuation_signal_6(k,timePlot(i),p0);
+    actuStar(i) = actuation_signal_6(k,timePlot(i),[1.2;2.5;0.8]);%pStar(nPShape+1:end));
 end
 plot(timePlot,actu0,'--')
 hold on

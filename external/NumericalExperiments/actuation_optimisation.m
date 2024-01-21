@@ -109,6 +109,28 @@ topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
 %%
+AActu = [1 0 0;
+        -1 0 0;
+        0 1 0;
+        0 -1 0;
+        0 0 1;
+        0 0 -1];
+bActu = [0.25;-0.15;2.6;-1.4;1.05;-0.05];
+
+tStart = tic;
+[xiStar,xiEvo,LEvo, ~] = optimise_actuation_3D(myElementConstructor,nset, ...
+    nodes,elements,dSwim,h,tmax,AActu,bActu, ...
+    'maxIteration',30, ...
+    'convCrit',0.0005, ...
+    'convCritCost',0.002, ...
+    'barrierParam',600, ...
+    'gStepSize',0.001, ...
+    'nResolve',8, ...
+    'resolveThreshold',0.1);
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
+%%
 % AO 2 (Change the acutation functions if you change the time step h)
 % nParam = int32(tmax/h*0.1+2);
 % A = zeros(2 * nParam, nParam);

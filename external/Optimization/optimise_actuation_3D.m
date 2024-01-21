@@ -55,6 +55,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     % p_k = [1;0;0];    % actuation_force_2
     % p_k = [0.8;2*pi;0];   % actuation_force_3
     p_k = [1;0;0;1];    % actuation_force_4
+    p_k = [0.2;2;0.9];    % actuation_force_6
 
 %     % actuation_force_5:
 %     nParam = size(A,2);
@@ -69,6 +70,8 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     pEvo = p_k;
     nParam = length(p_k);
     gradientWeights = ones(1,nParam);
+    
+    gradientWeights(1)=0.5;
    
     % Mesh
             
