@@ -120,6 +120,14 @@ elseif dimension == 2           % For 2D plots
         defoX = X + factor*UX ;
         defoY = Y + factor*UY ;
         
+        view(-0.2207,13.2656)   
+        camproj('orthographic')
+        campos([-0.927954494978962,-3.313676033697632,2.55113399138335])
+        camtarget([0.423664179178241,-0.25731872550064,0.017983359980954])
+        camup([0.2443,0.5525,0.7969])
+        camva(11.0954365);
+        hold on;
+        
         h{1} = patch(defoX,defoY,profile,'EdgeColor',meshcolor,'EdgeAlpha',0.5);
         h{2} = plot(defoX(:),defoY(:),'.','Color', meshcolor, 'Markersize',5); %5 %10 
     else
