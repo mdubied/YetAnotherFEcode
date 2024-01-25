@@ -108,25 +108,28 @@ tStart = tic;
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
-%%
+%% AO1
 AActu = [1 0 0;
         -1 0 0;
         0 1 0;
         0 -1 0;
         0 0 1;
         0 0 -1];
-bActu = [0.25;-0.15;2.6;-1.4;1.05;-0.05];
+bActu = [0.31;-0.1;2.6;-1.4;1.05;0.05];
+barrierParam = [3,3,30,30,30,30];
+gradientWeights = [0.4,10,10];
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, ~] = optimise_actuation_3D(myElementConstructor,nset, ...
+[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset, ...
     nodes,elements,dSwim,h,tmax,AActu,bActu, ...
     'maxIteration',30, ...
-    'convCrit',0.0005, ...
+    'convCrit',0.02, ...
     'convCritCost',0.002, ...
-    'barrierParam',600, ...
-    'gStepSize',0.001, ...
-    'nResolve',8, ...
-    'resolveThreshold',0.1);
+    'barrierParam',barrierParam, ...
+    'gradientWeights',gradientWeights, ...
+    'gStepSize',0.003, ...
+    'nResolve',12, ...
+    'resolveThreshold',0.25);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
@@ -159,13 +162,39 @@ fCost = figure;
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-plot(LEvo)
+% plot(LEvo)
+% hold on
+plot(LwoBEvo)
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
-%%
-exportgraphics(fCost,'AO1_cost_V0.pdf','Resolution',600)
 
+exportgraphics(fCost,'AO1_cost.pdf','Resolution',600)
+
+%% PLOT ACTUATION SIGNAL _____________________________________
+
+f1 = figure('units','centimeters','position',[3 3 9 4]);
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+timePlot = linspace(0,tmax-h,tmax/h);
+p0 = [0.2;2;0];
+k=300;
+actu0 = zeros(1,length(timePlot));
+actuStar = zeros(1,length(timePlot));
+for i = 1:length(timePlot)
+    actu0(i) = actuation_signal_6(k,timePlot(i),p0);
+    actuStar(i) = actuation_signal_6(k,timePlot(i),xiStar);
+end
+plot(timePlot,actu0,'--')
+hold on
+plot(timePlot,actuStar)
+grid on
+ylabel('Actuation signal','Interpreter','latex')
+xlabel('Time [s]')
+legend('Initial','Optimised','Interpreter','latex')%Location='northoutside',Orientation='horizontal'
+hold off
+exportgraphics(f1,'AO1_signal_V0.pdf','Resolution',600)
 
 %% PLOT PARAMETERS' EVOLUTION OVER ITERATIONS _____________________________
 figure('Position',[100,100,600,200])
@@ -188,27 +217,4 @@ ylabel('$$p_3$$','Interpreter','latex')
 xlabel('Iterations')
 grid on
 
-%% PLOT ACTUATION SIGNAL _____________________________________
 
-f1 = figure('units','centimeters','position',[3 3 9 4]);
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-timePlot = linspace(0,tmax-h,tmax/h);
-p0 = [1;0;0;1];
-k=300;
-actu0 = zeros(1,length(timePlot));
-actuStar = zeros(1,length(timePlot));
-for i = 1:length(timePlot)
-    actu0(i) = actuation_signal_4(k,timePlot(i),p0);
-    actuStar(i) = actuation_signal_4(k,timePlot(i),xiStar);
-end
-plot(timePlot,actu0,'--')
-hold on
-plot(timePlot,actuStar)
-grid on
-ylabel('Actuation signal','Interpreter','latex')
-xlabel('Time [s]')
-legend('Initial','Optimised','Interpreter','latex')%Location='northoutside',Orientation='horizontal'
-hold off
-exportgraphics(f1,'AO1_signal_V0.pdf','Resolution',600)

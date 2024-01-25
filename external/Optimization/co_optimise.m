@@ -56,13 +56,13 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
     fprintf('**************************************\n')
 
     % shape parameters
-    xi_k = [-0.3095;0.2176];%zeros(size(U,2),1);%[-0.0694;-0.487;0.2420;-0.287;0.058;0.3603;0.475;0.2852];%zeros(size(U,2),1);
+    xi_k = zeros(size(U,2),1);%[-0.0694;-0.487;0.2420;-0.287;0.058;0.3603;0.475;0.2852];%zeros(size(U,2),1);
     %xi_k(8) = 0.2;[-0.3941;0.3941]
     xiAtLastRebuild = xi_k;%zeros(size(U,2),1);
     deltaXi_k = xi_k - xiAtLastRebuild;
     
     % actuation parameters
-    pActu_k = [0.2517;2.3089;0.6876];%[0.2;2;0.1];% [1.0240;0.0852;0.1689;1.2457];%[1.1;0.0;0.18;1.20];%[1;0;0;1];    % actuation_force_4
+    pActu_k = [1;0;0;1];%[0.2517;2.3089;0.6876];%[0.2;2;0.1];% [1.0240;0.0852;0.1689;1.2457];%[1.1;0.0;0.18;1.20];%[1;0;0;1];    % actuation_force_4
     pActuAtLastResolve = pActu_k;
     deltaPActu_k = pActu_k - pActuAtLastResolve;
     

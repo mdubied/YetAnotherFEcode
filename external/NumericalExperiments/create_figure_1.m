@@ -1,7 +1,7 @@
 % -------------------------------------------------------------------------
 % Creation of a figure for the fish position
 %
-% Last modified: 21/01/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 23/01/2024, Mathieu Dubied, ETH Zurich
 % -------------------------------------------------------------------------
 clear; 
 close all; 
@@ -15,7 +15,6 @@ VOLUME = 1;         % integration over defected (1) or nominal volume (0)
 USEJULIA = 1;
 
 %% PREPARE MODEL                                                    
-
 % DATA ____________________________________________________________________
 E       = 2600000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
@@ -61,7 +60,6 @@ for el=1:nel
 end
 
 %% SHAPE VARIATIONS _______________________________________________________
-
 % gather all shape variations
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_tail,y_head,y_linLongTail,y_ellipseFish] = ...
@@ -72,16 +70,26 @@ U = [z_tail,y_head];
 U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_head,y_linLongTail,y_ellipseFish];
 
+% set xi
+% xi = [0.16;-0.4831;0.3;-0.2801;0.2;0.2;0.475;0.45];
+xi = zeros(8,1);
 
+% plot
+f0 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
+elementPlot = elements(:,1:4); hold on 
+v1 = reshape(U*xi, 3, []).';
+S = 1;
+hf=PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', S);
+L = [Lx,Ly,Lz];
+O = [-Lx,-Ly/2,-Lz/2];
+plotcube(L,O,.05,[0 0 0]);
+axis equal; grid on; box on; 
 
 %% BUILD ROM AND SOLVE EOMS _______________________________________________
-
 % Parameters
 h = 0.005;
-tmax = 2.0;
-pActu = [0.3;2.5;0.9];
-xi = [-0.5;0.4];
-xi = [0.16;-0.4831;0.045;-0.2801;0.2;0.2;0.475;0.26];
+tmax = 4.0;
+pActu = [0.2;2.0;0.3];
 
 % Mesh        
 df = U*xi;                    % displacement fields introduced by defects
@@ -133,23 +141,45 @@ ylabel('y-position tail node')
 legend('Location','southwest')
 drawnow
 
-%% CREATE FIGURE
+%% CREATE ACTUATION FIGURE
+f2 = figure('units','centimeters','position',[3 3 10 2]);
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+timePlot = linspace(0,tmax-h,tmax/h);
+pPlot = [0.3;2.4;1];
+k=300;
+actuPlot = zeros(1,length(timePlot));
+actuStar = zeros(1,length(timePlot));
+for i = 1:length(timePlot)
+    actuPlot(i) = actuation_signal_6(k,timePlot(i),pPlot);
+end
+plot(timePlot,actuPlot)
+hold on
+grid on
+ylabel('Actuation','Interpreter','latex')
+xlabel('Time [s]')
+hold off
+
+print(f2,'graphical_abstract_actu_optimal_V0.svg','-dsvg','-r800');
+
+
+
+%% CREATE SHAPE FIGURE
 elementPlot = elements(:,1:4); 
 nel = size(elements,1);
 nDOFperNode = 3;
 
-%AnimateFieldonDeformedMesh(nodes, elementPlot,TI_NL_ROM.Solution.u, ...
- %   'factor',1,'index',1:3,'filename','result_video','framerate',1/h)
-
-timesToPlot = [0,1,1.99];
+timesToPlot = [0,1.88,3.99];
 scalefactor = 1;
+opacityVec = [0.7,0.5,0.3];
+colors = [[0.2,0.2,0.2];[0.1,0.1,0.1];[0,0,0]];
 
 nt = size(solution,2);
 S = {solution};
 ns = 1;
 
-figure
-set(gcf, 'Position',  [100, 100, 1200, 500])
+f2 = figure('units','centimeters','position',[3 3 14 4]);
 
 for idx = 1:length(timesToPlot)
     hold on
@@ -157,28 +187,15 @@ for idx = 1:length(timesToPlot)
     reshapedSol = reshape(solution(:,timeStep),nDOFperNode,[]).';
     yShift = zeros(size(reshapedSol,1),nDOFperNode);
     yShift(:,2) = -ones(size(reshapedSol,1),1);
-    displ = reshapedSol(:,1:3) + idx/5*yShift;
-    PlotFieldonDeformedMesh(nodes_sv,elements,displ,'factor',scalefactor) ;
+    displ = reshapedSol(:,1:3) + idx/20*yShift;
+    PlotFieldonDeformedMeshSpecificColor(nodes_sv,elements,displ, ...
+        brighten([0 0.4470 0.7410],opacityVec(idx)), ...
+        'color', colors(idx,:) ,...
+        'factor',scalefactor) ;
     
-    displ2 = displ;
-    displ2(:,1) = displ(:,1) + 0.7*ones(size(reshapedSol,1),1);
-    PlotFieldonDeformedMesh(nodes_sv,elements,displ2,'factor',scalefactor) ;
 end
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+print(f2,'figure1.svg','-dsvg','-r800');
 
 
 

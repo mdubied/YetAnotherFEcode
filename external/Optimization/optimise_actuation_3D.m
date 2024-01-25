@@ -43,8 +43,8 @@
 function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset,nodes,elements,d,h,tmax,A,b,varargin)
 
     % parse input
-    [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nResolve,...
-        resolveThreshold,~,~,USEJULIA] = parse_inputs(varargin{:});
+    [maxIteration,convCrit,convCritCost,barrierParam,gradientWeights, ...
+        gStepSize,nResolve,resolveThreshold,~,~,USEJULIA] = parse_inputs(varargin{:});
     
     % NOMINAL SOLUTION ____________________________________________________
     fprintf('**************************************\n')
@@ -55,7 +55,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     % p_k = [1;0;0];    % actuation_force_2
     % p_k = [0.8;2*pi;0];   % actuation_force_3
     p_k = [1;0;0;1];    % actuation_force_4
-    p_k = [0.2;2;0.9];    % actuation_force_6
+    p_k = [0.2;2;0];    % actuation_force_6
 
 %     % actuation_force_5:
 %     nParam = size(A,2);
@@ -69,9 +69,15 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     deltaP_k = p_k - pResolve_k;
     pEvo = p_k;
     nParam = length(p_k);
-    gradientWeights = ones(1,nParam);
     
-    gradientWeights(1)=0.5;
+    % optimisation characteristics of each constraint/parameter
+    if length(barrierParam) ~= size(b,1)
+        barrierParam = barrierParam*ones(1,size(b,1));
+    end
+    
+    if length(gradientWeights) ~= nParam
+        gradientWeights = gradientWeights*ones(1,nParam);
+    end
    
     % Mesh
             
@@ -237,7 +243,29 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
 
         p_k = p_k - gStepSize*diag(gradientWeights)*nablaLr
 
-        p_k = clip_infeasible_parameters(p_k,A,b);
+        %p_k = clip_infeasible_parameters(p_k,A,b);
+        p_k_clipped = clip_infeasible_parameters(p_k,A,b);
+        if ~all(p_k_clipped == p_k)
+%             xiAtLastRebuild = xiAtLastRebuild + (p_k_clipped(1:nPShape) - xi_k);
+%             if ~all(p_k_clipped(1:nPShape) == p_k(1:nPShape))
+%                 %rebuildThreshold = rebuildThreshold/2;
+%             end
+           idxToChange = find(p_k~=p_k_clipped);
+           for idx = 1:length(idxToChange)
+               gradientWeights(idxToChange(idx)) = ...
+                   0.5*gradientWeights(idxToChange(idx));
+               fprintf('Adapting learning rate for xi%d to %.3f...\n',...
+                   idxToChange(idx),gradientWeights(idxToChange(idx)))
+               if nParam*2 == length(b)
+                    barrierParam(idxToChange(idx)*2-1:idxToChange(idx)*2) = ...
+                        0.5*barrierParam(idxToChange(idx)*2-1:idxToChange(idx)*2);
+                    fprintf('Decreasing barrier parameter %d to %.3f...\n',...
+                        idxToChange(idx),barrierParam(idxToChange(idx)*2-1))
+               end
+               
+           end
+           p_k = p_k_clipped;
+        end
 
         deltaP_k = p_k - pResolve_k;    
         pEvo = [pEvo,p_k];
@@ -275,11 +303,12 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
 end
 
 % Parse input _____________________________________________________________
-function [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nResolve,resolveThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
+function [maxIteration,convCrit,convCritCost,barrierParam,gradientWeights,gStepSize,nResolve,resolveThreshold,FORMULATION,VOLUME,USEJULIA] = parse_inputs(varargin)
     defaultMaxIteration = 50;
     defaultConvCrit = 0.001;
     defaultConvCritCost = 0.1;
     defaultBarrierParam = 500;
+    defaultGradientWeights = 1;
     defaultGStepSize = 0.1;
     defaultNResolve = 10;
     defaultResolveThreshold = 0.2;
@@ -294,6 +323,8 @@ function [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nResolve,res
     addParameter(p,'convCritCost',defaultConvCritCost,@(x)validateattributes(x, ...
                     {'numeric'},{'nonempty','positive'}) );
     addParameter(p,'barrierParam',defaultBarrierParam,@(x)validateattributes(x, ...
+                    {'numeric'},{'nonempty','positive'}) );
+    addParameter(p,'gradientWeights',defaultGradientWeights,@(x)validateattributes(x, ...
                     {'numeric'},{'nonempty','positive'}) );
     addParameter(p,'gStepSize',defaultGStepSize,@(x)validateattributes(x, ...
                     {'numeric'},{'nonempty','positive'}) );
@@ -314,6 +345,7 @@ function [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nResolve,res
     convCrit = p.Results.convCrit;
     convCritCost = p.Results.convCritCost;
     barrierParam = p.Results.barrierParam;
+    gradientWeights = p.Results.gradientWeights;
     gStepSize = p.Results.gStepSize;
     nResolve = p.Results.nResolve;
     resolveThreshold = p.Results.resolveThreshold;
