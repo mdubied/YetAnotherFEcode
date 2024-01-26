@@ -73,7 +73,7 @@ tmax = 2.0;
 %   optimise_actuation_3D
 
 %% AO1
-% actuation_force_6, ran with k=300
+% actuation_force_6, ran with k=300. Results: [0.3027,2.58.43,1.0161]
 AActu = [1 0 0;
         -1 0 0;
         0 1 0;
@@ -138,7 +138,7 @@ grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
 
-exportgraphics(fCost,'AO1_cost.pdf','Resolution',600)
+exportgraphics(fCost,'AO1_cost_V1.pdf','Resolution',600)
 
 %% PLOT ACTUATION SIGNAL _____________________________________
 
@@ -147,14 +147,14 @@ set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
 timePlot = linspace(0,tmax-h,tmax/h);
-%p0 = [0.2;2;0];
-p0 = [1;0;0;1];
+p0 = [0.2;2;0];
+%p0 = [1;0;0;1];
 k=300;
 actu0 = zeros(1,length(timePlot));
 actuStar = zeros(1,length(timePlot));
 for i = 1:length(timePlot)
-    actu0(i) = actuation_signal_4(k,timePlot(i),p0);
-    actuStar(i) = actuation_signal_4(k,timePlot(i),pStar);
+    actu0(i) = actuation_signal_6(k,timePlot(i),p0);
+    actuStar(i) = actuation_signal_6(k,timePlot(i),pStar);
 end
 plot(timePlot,actu0,'--')
 hold on
@@ -162,9 +162,9 @@ plot(timePlot,actuStar)
 grid on
 ylabel('Actuation signal','Interpreter','latex')
 xlabel('Time [s]')
-legend('Initial','Optimised','Interpreter','latex')%Location='northoutside',Orientation='horizontal'
+legend('Initial','Optimised','Interpreter','latex','Location','northoutside','Orientation','horizontal')
 hold off
-exportgraphics(f1,'AO1_signal_V0.pdf','Resolution',600)
+exportgraphics(f1,'AO1_signal_V1.pdf','Resolution',600)
 
 %% PLOT PARAMETERS' EVOLUTION OVER ITERATIONS _____________________________
 figure('Position',[100,100,600,200])
