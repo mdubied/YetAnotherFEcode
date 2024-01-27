@@ -136,7 +136,7 @@ h = 0.005;
 tmax = 2.0;
 
 %% OPTIMISATION TEST ______________________________________________________
-% 2 shape variations, 4 signal parameters: total of 5 parameters
+% 2 shape variations, 3 signal parameters: total of 5 parameters
 nPShape = 2;
 nPActu = 3;
 
@@ -151,14 +151,19 @@ AActu = [1 0 0;
         0 -1 0;
         0 0 1;
         0 0 -1];
-bActu = [0.3;-0.1;2.6;-1.4;1.05;-0.05];
+bActu = [0.3;-0.1;2.6;-1.4;1.00;-0.05];
+
+% barrierParam = [3,3,30,30,30,30];
+% gradientWeights = [0.4,10,10];
 
 A = [AShape,zeros(size(AShape,1),size(AActu,2));
     zeros(size(AActu,1),size(AShape,2)),AActu];
 b = [bShape;bActu];
-barrierParamShape = [0.04,0.04,0.04,0.04];
-barrierParamActu = [0.01,0.01,0.01,0.01,0.05,0.05];
+
+barrierParamShape = [0.2,0.2,0.2,0.2];
+barrierParamActu = [1,1,1,1,1,1];
 barrierParam = [barrierParamShape,barrierParamActu];
+
 gradientWeights = [1,1,0.1,0.1,2];
 
 tStart = tic;
@@ -166,22 +171,27 @@ tStart = tic;
     nodes,elements,U,h,tmax,A,b,nPShape,nPActu,...
     'FORMULATION',FORMULATION,...
     'VOLUME',VOLUME, ...
-    'maxIteration',30, ...
+    'maxIteration',50, ...
     'convCrit',0.004, ...
     'convCritCost',1, ...
     'barrierParam',barrierParam, ...
     'gradientWeights', gradientWeights, ...
-    'gStepSize',0.0001, ...
+    'gStepSize',0.00005, ...
     'nRebuild',12, ...
     'rebuildThreshold',0.15, ...
     'nResolve',12, ...
-    'resolveThreshold',0.15, ...
-    'USEJULIA',0);
+    'resolveThreshold',0.2, ...
+    'USEJULIA',1);
 
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
-
+%%
+figure
+plot(LwoBEvo)
+grid on
+ylabel('$$L$$','Interpreter','latex')
+xlabel('Iterations')
 
 
 %% OPTIMISATION CO1 _______________________________________________________
