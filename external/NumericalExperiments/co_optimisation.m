@@ -193,6 +193,64 @@ grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
 
+%% OPTIMISATION TEST 2 ____________________________________________________
+% 2 shape variations, 3 signal parameters: total of 5 parameters
+nPShape = 2;
+nPActu = 3;
+
+AShape = [1 0;
+         -1 0;
+         0 1;
+         0 -1];
+bShape = [0.4;0.4;0.4;0.4];
+AActu = [1 0 0;
+        -1 0 0;
+        0 1 0;
+        0 -1 0;
+        0 0 1;
+        0 0 -1];
+bActu = [0.3;-0.1;2.55;-1.45;1.00;-0.05];
+
+% barrierParam = [3,3,30,30,30,30];
+% gradientWeights = [0.4,10,10];
+
+A = [AShape,zeros(size(AShape,1),size(AActu,2));
+    zeros(size(AActu,1),size(AShape,2)),AActu];
+b = [bShape;bActu];
+
+barrierParamShape = [0.2,0.2,0.2,0.2];
+barrierParamActu = [1,1,0.5,0.5,1,1];
+barrierParam = 10*[barrierParamShape,barrierParamActu];
+
+gradientWeights = [1,1,0.1,0.05,2];
+
+tStart = tic;
+[pStar,pEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b,nPShape,nPActu,...
+    'FORMULATION',FORMULATION,...
+    'VOLUME',VOLUME, ...
+    'maxIteration',70, ...
+    'convCrit',0.004, ...
+    'convCritCost',1, ...
+    'barrierParam',barrierParam, ...
+    'gradientWeights', gradientWeights, ...
+    'gStepSize',0.001, ...
+    'nRebuild',12, ...
+    'rebuildThreshold',0.15, ...
+    'nResolve',12, ...
+    'resolveThreshold',0.2, ...
+    'USEJULIA',1);
+
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
+%%
+figure
+plot(LwoBEvo)
+grid on
+ylabel('$$L$$','Interpreter','latex')
+xlabel('Iterations')
+
 
 %% OPTIMISATION CO1 _______________________________________________________
 
