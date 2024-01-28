@@ -132,7 +132,7 @@ disp(matrix_inp)
 writematrix(matrix_inp,'M.csv')
  
 %% OPTIMIZATION PARAMETERS
-h = 0.005;
+h = 0.0025;
 tmax = 2.0;
 
 %% OPTIMISATION TEST ______________________________________________________
@@ -258,7 +258,7 @@ xlabel('Iterations')
 %    y_head,y_linLongTail,y_ellipseFish]
 % Constraints
 nPShape = 8;
-nPActu = 4;
+nPActu = 3;
 AShape = zeros(2 * nPShape, nPShape);
 for i = 1:nPShape
     AShape(2*i-1:2*i,i) =[1;-1];
@@ -272,43 +272,49 @@ bShape = [0.2;0.2;
     0.3;0.3;
     0.2;0.2;
     0.4;0.4;
-    0.5;0.5;
+    0.4;0.4;
     0.4;0.1];
 
-AActu = [1 0 0 0;
-        -1 0 0 0;
-        0 1 0 0;
-        0 -1 0 0;
-        0 0 1 0;
-        0 0 -1 0;
-        0 0 0 1;
-        0 0 0 -1];
-bActu = [1.15;-0.85;0.2;0.2;0.2;0.2;1.3;-0.7];
+AActu = [1 0 0;
+        -1 0 0;
+        0 1 0;
+        0 -1 0;
+        0 0 1;
+        0 0 -1];
+bActu = [0.3;-0.1;2.5;-1.5;1.00;-0.05];
 
 A = [AShape,zeros(size(AShape,1),size(AActu,2));
     zeros(size(AActu,1),size(AShape,2)),AActu];
 b = [bShape;bActu];
 
+barrierParamShape = 0.2*ones(1,nPShape*2);
+barrierParamActu = [1,1,0.05,0.05,1,1];
+barrierParam = 10*[barrierParamShape,barrierParamActu];
+
+gradientWeights = [1,1,1,1,1,1,1,1,0.1,0.1,2];
 %%
+% [0.1973;-0.4848;0.2889;-0.2650;0.1222;0.3886;0.3969;0.3889;0.2993;2.4947;0.9969]
 
 tStart = tic;
 [pStar,pEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,nPShape,nPActu,...
     'FORMULATION',FORMULATION,...
     'VOLUME',VOLUME, ...
-    'maxIteration',30, ...
+    'maxIteration',70, ...
     'convCrit',0.004, ...
-    'convCritCost',0.75, ...
-    'barrierParam',0.01, ...
-    'gStepSize',0.00001, ...
+    'convCritCost',1, ...
+    'barrierParam',barrierParam, ...
+    'gradientWeights', gradientWeights, ...
+    'gStepSize',0.00025, ...
     'nRebuild',12, ...
-    'rebuildThreshold',0.12, ...
+    'rebuildThreshold',0.15, ...
     'nResolve',12, ...
-    'resolveThreshold',0.1, ...
+    'resolveThreshold',0.2, ...
     'USEJULIA',1);
 
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
 elementPlot = elements(:,1:4); hold on
@@ -357,14 +363,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
-xiPlot = [0;
-   -0.375;
-    0;
-   0;
-    0;
-    0;
-    0;
-    0.3116];%pStar(1:nPShape);
+xiPlot = pStar(1:nPShape);
 xiPlotName = strcat('[',num2str(pStar(1)),', ',num2str(pStar(2)),', ',num2str(pStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -433,7 +432,6 @@ plot(pEvo(8,:));%,LineStyle,"-");
 plot(pEvo(9,:));%,LineStyle,"--");
 plot(pEvo(10,:));%,LineStyle,"--");
 plot(pEvo(11,:));%,LineStyle,"--");
-plot(pEvo(12,:));%,LineStyle,"--");
 % plot(xiEvo(6,:),LineStyle="-.");
 
 grid on
