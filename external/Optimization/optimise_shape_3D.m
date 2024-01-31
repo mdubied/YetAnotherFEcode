@@ -231,19 +231,19 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,xiRebuild_k,2));
                 
-                uTail = zeros(3,tmax/h);
-                for a=1:tmax/h
-                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
-                end 
-                subplot(2,1,1);
-                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
-                legend
-                drawnow
-
-                subplot(2,1,2);
-                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
-                legend
-                drawnow
+%                 uTail = zeros(3,tmax/h);
+%                 for a=1:tmax/h
+%                     uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+%                 end 
+%                 subplot(2,1,1);
+%                 plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+%                 legend
+%                 drawnow
+% 
+%                 subplot(2,1,2);
+%                 plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+%                 legend
+%                 drawnow
 
             else
                 eta_k = eta_0k + S*xiRebuild_k;
@@ -267,10 +267,10 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
         updatedGradientWeights = adapt_learning_rate(nablaEvo,gradientWeights);
 
         if ~all(gradientWeights == updatedGradientWeights) 
-            if  rebuildThresholdSwitch ==0
-                rebuildThreshold = rebuildThreshold/2;
-                rebuildThresholdSwitch = 1;
-            end
+%             if  rebuildThresholdSwitch ==0
+% %                 rebuildThreshold = rebuildThreshold/2;
+% %                 rebuildThresholdSwitch = 1;
+%             end
             gradientWeights = updatedGradientWeights;
             
         end
@@ -280,6 +280,17 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
 
         xi_k_clipped = clip_infeasible_parameters(xi_k,A,b);
         if ~all(xi_k_clipped == xi_k)
+            idxToChange = find(xi_k~=xi_k_clipped);
+            for idx = 1:length(idxToChange)
+               gradientWeights(idxToChange(idx)) = ...
+                   0.5*gradientWeights(idxToChange(idx));
+               fprintf('Adapting learning rate for xi%d to %.3f...\n',...
+                   idxToChange(idx),gradientWeights(idxToChange(idx)))
+                barrierParam(idxToChange(idx)*2-1:idxToChange(idx)*2) = ...
+                    0.5*barrierParam(idxToChange(idx)*2-1:idxToChange(idx)*2);
+                fprintf('Decreasing barrier parameter %d to %.3f...\n',...
+                    idxToChange(idx),barrierParam(idxToChange(idx)*2-1))
+            end
             xiRebuild_k = xiRebuild_k + (xi_k_clipped - xi_k);
             xi_k = xi_k_clipped;
         end
@@ -378,8 +389,10 @@ function cond = check_cond_rebuild(k,lastRebuild,nRebuild, xiRebuild_k, ...
         fprintf('Rebuilding PROM (max lin. iterations) ...\n')
     elseif any(abs(xiRebuild_k) > rebuildThreshold)
         cond = 1;
+        criticalParams = find(abs(xiRebuild_k) > rebuildThreshold);
         fprintf('____________________\n')
-        fprintf('Rebuilding PROM (xi>threshold) ...\n')
+        fprintf('Rebuilding PROM (delta xi>threshold) for \n') 
+        fprintf(' xi%.0f \n', criticalParams) 
     elseif maxIteration-k<0.2*maxIteration ...
             && mod(k-lastRebuild,int16(nRebuild/1.33)) == 0
         cond = 1;

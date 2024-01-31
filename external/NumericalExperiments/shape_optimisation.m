@@ -132,6 +132,8 @@ h = 0.005;
 tmax = 2.0;
 
 %% OPTIMISATION SO1 _______________________________________________________
+
+U = [z_tail,z_head,y_thinFish];
 A = [1 0 0 ;
     -1 0 0;
     0 1 0;
@@ -140,18 +142,28 @@ A = [1 0 0 ;
     0 0 -1];
 b = [0.5;0.5;0.5;0.5;0.5;0.5];
 
+barrierParam = 10*ones(1,length(b));
+
 tStart = tic;
 [xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
-    'VOLUME',VOLUME, 'maxIteration',25,'convCrit',0.004,'convCritCost',0.8,'barrierParam',10, ...
-    'gStepSize',0.002,'nRebuild',6, 'rebuildThreshold',0.15,'USEJULIA',0);
+    nodes,elements,U,h,tmax,A,b, ...
+    'FORMULATION',FORMULATION, ...
+    'VOLUME',VOLUME, ...
+    'maxIteration',25, ...
+    'convCrit',0.004, ...
+    'convCritCost',0.8, ...
+    'barrierParam',barrierParam, ...
+    'gStepSize',0.001, ...
+    'nRebuild',6, ...
+    'rebuildThreshold',0.15,...
+    'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
 
 %% OPTIMISATION SO2 _______________________________________________________
 
-% [z_tail,z_head,y_thinFish,y_linLongTail,y_head,y_ellipseFish];
+U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish];
 % Constraints
 nParam = 5;
 A = zeros(2 * nParam, nParam);
@@ -162,55 +174,41 @@ yTotConstr = [0 0 1 0 1;0 0  -1 0 -1;
               0 0 0 1 1;0 0  0 -1 -1];
 A = [A;yTotConstr];
 disp(A);
-b = [0.6;0.6;
-    0.6;0.6;
+b = [0.5;0.5;
     0.5;0.5;
+    0.4;0.4;
     0.5;0.5;
     0.5;0.5;
     0.8;0.8;
     0.8;0.8];
 
+barrierParam = ones(1,length(b));
+
 %%
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
-    'VOLUME',VOLUME, 'maxIteration',25,'convCrit',0.004,'convCritCost',0.8,'barrierParam',1, ...
-    'gStepSize',0.001,'nRebuild',6, 'rebuildThreshold',0.15,'USEJULIA',1);
+[xiStar,xiEvo,LEvo, LwoBEvoSO2] = optimise_shape_3D(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b,...
+    'FORMULATION',FORMULATION, ...
+    'VOLUME',VOLUME, ...
+    'maxIteration',50, ...
+    'convCrit',0.004, ...
+    'convCritCost',0.8, ...
+    'barrierParam',barrierParam, ...
+    'gStepSize',0.0004,...
+    'nRebuild',15, ...
+    'rebuildThreshold',0.15,...
+    'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 
 %% OPTIMISATION SO5 _______________________________________________________
 
-% [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-%    y_tail,y_head,y_linLongTail,y_ellipseFish]
-% Constraints
-nParam = 10;
-A = zeros(2 * nParam, nParam);
-for i = 1:nParam
-    A(2*i-1:2*i,i) =[1;-1];
-end
-yTotConstr = [1 0 0 0 0 0 1 0 1 1;-1 0 0 0 0 0 -1 0 -1 -1;
-              1 0 0 0 0 0 0 1 0 1;-1 0 0 0 0 0 0 -1 0 -1];
-A = [A;yTotConstr];
-disp(A);
-b = [0.2;0.2;
-    0.3;0.3;
-    0.6;0.4;
-    0.5;0.5;
-    0.3;0.3;
-    0.5;0.5;
-    0.4;0.4;
-    0.4;0.4;
-    0.4;0.4;
-    0.4;0.4;
-    0.8;0.8;
-    0.8;0.8];
+%[0.1968;-0.4929;0.3093;-0.2883;0.2715;0.4913;0.4962;0.3890]
 
-%% OPTIMISATION SO5 _______________________________________________________
+U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+    y_head,y_linLongTail,y_ellipseFish];
 
-% [,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-%    y_head,y_linLongTail,y_ellipseFish]
 % Constraints
 nParam = 8;
 A = zeros(2 * nParam, nParam);
@@ -220,27 +218,39 @@ end
 yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
               0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
 A = [A;yTotConstr];
-disp(A);
-b = [0.3;0.3;
+
+b = [0.2;0.2;
     0.5;0.5;
     0.5;0.5;
     0.3;0.3;
+    0.3;0.3;
     0.5;0.5;
-    0.4;0.4;
     0.5;0.5;
     0.4;0.4;
     0.9;0.9;
     0.9;0.9];
 
+
+barrierParam = 3*ones(1,length(b));
+
 %%
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b,'FORMULATION',FORMULATION, ...
-    'VOLUME',VOLUME, 'maxIteration',40,'convCrit',0.004,'convCritCost',1,'barrierParam',3, ...
-    'gStepSize',0.0006,'nRebuild',12, 'rebuildThreshold',0.15,'USEJULIA',1);
+[xiStar,xiEvo,LEvo, LwoBEvoSO5] = optimise_shape_3D(myElementConstructor,nset, ...
+    nodes,elements,U,h,tmax,A,b, ...
+    'FORMULATION',FORMULATION, ...
+    'VOLUME',VOLUME, ...
+    'maxIteration',80, ...
+    'convCrit',0.01, ...
+    'convCritCost',2, ...
+    'barrierParam',barrierParam, ...
+    'gStepSize',0.0003, ...
+    'nRebuild',20, ...
+    'rebuildThreshold',0.15, ...
+    'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
 elementPlot = elements(:,1:4); hold on
@@ -262,34 +272,35 @@ xiPlot = 0.5;
 v1 = reshape(subU*xiPlot, 3, []).';
 dm = PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_7=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_4=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,2);
+subU = U(:,4);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v2, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_8=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_5=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,3);
+subU = U(:,5);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v3, 'factor', 1); 
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_9=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_6=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
 xiPlot = xiStar;
+xiPlot(1) = 0.2;
 xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -303,9 +314,11 @@ axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO5_shapes_V0.pdf','Resolution',600)
+exportgraphics(f1,'SO5_shapes_V1.pdf','Resolution',600)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
+set(groot,'defaultAxesTickLabelInterpreter','latex');  
+set(groot,'defaulttextinterpreter','latex');
 f2 = figure('units','centimeters','position',[3 3 9 5]);
 t = tiledlayout(1,2);
 t.TileSpacing = 'loose';
@@ -313,7 +326,7 @@ t.Padding = 'tight';
 
 % cost function
 ax1 = nexttile;
-plot(LEvo)
+plot(LwoBEvo)
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations')
@@ -332,11 +345,42 @@ grid on
 ylabel('$$\xi$$','Interpreter','latex')
 xlabel('Iterations')
 legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
-    'Position',[0.75 0.35 0.2 0.2])
+    'Position',[0.8 0.45 0.2 0.2])
 
-legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
-    'Position',[0.35 0.64 0.2 0.35])
-exportgraphics(f2,'SO2_evo_V0.pdf','Resolution',600)
+% legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
+%     'Position',[0.35 0.64 0.2 0.35])
+exportgraphics(f2,'SO1_evo_V1.pdf','Resolution',600)
+
+%% PLOT COST FUNCTIONS, SO2 + SO3 _________________________________________
+set(groot,'defaultAxesTickLabelInterpreter','latex');  
+set(groot,'defaulttextinterpreter','latex');
+f2 = figure('units','centimeters','position',[3 3 9 5]);
+t = tiledlayout(1,2);
+t.TileSpacing = 'loose';
+t.Padding = 'tight';
+
+% cost function
+ax1 = nexttile;
+plot(LwoBEvoSO2)
+hold on
+annotation('textbox',[.35 .6 .3 .3],'String','SO2','EdgeColor','None','Interpreter','latex');
+grid on
+ylabel('$$L$$','Interpreter','latex')
+xlabel('Iterations','Interpreter','latex')
+hold off
+
+
+% Parameters
+ax2 = nexttile;
+plot(LwoBEvoSO5)
+hold on
+annotation('textbox',[.87 .6 .3 .3],'String','SO5','EdgeColor','None','Interpreter','latex');
+grid on
+ylabel('$$L$$','Interpreter','latex')
+xlabel('Iterations','Interpreter','latex')
+hold off
+
+exportgraphics(f2,'SO2-5_cost_V1.pdf','Resolution',600)
 
 
 %% PLOT PARAMETERS' EVOLUTION OVER ITERATIONS _____________________________
@@ -361,42 +405,6 @@ xlabel('Iterations')
 grid on
 
 
-%% COST COMPUTATION ON FINAL ROM __________________________________________
-%xiStar4 = [0.2;0.1;0.5;0.2;0.1]
-xiFinal = xiStar;
-
-% tmax=4;
-% h=0.0025
-
-% shape-varied mesh 
-df = U*xiFinal;                       % displacement field introduced by shape variations
-dd = [df(1:2:end) df(2:2:end)];   % rearrange as two columns matrix
-nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
-svMesh = Mesh(nodes_sv);
-svMesh.create_elements_table(elements,myElementConstructor);
-svMesh.set_essential_boundary_condition([nset{1} nset{2}],1:2,0)
-
-% (P)ROM creation
-FORMULATION = 'N1';VOLUME = 1; USEJULIA = 0;FOURTHORDER = 0; ACTUATION = 1;
-[V,PROM_Assembly,tensors_PROM,tensors_hydro_PROM, tensors_topMuscle_PROM, tensors_bottomMuscle_PROM] = ...
-        build_PROM(svMesh,nodes,elements,U,FORMULATION,VOLUME,USEJULIA,FOURTHORDER,ACTUATION);
-       
-% solve EoMs
-TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax, ...
-     'ACTUATION', ACTUATION,'topMuscle',tensors_topMuscle_PROM,'bottomMuscle',tensors_bottomMuscle_PROM);
-% TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_hydro_PROM,h,tmax);
-eta = TI_NL_PROM.Solution.q;
-etad = TI_NL_PROM.Solution.qd;
-N = size(eta,2);
-
-% compute cost Lr without barrier functions (no constraints, to obtain the
-% the cost stemming from the hydrodynamic force only)
-dr = reduced_constant_vector(dSwim,V);
-AFinal = [];     % no constraint
-bFinal= [];      % no constraint
-barrierParam = 10;
-Lr = reduced_cost_function_w_constraints(N,tensors_hydro_PROM,eta,etad,xiFinal,dr,AFinal,bFinal,barrierParam);
-%fprintf('The cost function w/o constraint is: %.4f\n',Lr)
 
 %% PLOTs __________________________________________________________________
 
@@ -422,5 +430,3 @@ grid on
 hold off
 
 
-
-%% ANIMATIONS _____________________________________________________________
