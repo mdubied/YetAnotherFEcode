@@ -117,24 +117,46 @@ fprintf('Time needed to solve the problem using PROM: %.2fsec\n',toc(tStartPROM)
 timePROM = toc(tStartPROM);
 
 %% FOM ____________________________________________________________________
-% assembly
-NominalAssembly = Assembly(MeshNominal);
-Mn = NominalAssembly.mass_matrix();
-nNodes = size(nodes,1);
-u0 = zeros( MeshNominal.nDOFs, 1);
-[Kn,~] = NominalAssembly.tangent_stiffness_and_force(u0);
-% store matrices
-NominalAssembly.DATA.K = Kn;
-NominalAssembly.DATA.M = Mn;
+tStartPROM = tic;
 
-% damping
-alfa = 0.912;
-beta = 0.002;
-Dn = alfa*Mn + beta*Kn; % Rayleigh damping 
-NominalAssembly.DATA.D = Dn;
-NominalAssembly.DATA.C = Dn;
-Dc = NominalAssembly.constrain_matrix(Dn);
+% build PROM
+fprintf('____________________\n')
+fprintf('Building PROM ... \n')
+[Assembly,tensors_FOM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
+build_FOM_3D(MeshNominal,nodes,elements,USEJULIA);      
 
+% % solve EoMs (with sensitivities for the PROM)
+% tic 
+% fprintf('____________________\n')
+% fprintf('Solving EoMs and sensitivities...\n') 
+% TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+% toc
+
+fprintf('Time needed to solve the problem using PROM: %.2fsec\n',toc(tStartPROM))
+timePROM = toc(tStartPROM);
+
+%%
+% find spine and tail elements
+if fishDim == 2
+    [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
+    [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
+else
+    [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TET4(elements,nodes);
+    [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
+end
+
+% get spine normalisation factors
+normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
+wTail = normalisationFactors(tailElement);
+
+% get dorsal nodes
+[~,matchedDorsalNodesIdx,~,matchedDorsalNodesZPos] = ....
+    find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
+
+% drag force
+tensors_drag = compute_drag_tensors_FOM(NominalAssembly, skinElements, skinElementFaces, rho, VHead)
+% tensors_tail
+% tensors_spine
 
 
 %% PLOT ___________________________________________________________________

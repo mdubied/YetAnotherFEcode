@@ -359,7 +359,7 @@ classdef Assembly < handle
                 thisElement = Elements(j).Object;
                 
                 index{j} = thisElement.iDOFs;
-                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
+                v{j} = elementWeights(j) * thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
             end
             
             % assembling
@@ -593,13 +593,10 @@ classdef Assembly < handle
         end
 
         function [T] = tensor_skin(self,elementMethodName,SIZE,sumDIMS,varargin)
-            % This function assembles a generic finite element vector from
-            % its element level counterpart.
-            % elementMethodName is a string input containing the name of
-            % the method that returns the element level vector Fe.
-            % For this to work, a method named elementMethodName which
-            % returns the appropriate vector must be defined for all
-            % element types in the FE Mesh.
+            % This function assembles a tensor that stems from reaction at
+            % the skin elements. For this work in particular, it is used to
+            % model the drag force. "varargin", and therefore "inputs"
+            % contain argument for the elementMethodName "Te3".
 
             n_e = self.Mesh.nElements;
 
@@ -610,6 +607,7 @@ classdef Assembly < handle
             
             % parsing element weights
             [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            vecHeadX = inputs{3};
             
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);
@@ -619,8 +617,17 @@ classdef Assembly < handle
             for j = elementSet
                 thisElement = Elements(j).Object;
                 
-                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}, inputs{3}, inputs{4});
+                Te= thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
+                
+                % augment original tensor for head velocity and reduce it
+                TeVHead = ttt(tensor(Te),tensor(vecHeadX'));    % ne x 1 x n x 1
+                TeVHead = ttv(TeVHead,1,4);                     % ne x 1 x n
+                TeVVHead = ttt(TeVHead,tensor(vecHeadX'));      % ne x 1 x n x n x 1
+                Te = ttv(TeVVHead,1,5);                         % ne x 1 x n x n
+                
+                Te = ttv(tensor(Te),1,2);    % from ne x 1 x n x n to ne x n x n
                 Te = tensor(Te);
+                
                 [subs{j}, T{j}] = sparsify(elementWeights(j) * Te, {}, sumDIMS);
             end
 
