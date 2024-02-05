@@ -56,8 +56,8 @@ a2 = [];
 a3 = [];
 a4 = [];
 a5 = [];
-normalizedActuationValues = normalize(ActuationValues,'range',[-1 1]);
-normalizedActuationValues2 = normalize(ActuationValues2,'range',[-1 1]);
+normalizedActuationValues = ActuationValues;%normalize(ActuationValues,'range')-0.5;
+normalizedActuationValues2 = ActuationValues;%normalize(ActuationValues2,'range')-0.5;
 
 for j = 1:nt
     hold on

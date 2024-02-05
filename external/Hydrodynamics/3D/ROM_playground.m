@@ -128,7 +128,7 @@ hold off
 %% TIME INTEGRATION _______________________________________________________
 
 % time step for integration
-h1 = 0.01;
+h1 = 0.0;
 tmax = 2; 
 
 % initial condition: equilibrium
@@ -284,26 +284,26 @@ hold off
 tailNode = tailProp.tailNode;
 
 initialPosFOM = reshape(nodes.',[],1);
-figure(Position=[300,150,300,300])
+figure('Position',[300,150,300,300])
 plot(initialPosFOM(tailNode*3-2)+TI_NL_ROM.Solution.u(tailNode*3-2,:))
 title('tail x position')
 
-figure(Position=[700,150,300,300])
+figure('Position',[700,150,300,300])
 plot(TI_NL_ROM.Solution.ud(tailNode*3-2,:))
 title('tail x velocity')
 
 %% PLOT Y _________________________________________________________________
 initialPosFOM = reshape(nodes.',[],1);
-figure(Position=[300,150,300,300])
+figure('Position',[300,150,300,300])
 plot(initialPosFOM(tailNode*3-1)+TI_NL_ROM.Solution.u(tailNode*3-1,:))
 title('tail y position')
-figure(Position=[700,150,300,300])
+figure('Position',[700,150,300,300])
 plot(TI_NL_ROM.Solution.ud(tailNode*3-2,:))
 title('tail y velocity')
 
 %% PLOT Y _________________________________________________________________
 initialPosFOM = reshape(nodes.',[],1);
-figure(Position=[300,150,300,300])
+figure('Position',[300,150,300,300])
 headNode = 6;
 plot(initialPosFOM(headNode*3-1)+TI_NL_ROM.Solution.u(headNode*3-1,:))
 title('head y position')
@@ -321,7 +321,7 @@ plot(force(3,:))
 
 %% ANIMATIONS _____________________________________________________________
 
-TI_NL_PROM.Solution.u = V * TI_NL_PROM.Solution.q; % get full order solution
+TI_NL_PROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution
 
 elementPlot = elements(:,1:4); 
 nel = size(elements,1);
@@ -348,24 +348,24 @@ for el=1:nel
 
 end
 
-actuationValues = zeros(size(TI_NL_PROM.Solution.u,2),1);
-for t=1:size(TI_NL_PROM.Solution.u,2)
+actuationValues = zeros(size(TI_NL_ROM.Solution.u,2),1);
+for t=1:size(TI_NL_ROM.Solution.u,2)
     actuationValues(t) = -1*(actuSignalT(t*h)*2/k-1);
 end
 
-actuationValues2 = zeros(size(TI_NL_PROM.Solution.u,2),1);
-for t=1:size(TI_NL_PROM.Solution.u,2)
+actuationValues2 = zeros(size(TI_NL_ROM.Solution.u,2),1);
+for t=1:size(TI_NL_ROM.Solution.u,2)
     actuationValues2(t) = -1*(actuSignalB(t*h)*2/k-1);
 end
 
-AnimateFieldonDeformedMeshActuation2Muscles(nodes_sv, elementPlot,topMuscle,actuationValues,...
-    bottomMuscle,actuationValues2,TI_NL_PROM.Solution.u, ...
+AnimateFieldonDeformedMeshActuation2Muscles(nodes, elementPlot,topMuscle,actuationValues,...
+    bottomMuscle,actuationValues2,TI_NL_ROM.Solution.u, ...
     'factor',1,'index',1:3,'filename','result_video','framerate',1/h)
 
 
 
 %% ANIMATION ______________________________________________________________
-elementPlot = elements(:,1:3); % plot only corners (otherwise it's a mess)
+elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
 AnimateFieldonDeformedMesh(nodes_sv, elementPlot,TI_NL_ROM.Solution.u, ...
     'factor',1,'index',1:3,'filename','result_video','framerate',1/h)
 

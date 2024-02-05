@@ -13,6 +13,7 @@ function AnimateFieldonDeformedMesh(Nodes,Elements,S,varargin)
 % filename: for storing animation files (with path)
 % framerate: numerical rate of frames to be played per second in the video
 figure
+set(gcf, 'Position',  [100, 100, 1200, 500])
 [scalefactor,index,filename,framerate] = parse_inputs(varargin{:});
 
 %% video object

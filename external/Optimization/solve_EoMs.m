@@ -42,13 +42,13 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=400; % k=400 for 3D
+    k=50; 
     
-    actuSignalT = @(t) k/2*(1-(1+0.2*sin(t*2*pi)));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(1-(1-0.2*sin(t*2*pi)));
+    actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
+    actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
     
-    fActu = @(t,q)  k/2*(1-(1+0.2*sin(t*2*pi)))*(B1T+B2T*q) + ...
-                    k/2*(1-(1-0.2*sin(t*2*pi)))*(B1B+B2B*q);
+    fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
+                    k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
 
     % tail pressure force properties
     A = tailProperties.A;
@@ -69,10 +69,17 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     % spine change in momentum (solve for xi=0, so that we do not need f1
     % and f2 terms, nor the terms in U)
     if fishDim == 3
-        Txx2 = spineProperties.tensors.Txx.f0;
-        TxV3 = spineProperties.tensors.TxV.f0;
-        TVx3 = spineProperties.tensors.TVx.f0;
-        TVV4 = spineProperties.tensors.TVV.f0;
+        if isfield(spineProperties.tensors,'f0') == 1   % PROM was constructed
+            Txx2 = spineProperties.tensors.Txx.f0;
+            TxV3 = spineProperties.tensors.TxV.f0;
+            TVx3 = spineProperties.tensors.TVx.f0;
+            TVV4 = spineProperties.tensors.TVV.f0;
+        else                                            % ROM was constructed
+            Txx2 = spineProperties.tensors.Txx; 
+            TxV3 = spineProperties.tensors.TxV;
+            TVx3 = spineProperties.tensors.TVx;
+            TVV4 = spineProperties.tensors.TVV;
+        end
         
         fSpine = @(q,qd,qdd) double(Txx2)*qdd ...
             + double(ttv(ttv(TxV3,q,3),qdd,2) ...
@@ -108,9 +115,13 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     TI_NL_ROM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
     
     % modal nonlinear Residual evaluation function handle
-    Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro_PROM(eta,etad,etadd, ...
-        t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
-
+    if isfield(spineProperties.tensors,'f0') == 1   % PROM was constructed
+        Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro_PROM(eta,etad,etadd, ...
+            t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
+    else
+        Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro(eta,etad,etadd, ...
+            t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
+    end
     % time integration 
     TI_NL_ROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red);
     TI_NL_ROM.Solution.u = V * TI_NL_ROM.Solution.q; % get full order solution

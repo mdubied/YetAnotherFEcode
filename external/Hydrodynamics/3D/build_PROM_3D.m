@@ -72,7 +72,6 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     [f0n,ind] = sort(sqrt(diag(om))/2/pi);
     VMn = VMn(:,ind);
     
-    
     for ii = 1:n_VMs
         VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
     end
@@ -92,19 +91,39 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
+    
+    % rotation mode
+    m3 = zeros(nNodes*3,1);
+    rotMat = [sqrt(2)/2, -sqrt(2)/2, 0;
+               sqrt(2)/2, sqrt(2)/2, 0;
+               0, 0, 1];
+    Lx = abs(max(nodes(:,1))-min(nodes(:,1)));
+    desiredFixedPoint = - 0.4*Lx;
+    fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
+    tMat1 = [1,0, fixedPoint;
+            0, 1, 0;
+            0, 0, 1];
+    tMat2 = [1,0, -fixedPoint;
+            0, 1, 0;
+            0, 0, 1];
+    
+    for n = 1:size(nodes,1)
+        m3(n*3-2:n*3) = nodes(n,:)'+ rotMat*(nodes(n,:)');
+    end
     % mSingle = [0 0 1];
     % m3 = repmat(mSingle,1,nNodes)';
     V  = [m1 m2 VMn MDn DS];
+%     V = [m1 m3 VMn MDn DS];
     V  = orth(V);
 
     % % plot
-    % mod = 2;
-    % elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-    % figure('units','normalized','position',[.2 .1 .6 .8])
-    % PlotMesh(nodes, elementPlot, 0);
-    % v1 = reshape(VMn(:,mod), 3, []).';
-    % PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
-    % title(['\Phi_' num2str(mod)])
+%     mod = 2;
+%     elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+%     figure('units','normalized','position',[.2 .1 .6 .8])
+%     PlotMesh(nodes, elementPlot, 0);
+%     v1 = reshape(VMn(:,mod), 3, []).';
+%     PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+%     title(['\Phi_' num2str(mod)])
 
     % reduced assembly
     PROM_Assembly = DpromAssembly(MeshNominal,U,V);

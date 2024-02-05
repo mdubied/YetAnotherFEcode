@@ -150,7 +150,7 @@ if dimension == 3   % For 3D plots
         
     end
     
-    camup(upVec) 
+    %camup(upVec) 
     
     
 

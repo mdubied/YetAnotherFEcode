@@ -48,7 +48,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,fIntTensors,t
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=300; 
+    k=50; 
     
     actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
     actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));

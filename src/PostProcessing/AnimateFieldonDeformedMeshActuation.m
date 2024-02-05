@@ -17,6 +17,7 @@ function AnimateFieldonDeformedMeshActuation(Nodes,Elements,ActuationElements,Ac
 %
 % Last modified: 12/03/2023, Mathieu Dubied, ETH Zurich
 figure
+set(gcf, 'Position',  [100, 100, 1200, 500])
 [scalefactor,index,cameraPos,upVec,filename,framerate] = parse_inputs(varargin{:});
 
 %% video object
