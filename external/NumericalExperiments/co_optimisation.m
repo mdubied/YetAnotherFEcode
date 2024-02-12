@@ -98,6 +98,7 @@ xiPlot = [0.16;
     0.2;
     0.475;
     0.26];
+xiPlot = [0.1973;-0.4848;0.2889;-0.2650;0.1222;0.3886;0.3969;0.3889];
 % xiPlot = [0.5;0.5];
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
@@ -115,7 +116,7 @@ set(f1,'Units','centimeters');
 
 
 %%
-xiTest = [-0.4;0.2;0.4];
+xiTest = [0.1973;-0.4848;0.2889;-0.2650;0.1222;0.3886;0.3969;0.3889];;
 % shape-varied mesh 
 df = U*xiTest;                       % displacement field introduced by shape variations
 dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix

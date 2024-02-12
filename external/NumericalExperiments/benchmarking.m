@@ -122,8 +122,8 @@ tStartPROM = tic;
 % build PROM
 fprintf('____________________\n')
 fprintf('Building PROM ... \n')
-[Assembly,tensors_FOM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_FOM_3D(MeshNominal,nodes,elements,USEJULIA);      
+[Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
+build_FOM_3D(MeshNominal,nodes,elements);      
 
 % % solve EoMs (with sensitivities for the PROM)
 % tic 
@@ -136,27 +136,7 @@ fprintf('Time needed to solve the problem using PROM: %.2fsec\n',toc(tStartPROM)
 timePROM = toc(tStartPROM);
 
 %%
-% find spine and tail elements
-if fishDim == 2
-    [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
-    [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
-else
-    [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TET4(elements,nodes);
-    [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
-end
 
-% get spine normalisation factors
-normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
-wTail = normalisationFactors(tailElement);
-
-% get dorsal nodes
-[~,matchedDorsalNodesIdx,~,matchedDorsalNodesZPos] = ....
-    find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
-
-% drag force
-tensors_drag = compute_drag_tensors_FOM(NominalAssembly, skinElements, skinElementFaces, rho, VHead)
-% tensors_tail
-% tensors_spine
 
 
 %% PLOT ___________________________________________________________________

@@ -10,29 +10,27 @@
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
 % (2) nodes:        nodes and their coordinates
 % (3) elements:     elements and corresponding nodes
-% (4) USEJULIA:     use of JULIA (1) for the computation of internal forces
-%                   tensors 
+
 %
 % OUTPUTS:   
 % (1) ROM_Assembly:         FOM assembly
-% (2) tensors_ROM:          (unreduced) tensors for the internal forces 
-% (3) tailProperties:       properties of the tail pressure force
+% (2) tailProperties:       properties of the tail pressure force
 %                           (matrices, tail elements etc.)
-% (4) spineProperties:      properties of the spine change in momentum
+% (3) spineProperties:      properties of the spine change in momentum
 %                           (tensor, spine elements etc.)
-% (5) draProperties         properties of the form drag forces
-% (6) actuTop:              vectors and matrices related to the actuation
+% (4) draProperties         properties of the form drag forces
+% (5) actuTop:              vectors and matrices related to the actuation
 %                           muscle at the top
-% (7) actuBottom:           vectors and matrices related to the actuation
+% (6) actuBottom:           vectors and matrices related to the actuation
 %                           muscle at the bottom
 %     
 %
 % Additional notes: -
 %
-% Last modified: 05/02/2024, Mathieu Dubied, ETH Zürich
+% Last modified: 06/02/2024, Mathieu Dubied, ETH Zürich
 
-function [V,FOM_Assembly,tensors_FOM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_FOM_3D(MeshNominal,nodes,elements,USEJULIA)
+function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
+    build_FOM_3D(MeshNominal,nodes,elements)
 
     startROMBuilding = tic;
     
@@ -63,63 +61,63 @@ function [V,FOM_Assembly,tensors_FOM,tailProperties,spineProperties,dragProperti
     % HYDRODYNAMIC FORCES _________________________________________________
     
     % find spine and tail elements
-%     if fishDim == 2
-%         [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
-%         [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
-%     else
-%         [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TET4(elements,nodes);
-%         [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
-%     end
-%     
-%     % get spine normalisation factors
-%     normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
-%     wTail = normalisationFactors(tailElement);
-% 
-%     % get dorsal nodes
-%     [~,matchedDorsalNodesIdx,~,matchedDorsalNodesZPos] = ....
-%         find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
-% 
-%     % tail pressure force: get matrices
-%     [A,B] = compute_AB_tail_pressure_TET4(nodeIdxPosInElements(tailElement,:));
-%     nodesTailEl = elements(tailElement,:);
-%     iDOFs = [nodesTailEl(1)*3-2,nodesTailEl(1)*3-1,nodesTailEl(1)*3,...
-%              nodesTailEl(2)*3-2,nodesTailEl(2)*3-1,nodesTailEl(2)*3,...
-%              nodesTailEl(3)*3-2,nodesTailEl(3)*3-1,nodesTailEl(3)*3,...
-%              nodesTailEl(4)*3-2,nodesTailEl(4)*3-1,nodesTailEl(4)*3];
-%     VTail = V(iDOFs,:);
-%     R = [0 -1 0 0 0 0 0 0 0 0 0 0;
-%          1 0 0 0 0 0 0 0 0 0 0 0;
-%          0 0 0 0 0 0 0 0 0 0 0 0;
-%          0 0 0 0 -1 0 0 0 0 0 0 0;
-%          0 0 0 1 0 0 0 0 0 0 0 0;
-%          0 0 0 0 0 0 0 0 0 0 0 0;
-%          0 0 0 0 0 0 0 -1 0 0 0 0;
-%          0 0 0 0 0 0 1 0 0 0 0 0;
-%          0 0 0 0 0 0 0 0 0 0 0 0;
-%          0 0 0 0 0 0 0 0 0 0 -1 0;
-%          0 0 0 0 0 0 0 0 0 1 0 0;
-%          0 0 0 0 0 0 0 0 0 0 0 0];     % 90 degrees rotation counterclock-wise
-% 
-%     % tail pressure force: group tail quantities in a struct
-%     tailProperties.A = A;
-%     tailProperties.B = B;
-%     tailProperties.w = wTail;
-%     tailProperties.V = VTail;
-%     tailProperties.R = R;
-%     tailProperties.tailNode = tailNode;
-%     tailProperties.tailElement = tailElement;
-%     tailProperties.iDOFs = iDOFs;
-%     tailProperties.zDOFIdx = matchedDorsalNodesIdx(spineElements==tailElement)*3;
-%     tailProperties.z = matchedDorsalNodesZPos(tailElement);
-%     
+    if fishDim == 2
+        [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TRI3(elements,nodes);
+        [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
+    else
+        [spineNodes, spineElements, spineElementWeights, nodeIdxPosInElements] = find_spine_TET4(elements,nodes);
+        [tailNode, tailElement, ~] = find_tail(elements,nodes,spineElements,nodeIdxPosInElements);
+    end
+    
+    % get spine normalisation factors
+    normalisationFactors = compute_normalisation_factors(nodes, elements, spineElements, nodeIdxPosInElements);
+    wTail = normalisationFactors(tailElement);
+
+    % get dorsal nodes
+    [~,matchedDorsalNodesIdx,~,matchedDorsalNodesZPos] = ....
+        find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
+
+    % tail pressure force: get matrices
+    [A,B] = compute_AB_tail_pressure_TET4(nodeIdxPosInElements(tailElement,:));
+    nodesTailEl = elements(tailElement,:);
+    iDOFs = [nodesTailEl(1)*3-2,nodesTailEl(1)*3-1,nodesTailEl(1)*3,...
+             nodesTailEl(2)*3-2,nodesTailEl(2)*3-1,nodesTailEl(2)*3,...
+             nodesTailEl(3)*3-2,nodesTailEl(3)*3-1,nodesTailEl(3)*3,...
+             nodesTailEl(4)*3-2,nodesTailEl(4)*3-1,nodesTailEl(4)*3];
+    R = [0 -1 0 0 0 0 0 0 0 0 0 0;
+         1 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 -1 0 0 0 0 0 0 0;
+         0 0 0 1 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 -1 0 0 0 0;
+         0 0 0 0 0 0 1 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0;
+         0 0 0 0 0 0 0 0 0 0 -1 0;
+         0 0 0 0 0 0 0 0 0 1 0 0;
+         0 0 0 0 0 0 0 0 0 0 0 0];     % 90 degrees rotation counterclock-wise
+
+    % tail pressure force: group tail quantities in a struct
+    tailProperties.A = A;
+    tailProperties.B = B;
+    tailProperties.w = wTail;
+    tailProperties.R = R;
+    tailProperties.tailNode = tailNode;
+    tailProperties.tailElement = tailElement;
+    tailProperties.iDOFs = iDOFs;
+    tailProperties.zDOFIdx = matchedDorsalNodesIdx(spineElements==tailElement)*3;
+    tailProperties.z = matchedDorsalNodesZPos(tailElement);
+    tailProperties.mTilde = 0.25*pi*1000*(tailProperties.z*2)^2;
+    
+    
 %     % spine momentum change tensor (reduced order)
 %     spineTensors = compute_spine_momentum_tensor_TET4(Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,matchedDorsalNodesZPos);
 %     spineProperties.tensors = spineTensors;
-%     spineProperties.spineNodes = spineNodes;
-%     spineProperties.spineElements = spineElements;
-%     spineProperties.nodeIdxPosInElements = nodeIdxPosInElements;
-%     spineProperties.dorsalNodeIdx = matchedDorsalNodesIdx;
-%     spineProperties.zPos = matchedDorsalNodesZPos;
+    spineProperties.spineNodes = spineNodes;
+    spineProperties.spineElements = spineElements;
+    spineProperties.nodeIdxPosInElements = nodeIdxPosInElements;
+    spineProperties.dorsalNodeIdx = matchedDorsalNodesIdx;
+    spineProperties.zPos = matchedDorsalNodesZPos;
      
     % drag force (reduced order)
     [~,~,skinElements, skinElementFaces] = getSkin3D(elements);
@@ -162,7 +160,10 @@ function [V,FOM_Assembly,tensors_FOM,tailProperties,spineProperties,dragProperti
 %     end
 %     actuBottom = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
 
+    actuTop = 0;
+    actuBottom = 0;
 
-    fprintf('Time to build ROM: %.2fsec\n',toc(startROMBuilding))
+
+    fprintf('Time to build FOM: %.2fsec\n',toc(startROMBuilding))
 
 end 
