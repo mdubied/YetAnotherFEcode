@@ -27,9 +27,9 @@
 % Additional notes:
 %   - List of currently supported elements: TRI3, TET4
 %
-% Last modified: 05/02/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 18/02/2024, Mathieu Dubied, ETH Zurich
 
-function tensors = compute_drag_tensors_FOM(Assembly, skinElements, skinElementFaces, rho, vecHeadX) 
+function tensors = compute_drag_tensors_FOM(Assembly, skinElements, skinElementFaces, rho) 
 
     t0=tic;
     
@@ -42,7 +42,7 @@ function tensors = compute_drag_tensors_FOM(Assembly, skinElements, skinElementF
     fprintf(' Assembling %d elements ...\n', nel)
 
     tic;
-    T3 = Assembly.vector_skin('Te1','weights', skinElements, skinElementFaces, rho, vecHeadX);
+    T3 = Assembly.vector_skin('Te1','weights', skinElements, skinElementFaces, rho);
 
     fprintf('   3rd order term - T3: %.2f s\n',toc)
     

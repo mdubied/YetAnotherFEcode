@@ -4,11 +4,11 @@
 % f = spine_force_FOM(q,qd,Assembly,elements,tailProperties)
 %
 % Description: Computes the spine force for the FOM, expressed as an
-% unconstraint vectors (size: nDOFs).
+% unconstrained vectors (size: nDOFs).
 %
 % INPUTS: 
-% (1) q:                constraint displacement vector
-% (2) qd:               constraints velocity vector
+% (1) q:                unconstrained displacement vector
+% (2) qd:               unconstrained velocity vector
 % (3) Assembly:         FOM FEM assembly
 % (4) elements:         elements from the FEM assembly
 % (5) spineProperties:  struct containing the mathematical property of the
@@ -18,7 +18,7 @@
 % (1) f:                spine force, of size nDOFs x 1, where nDOFs is the 
 %                       total, unconstraint number of DOFs
 %     
-% Last modified: 16/02/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 18/02/2023, Mathieu Dubied, ETH Zurich
 function f = spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties)
     
     % get information from assembly
@@ -33,6 +33,9 @@ function f = spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties)
     matchedDorsalNodesIdx = spineProperties.dorsalNodeIdx;
     matchedDorsalNodesZPos = spineProperties.zPos;
     normalisationFactors = spineProperties.normalisationFactors;
+    
+    % initialise force
+    f = zeros(nDOFs,1);
     
     % create force by looping over spine elements
     for i = 1:size(spineElements,1)
@@ -57,45 +60,36 @@ function f = spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties)
          
          
         % create matrix to select spine velocity and displacement from q
-        nodesSpineElement = elements(spineElementIdx,:);
+        nodesSpineElement = elements(sElementIdx,:);
         iDOFs = [nodesSpineElement(1)*3-2,nodesSpineElement(1)*3-1,nodesSpineElement(1)*3,...
              nodesSpineElement(2)*3-2,nodesSpineElement(2)*3-1,nodesSpineElement(2)*3,...
              nodesSpineElement(3)*3-2,nodesSpineElement(3)*3-1,nodesSpineElement(3)*3,...
              nodesSpineElement(4)*3-2,nodesSpineElement(4)*3-1,nodesSpineElement(4)*3];
          
         nodeSelMatrix = zeros(12,nDOFs);    % 12 = 4*3, specific for linear tet mesh
-        for ii = 1:length(tailDOFs)
-            currentTailDOF = tailDOFs(ii);
-            nodeSelMatrix(ii,currentTailDOF) = 1;
+        for ii = 1:length(iDOFs)
+            currentSpineDOF = iDOFs(ii);
+            nodeSelMatrix(ii,currentSpineDOF) = 1;
         end
         
         % compute force at the spine element
         mTilde = 0.25*pi*1000*(matchedDorsalNodesZPos(sElementIdx)*2)^2;
         w = normalisationFactors(sElementIdx);
-        fSpineAtElement = -mTilde*w*((A*qdd)'*R*B*((x0(tailDOFs)+q)*R*R*B*)
-    
-         
         
+        qEl = nodeSelMatrix*q;
+        qdEl = nodeSelMatrix*qd;
+        qddEl = nodeSelMatrix*qdd;
+        term1 = (A*qddEl)'*R*B*(x0(currentSpineDOF)+qEl)*R*R*B*(x0(currentSpineDOF)+qEl);
+        term2 = (A*qdEl)'*R*B*qdEl*R*R*B*(x0(currentSpineDOF)+qEl);
+        term3 = (A*qdEl)'*R*B*(x0(currentSpineDOF)+qEl)*R*R*B*qdEl;
+        fSpineAtElement = -mTilde*w*(term1 + term2 + term3);
+        
+        % position element force in assembly vector
+        f(iDOFs) = fSpineAtElement;
+      
     end
-                
-    
-    % create matrix to select tail velocity and displacement from q
-    nodeSelMatrix = zeros(12,nDOFs);    % 12 = 4*3, specific for linear tet mesh
-    for iii = 1:length(tailDOFs)
-        currentTailDOF = tailDOFs(iii);
-        nodeSelMatrix(iii,currentTailDOF) = 1;
-    end
-    
-    % compute tail force expressed at the tail element
-    tailNodeInTailElement = find(elements(tailElement,:)==tailNode);
-    
-    fAtTailElement = 0.5*mTilde*wTail^3*(dot(A*nodeSelMatrix*qd,R*B*...
-        (x0(tailDOFs)+nodeSelMatrix*q))).^2*B*(x0(tailDOFs)+nodeSelMatrix*q);
-    
-    % return unconstraint force
-    f = zeros(nDOFs,1);
-    f(tailNode*3-2:tailNode*3) = fAtTailElement(tailNodeInTailElement*3-2:tailNodeInTailElement*3);
-                      
+    disp(f(13:15))
+                                    
 end
 
 

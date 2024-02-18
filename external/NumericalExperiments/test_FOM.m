@@ -48,21 +48,21 @@ PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
 % boundary conditions of nominal mesh
-desiredFixedPoint = - 0.5*Lx;
+desiredFixedPoint = - 0.3*Lx;
 fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
 nel = size(elements,1);
 nset = {};
 marginFixedPoint = 0.02;
 for el=1:nel   
     for n=1:size(elements,2)
-%         if  ~any(cat(2, nset{:}) == elements(el,n))
-%             nset{end+1} = elements(el,n);
-%         end
-        if  nodes(elements(el,n),1)> fixedPoint-marginFixedPoint && ...
-                nodes(elements(el,n),1)< fixedPoint+marginFixedPoint && ...
-                ~any(cat(2, nset{:}) == elements(el,n))
+        if  ~any(cat(2, nset{:}) == elements(el,n))
             nset{end+1} = elements(el,n);
         end
+%         if  nodes(elements(el,n),1)> fixedPoint-marginFixedPoint && ...
+%                 nodes(elements(el,n),1)< fixedPoint+marginFixedPoint && ...
+%                 ~any(cat(2, nset{:}) == elements(el,n))
+%             nset{end+1} = elements(el,n);
+%         end
     end   
 end
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
@@ -73,51 +73,33 @@ end
 U = [z_tail,y_head];
 
 for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
+    MeshNominal.set_essential_boundary_condition([nset{l}],3,0)
+%     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
+end   
+
+desiredFixedPoint = - 0.3*Lx;
+fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
+nel = size(elements,1);
+nset2 = {};
+marginFixedPoint = 0.02;
+for el=1:nel   
+    for n=1:size(elements,2)
+        if  nodes(elements(el,n),1)> fixedPoint-marginFixedPoint && ...
+                nodes(elements(el,n),1)< fixedPoint+marginFixedPoint && ...
+                ~any(cat(2, nset2{:}) == elements(el,n))
+            nset2{end+1} = elements(el,n);
+        end
+    end   
+end
+
+for l=1:length(nset2)
+    MeshNominal.set_essential_boundary_condition([nset2{l}],2,0)
 %     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
 end   
 
 %% SIMULATION PARAMETERS __________________________________________________
-h = 0.005;
-tmax = 2;
-
-%% ROM ____________________________________________________________________
-tStartROM = tic;
-
-% build PROM
-fprintf('____________________\n')
-fprintf('Building ROM ... \n')
-[V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_ROM_3D(MeshNominal,nodes,elements,USEJULIA);  
-
-% solve EoMs 
-tic 
-fprintf('____________________\n')
-fprintf('Solving EoMs ...\n') 
-TI_NL_ROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
-toc
-
-fprintf('Time needed to solve the problem using ROM: %.2fsec\n',toc(tStartROM))
-timeROM = toc(tStartROM);
-
-%% PROM ___________________________________________________________________
-tStartPROM = tic;
-
-% build PROM
-fprintf('____________________\n')
-fprintf('Building PROM ... \n')
-[V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION);      
-
-% solve EoMs (with sensitivities for the PROM)
-tic 
-fprintf('____________________\n')
-fprintf('Solving EoMs and sensitivities...\n') 
-TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
-toc
-
-fprintf('Time needed to solve the problem using PROM: %.2fsec\n',toc(tStartPROM))
-timePROM = toc(tStartPROM);
+h = 0.01;
+tmax = 1;
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -127,27 +109,97 @@ fprintf('____________________\n')
 fprintf('Building FOM ... \n')
 [Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
 build_FOM_3D(MeshNominal,nodes,elements);   
-%%
-% solve EoMs
-tic 
-fprintf('____________________\n')
-fprintf('Solving EoMs and sensitivities...\n') 
-TI_NL_PROM = solve_EoMs_FOM(Assembly,elements,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
-toc
+% %% EoMs: ACTUATION TEST ___________________________________________________
+% % SETTING UP ______________________________________________________________
+% % initial conditions
+% nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
+% nDOFs = Assembly.Mesh.nDOFs;
+% q0 = zeros(nUncDOFs,1);
+% qd0 = zeros(nUncDOFs,1);
+% qdd0 = zeros(nUncDOFs,1);
+% 
+% % forces
+% B1T = actuTop.B1;
+% B1B = actuBottom.B1;
+% B2T = actuTop.B2;
+% B2B = actuBottom.B2;
+% k=8; 
+% 
+% actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
+% actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
+% 
+% fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
+%                 k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+%             
+% % NONLINEAR TIME INTEGRATION ______________________________________________
+%     
+% % instantiate object for nonlinear time integration
+% TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
+% 
+% % modal nonlinear Residual evaluation function handle
+% Residual_NL = @(q,qd,qdd,t)residual_nonlinear_actu(q,qd,qdd, ...
+%     t,Assembly,fActu,actuTop,actuBottom,actuSignalT,actuSignalB);
+% 
+% % time integration 
+% TI_NL_FOM.Integrate(q0,qd0,qdd0,tmax,Residual_NL);
+% TI_NL_FOM.Solution.u = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
+% 
+% fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
+% timeFOM = toc(tStartFOM);
+
+%% EoMs: TAIL TEST ___________________________________________________
+% SETTING UP ______________________________________________________________
+% initial conditions
+nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
+nDOFs = Assembly.Mesh.nDOFs;
+q0 = zeros(nUncDOFs,1);
+qd0 = zeros(nUncDOFs,1);
+qdd0 = zeros(nUncDOFs,1);
+
+% forces
+B1T = actuTop.B1;
+B1B = actuBottom.B1;
+B2T = actuTop.B2;
+B2B = actuBottom.B2;
+k=8; 
+
+actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
+actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
+
+fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
+                k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+            
+fTail = @(q,qd) tail_force_FOM(q,qd,Assembly,elements,tailProperties);
+
+fSpine = @(q,qd,qdd) spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties);
+
+fDrag = @(qd) drag_force_FOM(qd,dragProperties);
+       
+% NONLINEAR TIME INTEGRATION ______________________________________________
+    
+% instantiate object for nonlinear time integration
+TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
+
+% modal nonlinear Residual evaluation function handle
+Residual_NL = @(q,qd,qdd,t)residual_nonlinear_actu_hydro(q,qd,qdd, ...
+    t,Assembly,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB);
+
+% time integration 
+TI_NL_FOM.Integrate(q0,qd0,qdd0,tmax,Residual_NL);
+TI_NL_FOM.Solution.u = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
 
 fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
 timeFOM = toc(tStartFOM);
 
-%%
-
-
 
 %% PLOT ___________________________________________________________________
+% unconstrained solution
+sol = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
 uTail = zeros(3,tmax/h);
 timePlot = linspace(0,tmax-h,tmax/h);
 x0Tail = min(nodes(:,1));
 for a=1:tmax/h
-    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_ROM.Solution.q(:,a);
+    uTail(:,a) = sol(tailProperties.tailNode*3-2:tailProperties.tailNode*3,a);
 end
 
 figure
@@ -175,7 +227,7 @@ topMuscle = zeros(nel,1);
 for el=1:nel
     elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
     elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-    if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+    if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.85
         topMuscle(el) = 1;
     end    
 end
@@ -185,22 +237,22 @@ bottomMuscle = zeros(nel,1);
 for el=1:nel
     elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
     elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-    if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+    if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.85
         bottomMuscle(el) = 1;
     end    
 
 end
 
-actuationValues = zeros(size(TI_NL_ROM.Solution.u,2),1);
-for t=1:size(TI_NL_ROM.Solution.u,2)
+actuationValues = zeros(size(TI_NL_FOM.Solution.u,2),1);
+for t=1:size(TI_NL_FOM.Solution.u,2)
     actuationValues(t) = 0;
 end
 
-actuationValues2 = zeros(size(TI_NL_ROM.Solution.u,2),1);
-for t=1:size(TI_NL_ROM.Solution.u,2)
+actuationValues2 = zeros(size(TI_NL_FOM.Solution.u,2),1);
+for t=1:size(TI_NL_FOM.Solution.u,2)
     actuationValues2(t) = 0;
 end
-sol = TI_NL_ROM.Solution.u(:,1:2:end);
+sol = TI_NL_FOM.Solution.u(:,1:2:end);
 AnimateFieldonDeformedMeshActuation2Muscles(nodes, elementPlot,topMuscle,actuationValues,...
     bottomMuscle,actuationValues2,sol, ...
     'factor',1,'index',1:3,'filename','result_video','framerate',1/h*0.5)

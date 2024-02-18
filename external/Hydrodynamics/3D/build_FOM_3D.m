@@ -50,9 +50,9 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     % DAMPING _____________________________________________________________ 
     alfa = 3.1;
     beta = 6.3*1e-6;
-    Dn = alfa*Mn + beta*Kn; % Rayleigh damping 
-    FOM_Assembly.DATA.D = Dn;
-    Dc = FOM_Assembly.constrain_matrix(Dn);
+    Cn = alfa*Mn + beta*Kn; % Rayleigh damping 
+    FOM_Assembly.DATA.C = Cn;
+    C = FOM_Assembly.constrain_matrix(Cn);
 
     % INTERNAL FORCES TENSORS _____________________________________________
     % not computed for the FOM. The internal forces are kept in a 
@@ -127,10 +127,11 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     vecHeadX = zeros(1,MeshNominal.nDOFs);
     rho = 1000;
     kFactor = 1;
-    tensors_drag = compute_drag_tensors_FOM(FOM_Assembly,skinElements,skinElementFaces,kFactor*rho,vecHeadX) ;
+    tensors_drag = compute_drag_tensors_FOM(FOM_Assembly,skinElements,skinElementFaces,kFactor*rho) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
     dragProperties.skinElementFaces = skinElementFaces;
+    dragProperties.headxDOF = headxDOF;
 
     % ACTUATION FORCES ____________________________________________________
     
