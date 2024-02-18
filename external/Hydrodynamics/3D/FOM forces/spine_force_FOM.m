@@ -88,7 +88,6 @@ function f = spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties)
         f(iDOFs) = fSpineAtElement;
       
     end
-    disp(f(13:15))
                                     
 end
 

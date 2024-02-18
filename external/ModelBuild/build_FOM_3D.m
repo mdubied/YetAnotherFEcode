@@ -126,7 +126,7 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     headxDOF = 3*headNode-2;
     vecHeadX = zeros(1,MeshNominal.nDOFs);
     rho = 1000;
-    kFactor = 1;
+    kFactor = 2;
     tensors_drag = compute_drag_tensors_FOM(FOM_Assembly,skinElements,skinElementFaces,kFactor*rho) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;

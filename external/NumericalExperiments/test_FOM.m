@@ -77,7 +77,7 @@ for l=1:length(nset)
 %     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
 end   
 
-desiredFixedPoint = - 0.3*Lx;
+desiredFixedPoint = - 0.45*Lx;
 fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
 nel = size(elements,1);
 nset2 = {};
@@ -98,8 +98,8 @@ for l=1:length(nset2)
 end   
 
 %% SIMULATION PARAMETERS __________________________________________________
-h = 0.01;
-tmax = 1;
+h = 0.005;
+tmax = 2;
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -147,7 +147,7 @@ build_FOM_3D(MeshNominal,nodes,elements);
 % fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
 % timeFOM = toc(tStartFOM);
 
-%% EoMs: TAIL TEST ___________________________________________________
+%% EoMs: HYDRODYNAMIC TEST ________________________________________________
 % SETTING UP ______________________________________________________________
 % initial conditions
 nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
@@ -161,13 +161,13 @@ B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
-k=8; 
+k=20; 
 
-actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
-actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
+actuSignalT = @(t) k/2*(-0.2*sin(t*4*pi));    % to change below as well if needed
+actuSignalB = @(t) k/2*(0.2*sin(t*4*pi));
 
-fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
-                k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+fActu = @(t,q)  k/2*(-0.2*sin(t*4*pi))*(B1T+B2T*q) + ...
+                k/2*(0.2*sin(t*4*pi))*(B1B+B2B*q);
             
 fTail = @(q,qd) tail_force_FOM(q,qd,Assembly,elements,tailProperties);
 
