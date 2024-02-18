@@ -70,7 +70,7 @@ end
 %% SHAPE VARIATIONS _______________________________________________________
 
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-    y_tail,y_head,y_linLongTail,y_ellipseFish] = ...
+    y_tail,y_head,y_linLongTail,y_ellipseFish, x_concaveTail] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz);
 
 % shape variations basis
@@ -89,12 +89,15 @@ U = [z_tail,z_head,y_thinFish];
 % U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
 %     y_head,y_linLongTail,y_ellipseFish];
 
+% test 
+U = [x_concaveTail,z_tail];
+
 
 % plot the two meshes
-xiPlot = [0.23;-0.39;0.1091];
+% xiPlot = [0.23;-0.39;0.1091];
 % xiPlot = [-0.6;0.3;0.5;0.3;0.5];
 % xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
-% xiPlot = 0.5;
+xiPlot = 1;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -112,12 +115,18 @@ set(f1,'Units','centimeters');
 
 %%
 xiTest = [0;0;0];%[-0.4;0.2;0.4];
+xiTest=[0.5;-0.5]
 % shape-varied mesh 
 df = U*xiTest;                       % displacement field introduced by shape variations
 dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
 nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
 svMesh = Mesh(nodes_sv);
 svMesh.create_elements_table(elements,myElementConstructor);
+
+elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMeshAxis(nodes_sv, elementPlot, 0);
+hold off
 
 
 %%
