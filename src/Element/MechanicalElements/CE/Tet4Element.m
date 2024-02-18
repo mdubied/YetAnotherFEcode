@@ -110,7 +110,7 @@ classdef Tet4Element < ContinuumElement
             
             % compute force
             T = -0.25*pi*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
-            T = double (T);
+            T = double(T);
 
         end
 

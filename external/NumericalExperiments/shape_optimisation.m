@@ -82,18 +82,18 @@ end
 U = [z_tail,z_head,y_thinFish];
 
 % SO2
-U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish];
+% U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish];
+% 
+% % SO3
 
-% SO3
-
-U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-    y_head,y_linLongTail,y_ellipseFish];
+% U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+%     y_head,y_linLongTail,y_ellipseFish];
 
 
 % plot the two meshes
-% xiPlot = [0.23;-0.39;0.1091];
+xiPlot = [0.23;-0.39;0.1091];
 % xiPlot = [-0.6;0.3;0.5;0.3;0.5];
-xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
+% xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
 % xiPlot = 0.5;
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
@@ -111,7 +111,7 @@ set(f1,'Units','centimeters');
 
 
 %%
-xiTest = [-0.4;0.2;0.4];
+xiTest = [0;0;0];%[-0.4;0.2;0.4];
 % shape-varied mesh 
 df = U*xiTest;                       % displacement field introduced by shape variations
 dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix

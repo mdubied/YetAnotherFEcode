@@ -60,7 +60,7 @@ function tensors = compute_drag_tensors_PROM(PROMAssembly, skinElements, skinEle
     
     % display time needed for computation
     time = toc(t0);
-    fprintf(' TOTAL TIME: %.2f s\n',toc(t0),time)
+    fprintf(' TOTAL TIME: %.2f s\n',time)
     
     % store outputs   
     tensors.Tr3 = Tr3;

@@ -42,13 +42,13 @@ function tensors = compute_drag_tensors_FOM(Assembly, skinElements, skinElementF
     fprintf(' Assembling %d elements ...\n', nel)
 
     tic;
-    T3 = Assembly.vector_skin('Te1','weights', skinElements, skinElementFaces, rho,vecHeadX);
+    T3 = Assembly.vector_skin('Te1','weights', skinElements, skinElementFaces, rho, vecHeadX);
 
     fprintf('   3rd order term - T3: %.2f s\n',toc)
     
     % display time needed for computation
     time = toc(t0);
-    fprintf(' TOTAL TIME: %.2f s\n',toc(t0),time)
+    fprintf(' TOTAL TIME: %.2f s\n',time)
     
     % store outputs   
     tensors.T3 = T3;

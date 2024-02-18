@@ -118,6 +118,7 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     spineProperties.nodeIdxPosInElements = nodeIdxPosInElements;
     spineProperties.dorsalNodeIdx = matchedDorsalNodesIdx;
     spineProperties.zPos = matchedDorsalNodesZPos;
+    spineProperties.normalisationFactors = normalisationFactors;
      
     % drag force (reduced order)
     [~,~,skinElements, skinElementFaces] = getSkin3D(elements);
@@ -133,36 +134,33 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
 
     % ACTUATION FORCES ____________________________________________________
     
-%     Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
-%     
-%     nel = size(elements,1);
-%     actuationDirection = [1;0;0;0;0;0];               %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
-% 
-%     % left muscle
-%     topMuscle = zeros(nel,1);
-%     for el=1:nel
-%         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
-%         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-%         if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
-%             topMuscle(el) = 1;
-%         end    
-%     end
-%     actuTop = reduced_tensors_actuation_ROM(NominalAssembly, V, topMuscle, actuationDirection);
-% 
-%     % right muscle
-%     bottomMuscle = zeros(nel,1);
-%     for el=1:nel
-%         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
-%         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-%         if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
-%             bottomMuscle(el) = 1;
-%         end    
-%     end
-%     actuBottom = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
+    Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
+    
+    nel = size(elements,1);
+    actuationDirection = [1;0;0;0;0;0];               %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
 
-    actuTop = 0;
-    actuBottom = 0;
+    % left muscle
+    topMuscle = zeros(nel,1);
+    for el=1:nel
+        elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+        elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+            topMuscle(el) = 1;
+        end    
+    end
+    
+    actuTop = compute_actuation_tensors_FOM(FOM_Assembly,topMuscle,actuationDirection);
 
+    % right muscle
+    bottomMuscle = zeros(nel,1);
+    for el=1:nel
+        elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+        elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+            bottomMuscle(el) = 1;
+        end    
+    end
+    actuBottom = compute_actuation_tensors_FOM(FOM_Assembly, bottomMuscle, actuationDirection);
 
     fprintf('Time to build FOM: %.2fsec\n',toc(startROMBuilding))
 
