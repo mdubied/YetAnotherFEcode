@@ -137,19 +137,21 @@ disp(matrix_inp)
 writematrix(matrix_inp,'M.csv')
  
 %% OPTIMIZATION PARAMETERS
-h = 0.005;
+h = 0.01;
 tmax = 2.0;
+
 
 %% OPTIMISATION SO1 _______________________________________________________
 
-U = [z_tail,z_head,y_thinFish];
+U = [z_tail,z_head,y_thinFish]; 
+U = [z_tail,z_head, x_concaveTail];
 A = [1 0 0 ;
     -1 0 0;
     0 1 0;
     0 -1 0;
     0 0 1;
     0 0 -1];
-b = [0.5;0.5;0.5;0.5;0.5;0.5];
+b = [0.5;0.5;0.5;0.5;0.3;0.3];
 
 barrierParam = 10*ones(1,length(b));
 
@@ -216,8 +218,8 @@ fprintf('Computation time: %.2fmin\n',topti/60)
 %[0.1968;-0.4929;0.3093;-0.2883;0.2715;0.4913;0.4962;0.3890]
 
 U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-    y_head,y_linLongTail,y_ellipseFish];
-
+    y_head,y_linLongTail,y_ellipseFish,x_concaveTail];
+%%
 % Constraints
 nParam = 8;
 A = zeros(2 * nParam, nParam);
@@ -286,7 +288,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,4);
+subU = U(:,2);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -297,7 +299,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,5);
+subU = U(:,3);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -309,7 +311,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
 xiPlot = xiStar;
-xiPlot(1) = 0.2;
+% xiPlot(1) = 0.2;
 xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -437,5 +439,20 @@ set(gca,'FontName','ComputerModern');
 grid on
 %legend({'FOM','FOM-t','ROM','PROM'}, 'Location', 'eastoutside','Orientation','vertical')
 hold off
+
+%%
+xiTest=[0.1968;-0.4929;0.3093;-0.2883;0.2715;0.4913;0.4962;0.3890;0.0]
+% shape-varied mesh 
+df = U*xiTest;                       % displacement field introduced by shape variations
+dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
+nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
+svMesh = Mesh(nodes_sv);
+svMesh.create_elements_table(elements,myElementConstructor);
+
+elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMeshAxis(nodes_sv, elementPlot, 0);
+hold off
+
 
 

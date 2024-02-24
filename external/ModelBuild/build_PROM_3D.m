@@ -92,24 +92,26 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
     
-    % rotation mode
-    m3 = zeros(nNodes*3,1);
-    rotMat = [sqrt(2)/2, -sqrt(2)/2, 0;
-               sqrt(2)/2, sqrt(2)/2, 0;
-               0, 0, 1];
-    Lx = abs(max(nodes(:,1))-min(nodes(:,1)));
-    desiredFixedPoint = - 0.4*Lx;
-    fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
-    tMat1 = [1,0, fixedPoint;
-            0, 1, 0;
-            0, 0, 1];
-    tMat2 = [1,0, -fixedPoint;
-            0, 1, 0;
-            0, 0, 1];
+    disp('yes')
     
-    for n = 1:size(nodes,1)
-        m3(n*3-2:n*3) = nodes(n,:)'+ rotMat*(nodes(n,:)');
-    end
+    % rotation mode
+%     m3 = zeros(nNodes*3,1);
+%     rotMat = [sqrt(2)/2, -sqrt(2)/2, 0;
+%                sqrt(2)/2, sqrt(2)/2, 0;
+%                0, 0, 1];
+%     Lx = abs(max(nodes(:,1))-min(nodes(:,1)));
+%     desiredFixedPoint = - 0.4*Lx;
+%     fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
+%     tMat1 = [1,0, fixedPoint;
+%             0, 1, 0;
+%             0, 0, 1];
+%     tMat2 = [1,0, -fixedPoint;
+%             0, 1, 0;
+%             0, 0, 1];
+%     
+%     for n = 1:size(nodes,1)
+%         m3(n*3-2:n*3) = nodes(n,:)'+ rotMat*(nodes(n,:)');
+%     end
     % mSingle = [0 0 1];
     % m3 = repmat(mSingle,1,nNodes)';
     V  = [m1 m2 VMn MDn DS];

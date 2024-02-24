@@ -42,13 +42,13 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=50; 
+    k=12; 
     
-    actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
+    actuSignalT = @(t) k/2*(-0.2*sin(t*4*pi));    % to change below as well if needed
+    actuSignalB = @(t) k/2*(0.2*sin(t*4*pi));
     
-    fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
-                    k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+    fActu = @(t,q)  k/2*(-0.2*sin(t*4*pi))*(B1T+B2T*q) + ...
+                    k/2*(0.2*sin(t*4*pi))*(B1B+B2B*q);
 
     % tail pressure force properties
     A = tailProperties.A;

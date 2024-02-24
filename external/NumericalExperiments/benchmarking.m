@@ -48,11 +48,31 @@ PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
 % boundary conditions of nominal mesh
-desiredFixedPoint = - 0.5*Lx;
+nset = {};
+for el=1:nel   
+    for n=1:size(elements,2)
+        if  ~any(cat(2, nset{:}) == elements(el,n))
+            nset{end+1} = elements(el,n);
+        end
+%         if  nodes(elements(el,n),1)> fixedPoint-marginFixedPoint && ...
+%                 nodes(elements(el,n),1)< fixedPoint+marginFixedPoint && ...
+%                 ~any(cat(2, nset{:}) == elements(el,n))
+%             nset{end+1} = elements(el,n);
+%         end
+    end   
+end
+
+for l=1:length(nset)
+    MeshNominal.set_essential_boundary_condition([nset{l}],3,0)
+end   
+
+
+desiredFixedPoint = - 0.45*Lx;
 fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
 nel = size(elements,1);
 nset = {};
 marginFixedPoint = 0.02;
+
 for el=1:nel   
     for n=1:size(elements,2)
 %         if  ~any(cat(2, nset{:}) == elements(el,n))
@@ -73,7 +93,7 @@ end
 U = [z_tail,y_head];
 
 for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
+    MeshNominal.set_essential_boundary_condition([nset{l}],1:2,0)
 %     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
 end   
 

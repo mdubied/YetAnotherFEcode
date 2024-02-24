@@ -109,7 +109,7 @@ classdef Tet4Element < ContinuumElement
                  0 0 0 0 0 0 0 0 0 0 0 0];     % 90 degrees rotation counterclock-wise around z axis
             
             % compute force
-            T = -0.25*pi*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
+            T = -0.25*pi*1000*normalisation*einsum('mJ,mi,iK,Is,sL->IJKL',A,R,B,R,B);
             T = double(T);
 
         end

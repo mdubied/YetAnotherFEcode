@@ -52,7 +52,11 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matched
     [skin,~,~,~] = getSkin3D(elements);
     
     % find common node indexes between skin and up Half Idx
+    % note: it also contains the skin nodes on the tail and head
     allDorsalNodesIdx = intersect(upHalfIdx,skin);
+    
+    % compute average z-position of dorsal nodes
+    avgZPos = mean(nodes(allDorsalNodesIdx,3));
 
     % MATCHING SPINE ELMENTS WITH A SINGLE DORSAL NODES ___________________
     nElements = length(elements(:,1));
@@ -66,19 +70,21 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matched
         spineNodeIdx = elements(el,nodeIdxPosInElements(el,1));
         spineNodePos = nodes(spineNodeIdx,1);   % x position
         
-        % get x position of dorsal nodes
-        nodes2search = nodes(allDorsalNodesIdx,1);
+        % get x and z position of dorsal nodes
+        nodes2searchX = nodes(allDorsalNodesIdx,1);
+        nodes2searchZ = nodes(allDorsalNodesIdx,3);
 
         % match spine node with dorsal node (min x distance)
-        xTargetVec = repmat(spineNodePos,size(nodes2search,1),1);
-        sn = abs(nodes2search - xTargetVec);
+        xTargetVec = repmat(spineNodePos,size(nodes2searchX,1),1);
+        sn = abs(nodes2searchX - xTargetVec) + abs(nodes2searchZ - avgZPos);
         [~,ind]=min(sum(sn,2));
 
         % get matched dorsal node index
         matchedDorsalNodesIdx(i) = allDorsalNodesIdx(ind);
         matchedDorsalNodesZPos(el) = nodes(allDorsalNodesIdx(ind),3);
         dorsalNodesElementsVec(el) = allDorsalNodesIdx(ind);
-        
+          
     end
+    disp(matchedDorsalNodesZPos(find(matchedDorsalNodesZPos)));
   
 end

@@ -60,7 +60,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 2;
+    n_VMs = 3;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
@@ -84,11 +84,14 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
-%     mSingle = [0 0 1];
-%     m3 = repmat(mSingle,1,nNodes)';
-    V  = [m1 m2 VMn MDn];
+    
+    solBending = matfile('FOM_sol.mat');
+    dispBending = solBending.sol(:,80);
+
+    V  = [m1 VMn MDn dispBending];
 %     V = [VMn MDn];
     V  = orth(V);
+    
 
     % plot
 %     mod = 1;
@@ -180,7 +183,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     headxDOF = 3*headNode-2;
     VHead = V(headxDOF,:);
     rho = 1000;
-    kFactor = 1;
+    kFactor = 2;
     tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;

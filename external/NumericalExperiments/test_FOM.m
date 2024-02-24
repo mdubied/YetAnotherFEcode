@@ -217,6 +217,8 @@ ylabel('y-position tail node')
 legend('Location','southwest')
 drawnow
 
+%%reshape(PROM_Assembly.Mesh.nodes.',[],1);
+
 %% ANIMATION ______________________________________________________________
 elementPlot = elements(:,1:4); 
 nel = size(elements,1);
