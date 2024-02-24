@@ -18,11 +18,15 @@
 % (1) f:                spine force, of size nDOFs x 1, where nDOFs is the 
 %                       total, unconstraint number of DOFs
 %     
-% Last modified: 18/02/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 24/02/2023, Mathieu Dubied, ETH Zurich
 function f = spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties)
     
     % get information from assembly
-    nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
+    if isempty(Assembly.Mesh.EBC)
+         nUncDOFs = Assembly.Mesh.nDOFs;  % no constraints
+    else
+        nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);% some constraints 
+    end
     nDOFs = Assembly.Mesh.nDOFs;
     x0 = reshape(Assembly.Mesh.nodes.',[],1);
     

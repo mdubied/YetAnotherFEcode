@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
-% Accuracy and computational speed comparison.
+% Test of the FOM.
 % 
-% Last modified: 04/02/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 24/02/2024, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -20,7 +20,7 @@ USEJULIA = 1;
 % DATA ____________________________________________________________________
 E       = 260000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
-nu      = 0.499;        % Poisson's ratio 
+nu      = 0.4;        % Poisson's ratio 
 
 % material
 myMaterial = KirchoffMaterial();
@@ -74,7 +74,6 @@ U = [z_tail,y_head];
 
 for l=1:length(nset)
     MeshNominal.set_essential_boundary_condition([nset{l}],3,0)
-%     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
 end   
 
 desiredFixedPoint = - 0.45*Lx;
@@ -92,10 +91,10 @@ for el=1:nel
     end   
 end
 
-for l=1:length(nset2)
-    MeshNominal.set_essential_boundary_condition([nset2{l}],2,0)
-%     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
-end   
+% for l=1:length(nset2)
+%     MeshNominal.set_essential_boundary_condition([nset2{l}],2,0)
+% %     MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)
+% end   
 
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.005;
@@ -150,18 +149,24 @@ build_FOM_3D(MeshNominal,nodes,elements);
 %% EoMs: HYDRODYNAMIC TEST ________________________________________________
 % SETTING UP ______________________________________________________________
 % initial conditions
-nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
+if isempty(Assembly.Mesh.EBC)
+     nUncDOFs = Assembly.Mesh.nDOFs;  % no constraints
+     fprintf('Info: no constraints \n')
+else
+    nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);% some constraints 
+end
+
 nDOFs = Assembly.Mesh.nDOFs;
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
 qdd0 = zeros(nUncDOFs,1);
-
+%%
 % forces
 B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
-k=20; 
+k=0.6; 
 
 actuSignalT = @(t) k/2*(-0.2*sin(t*4*pi));    % to change below as well if needed
 actuSignalB = @(t) k/2*(0.2*sin(t*4*pi));

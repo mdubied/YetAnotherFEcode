@@ -20,7 +20,7 @@ USEJULIA = 1;
 % DATA ____________________________________________________________________
 E       = 260000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
-nu      = 0.499;        % Poisson's ratio 
+nu      = 0.4;        % Poisson's ratio 
 
 % material
 myMaterial = KirchoffMaterial();
