@@ -58,11 +58,6 @@ for el=1:nel
         if  ~any(cat(2, nset{:}) == elements(el,n))
             nset{end+1} = elements(el,n);
         end
-%         if  nodes(elements(el,n),1)> fixedPoint-marginFixedPoint && ...
-%                 nodes(elements(el,n),1)< fixedPoint+marginFixedPoint && ...
-%                 ~any(cat(2, nset{:}) == elements(el,n))
-%             nset{end+1} = elements(el,n);
-%         end
     end   
 end
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
@@ -98,7 +93,7 @@ end
 
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.005;
-tmax = 2;
+tmax = 1.2;
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -160,13 +155,13 @@ nDOFs = Assembly.Mesh.nDOFs;
 q0 = zeros(nUncDOFs,1);
 qd0 = zeros(nUncDOFs,1);
 qdd0 = zeros(nUncDOFs,1);
-%%
+
 % forces
 B1T = actuTop.B1;
 B1B = actuBottom.B1;
 B2T = actuTop.B2;
 B2B = actuBottom.B2;
-k=0.6; 
+k=1.0; 
 
 actuSignalT = @(t) k/2*(-0.2*sin(t*4*pi));    % to change below as well if needed
 actuSignalB = @(t) k/2*(0.2*sin(t*4*pi));
@@ -235,7 +230,7 @@ for el=1:nel
     elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
     elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
     if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.85
-        topMuscle(el) = 1;
+        topMuscle(el) = 1;%0.25,0.85
     end    
 end
 
@@ -252,12 +247,12 @@ end
 
 actuationValues = zeros(size(TI_NL_FOM.Solution.u,2),1);
 for t=1:size(TI_NL_FOM.Solution.u,2)
-    actuationValues(t) = 0;
+    actuationValues(t) = 0.2;
 end
 
 actuationValues2 = zeros(size(TI_NL_FOM.Solution.u,2),1);
 for t=1:size(TI_NL_FOM.Solution.u,2)
-    actuationValues2(t) = 0;
+    actuationValues2(t) = -0.2;
 end
 sol = TI_NL_FOM.Solution.u(:,1:2:end);
 AnimateFieldonDeformedMeshActuation2Muscles(nodes, elementPlot,topMuscle,actuationValues,...

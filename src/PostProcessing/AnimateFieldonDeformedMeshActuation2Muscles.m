@@ -57,7 +57,7 @@ a3 = [];
 a4 = [];
 a5 = [];
 normalizedActuationValues = ActuationValues;%normalize(ActuationValues,'range')-0.5;
-normalizedActuationValues2 = ActuationValues;%normalize(ActuationValues2,'range')-0.5;
+normalizedActuationValues2 = ActuationValues2;%normalize(ActuationValues2,'range')-0.5;
 
 for j = 1:nt
     hold on
@@ -74,14 +74,14 @@ for j = 1:nt
         delete(a4);
         delete(a5);
         % muscle 1
-        a1 = annotation('textbox', [0.2, 0.2, 0.25, 0.06], 'String', "muscle 1, a=" + ActuationValues(j));
+        a1 = annotation('textbox', [0.2, 0.2, 0.25, 0.06], 'String', "muscle 1");%, a=" + ActuationValues(j));
         if normalizedActuationValues(j) >=0
             a2 = annotation('rectangle',[0.155, 0.2, 0.045, 0.06],'FaceColor','red','FaceAlpha',abs(normalizedActuationValues(j)));
         else
             a2 = annotation('rectangle',[0.155, 0.2, 0.045, 0.06],'FaceColor','blue','FaceAlpha',abs(normalizedActuationValues(j)));
         end
         % muscle 2
-        a3 = annotation('textbox', [0.2, 0.1, 0.25, 0.06], 'String', "muscle 2, a=" + ActuationValues2(j));
+        a3 = annotation('textbox', [0.2, 0.1, 0.25, 0.06], 'String', "muscle 2");%, a=");% + ActuationValues2(j));
         if normalizedActuationValues2(j) >=0
             a4 = annotation('rectangle',[0.155, 0.1, 0.045, 0.06],'FaceColor','red','FaceAlpha',abs(normalizedActuationValues2(j)));
         else

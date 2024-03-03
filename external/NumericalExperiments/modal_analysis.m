@@ -1,13 +1,15 @@
 % -------------------------------------------------------------------------
 % Vibration modes analysis
 %
-% Last updated: 24/02/2024, Mathieu Dubied, ETH Zurich
+% Last updated: 03/03/2024, Mathieu Dubied, ETH Zurich
 % -------------------------------------------------------------------------
 clear; 
 close all; 
 clc
 
 elementType = 'TET4';
+fish = 0;
+
 showMesh = 0;
 
 %% PREPARE MODEL __________________________________________________________                                                   
@@ -15,19 +17,33 @@ showMesh = 0;
 % DATA ____________________________________________________________________
 E       = 260000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
-nu      = 0.4;        % Poisson's ratio 
+nu      = 0.499;        % Poisson's ratio 
 
 % material
 myMaterial = KirchoffMaterial();
 set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
 myMaterial.PLANE_STRESS = true;	    % set "false" for plane_strain
-myElementConstructor = @()Tet4Element(myMaterial);
+switch elementType
+    case 'TET4'
+        myElementConstructor = @()Tet4Element(myMaterial);
+        filename = '3d_rectangle_660el';
+    case 'TET10'
+        myElementConstructor = @()Tet10Element(myMaterial);
+        filename = '3d_rectangle_660el_quad_tet';
+end
 
 % MESH ____________________________________________________________________
 
-filename = '3d_fish_for_mike';
+if fish
+    filename = '3d_fish_for_mike';
+end
+
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 nel = size(elements,1);
+
+if ~fish
+    nodes = 0.01*nodes ;    % convert from cm to m
+end
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -45,18 +61,18 @@ if showMesh
 end
 
 % boundary conditions of nominal mesh - Set 1
-% nset = {};
-% for el=1:nel   
-%     for n=1:size(elements,2)
-%         if  ~any(cat(2, nset{:}) == elements(el,n))
-%             nset{end+1} = elements(el,n);
-%         end
-%     end   
-% end
-% 
-% for l=1:length(nset)
-%     MeshNominal.set_essential_boundary_condition([nset{l}],3,0)
-% end   
+nset = {};
+for el=1:nel   
+    for n=1:size(elements,2)
+        if  ~any(cat(2, nset{:}) == elements(el,n))
+            nset{end+1} = elements(el,n);
+        end
+    end   
+end
+
+for l=1:length(nset)
+    MeshNominal.set_essential_boundary_condition([nset{l}],3,0)
+end   
 
 % boundary condition of nominal mesh - Set 2
 % desiredFixedPoint = - 0.45*Lx;
@@ -90,19 +106,21 @@ u0 = zeros( MeshNominal.nDOFs, 1);
 %% OBTAIN VIBRATION (AND RIGID BODY) MODES ________________________________
 
 % solve eigenvalue problem
-nVMs = 12;
+nVMs = 8;
 Kc = NominalAssembly.constrain_matrix(Kn);
 Mc = NominalAssembly.constrain_matrix(Mn);
-[VMn,om] = eigs(Kc, Mc, nVMs, 'SM');
+[VMn,om] = eigs(Kc, Mc, nVMs, 'smallestabs','tol',1e-24);
 [f0n,ind] = sort(sqrt(diag(om))/2/pi);
 VMn = VMn(:,ind);
-% for ii = 1:nVMs
-%     VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
-% end
+for ii = 1:nVMs
+    VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
+end
 VMn = NominalAssembly.unconstrain_vector(VMn);
 if ~isreal(VMn)
     fprintf('Modes contain non-real parts \n')
 end
+
+% VMn  = orth(VMn)*10;
 
 % plot the vibration modes
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 
@@ -117,11 +135,21 @@ for mod = 1:nVMs
     v = reshape(VMn(:,mod), 3, []).';
     PlotMesh(nodes, elementPlot, 0);
     PlotFieldonDeformedMesh(nodes, elementPlot, real(v), 'factor', max(nodes(:,2)));
-    currentTitle = ['$$\Phi_{',num2str(mod),'}, f=',num2str(real(f0n(mod)),'%.2f'),'$$ Hz'];
+
+    currentTitle = ['$$\Phi_{',num2str(mod),'}, f=',num2str(real(f0n(mod)),'%.1f'),'$$ Hz'];
     title(currentTitle,'Interpreter','latex')
 end
-figTitle = [elementType, ', $$\nu=',num2str(nu,'%.2f '),'$$'];
+figTitle = [elementType, ', $$\nu=',num2str(nu,'%.3f '),'$$'];
 title(t,figTitle,' ','Interpreter','latex')
+
+if fish
+    start = 'Fish_';
+else
+    start = 'Rect_';
+end
+
+documentTitle = [start,elementType, '_nu_',num2str(nu,'%.3f '),'_constrained','.svg'];
+print(f1,documentTitle,'-dsvg','-r800');
 
 
 
