@@ -37,9 +37,10 @@
 %                           nodes located toward the tail end of the fish.
 
 %
-% Additional notes: -
+% Additional notes: Only test for candidate dorsal nodes that are aligned
+% with the spine nodes. 
 %
-% Last modified: 23/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 02/05/2024, Mathieu Dubied, ETH Zurich
 function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matchedDorsalNodesZPos] = ....
     find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements)
        
@@ -54,10 +55,7 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matched
     % find common node indexes between skin and up Half Idx
     % note: it also contains the skin nodes on the tail and head
     allDorsalNodesIdx = intersect(upHalfIdx,skin);
-    
-    % compute average z-position of dorsal nodes
-    avgZPos = mean(nodes(allDorsalNodesIdx,3));
-
+  
     % MATCHING SPINE ELMENTS WITH A SINGLE DORSAL NODES ___________________
     nElements = length(elements(:,1));
     nSpineEl = length(spineElements);
@@ -76,8 +74,17 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matched
 
         % match spine node with dorsal node (min x distance)
         xTargetVec = repmat(spineNodePos,size(nodes2searchX,1),1);
-        sn = abs(nodes2searchX - xTargetVec) + abs(nodes2searchZ - avgZPos);
-        [~,ind]=min(sum(sn,2));
+        sn = abs(nodes2searchX - xTargetVec) ;
+        candidatesIdx = find(sn(:)==min(sn));
+        if length(candidatesIdx) == 1
+            ind = candidatesIdx;
+        else
+            % multiple candidates for a single spine node, happen at the
+            % tail of the fish. Select the one with the largest z value
+            zPosOfCandidates = nodes2searchZ(candidatesIdx);
+            [~,idxInZPosList] = max(zPosOfCandidates);
+            ind = candidatesIdx(idxInZPosList);
+        end
 
         % get matched dorsal node index
         matchedDorsalNodesIdx(i) = allDorsalNodesIdx(ind);
@@ -85,6 +92,5 @@ function [allDorsalNodesIdx,matchedDorsalNodesIdx,dorsalNodesElementsVec,matched
         dorsalNodesElementsVec(el) = allDorsalNodesIdx(ind);
           
     end
-    disp(matchedDorsalNodesZPos(find(matchedDorsalNodesZPos)));
   
 end

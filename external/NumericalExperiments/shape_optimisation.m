@@ -18,9 +18,9 @@ USEJULIA = 1;
 %% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
-E       = 2600000;      % Young's modulus [Pa]
+E       = 260000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
-nu      = 0.499;        % Poisson's ratio 
+nu      = 0.4;        % Poisson's ratio 
 
 % material
 myMaterial = KirchoffMaterial();
@@ -59,11 +59,22 @@ hold off
 % boundary conditions of nominal mesh
 nel = size(elements,1);
 nset = {};
+% for el=1:nel   
+%     for n=1:size(elements,2)
+%         if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
+%             nset{end+1} = elements(el,n);
+%         end
+%     end   
+% end
+
+fixedPortion = 0.7;
+nset = {};
 for el=1:nel   
     for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
-            nset{end+1} = elements(el,n);
+        if  nodes(elements(el,n),1)>-Lx*fixedPortion && ~any(cat(2, nset{:}) == elements(el,n))
+            nset{end+1} = elements(el,n);    
         end
+        
     end   
 end
 
@@ -90,14 +101,14 @@ U = [z_tail,z_head,y_thinFish];
 %     y_head,y_linLongTail,y_ellipseFish];
 
 % test 
-U = [x_concaveTail,z_tail];
+% U = [x_concaveTail,z_tail];
 
 
 % plot the two meshes
 % xiPlot = [0.23;-0.39;0.1091];
 % xiPlot = [-0.6;0.3;0.5;0.3;0.5];
 % xiPlot = [0.2;-0.6;0.2;0.1;0.3;0.2;0.2;0.4];
-xiPlot = 1;
+xiPlot = [-0.5;0.5,;0.5];
 f1 = figure('units','centimeters','position',[3 3 10 7],'name','Shape-varied mesh');
 elementPlot = elements(:,1:4); hold on 
 v1 = reshape(U*xiPlot, 3, []).';
@@ -144,14 +155,14 @@ tmax = 2.0;
 %% OPTIMISATION SO1 _______________________________________________________
 
 U = [z_tail,z_head,y_thinFish]; 
-U = [z_tail,z_head, x_concaveTail];
+% U = [z_tail,z_head, x_concaveTail];
 A = [1 0 0 ;
     -1 0 0;
     0 1 0;
     0 -1 0;
     0 0 1;
     0 0 -1];
-b = [0.5;0.5;0.5;0.5;0.3;0.3];
+b = [0.6;0.6;0.5;0.5;0.4;0.4];
 
 barrierParam = 10*ones(1,length(b));
 
@@ -162,9 +173,9 @@ tStart = tic;
     'VOLUME',VOLUME, ...
     'maxIteration',25, ...
     'convCrit',0.004, ...
-    'convCritCost',0.8, ...
+    'convCritCost',0.1, ...
     'barrierParam',barrierParam, ...
-    'gStepSize',0.001, ...
+    'gStepSize',0.005, ...
     'nRebuild',6, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);

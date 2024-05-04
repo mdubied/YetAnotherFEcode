@@ -310,7 +310,7 @@ classdef DpromAssembly < ReducedAssembly
                       
         end
         
-        % Spine momentum tensors (TET3) ___________________________________
+        % Spine momentum tensors (TET4) ___________________________________
         
         function T = tensor_spine_momentum_xx_TET4_PROM(self,elementMethodName,SIZE,varargin)
             

@@ -10,7 +10,11 @@
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
 % (2) nodes:        nodes and their coordinates
 % (3) elements:     elements and corresponding nodes
-% (4) USEJULIA:     use of JULIA (1) for the computation of internal forces
+% (4) nset1:        set of constrained DOFs to obtain vibration modes
+% (5) nset2:        set of constrained DOFs to obtain rigid body modes
+% (5) translation:  1 - translation in x direction manually added
+%                   2- translation in y direction manually added
+% (6) USEJULIA:     use of JULIA (1) for the computation of internal forces
 %                   tensors 
 %
 % OUTPUTS:
@@ -30,15 +34,22 @@
 %
 % Additional notes: -
 %
-% Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 18/03/2023, Mathieu Dubied, ETH Zürich
 
 function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA)
+    build_ROM_3D_extended(nodes,elements,nset1,nset2,translation,myElementConstructor,USEJULIA)
 
     startROMBuilding = tic;
     
     % 2D or 3D? ___________________________________________________________
     fishDim = size(nodes,2);
+    
+    % CONSTRAINTS FOR VM __________________________________________________
+    MeshNominal = Mesh(nodes);
+    MeshNominal.create_elements_table(elements,myElementConstructor);
+    for l=1:length(nset1)
+        MeshNominal.set_essential_boundary_condition([nset1{l}],1:3,0)
+    end  
 
     % ASSEMBLY ____________________________________________________________
     NominalAssembly = Assembly(MeshNominal);
@@ -60,17 +71,60 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 5;
+    n_VMs = 2;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
     [f0n,ind] = sort(sqrt(diag(om))/2/pi);
     VMn = VMn(:,ind);
-    VMn = VMn(:,4); n_VMs = 1;
+    VMn = NominalAssembly.unconstrain_vector(VMn);
+
+    % rigid body modes
+    if ~isempty(nset2)
+        MeshNominal2 = Mesh(nodes);
+        MeshNominal2.create_elements_table(elements,myElementConstructor);
+        for l=1:length(nset2)
+           MeshNominal2.set_essential_boundary_condition([nset2{l}],3,0)
+        end
+        
+        % to test, n_VMS2 = 2
+%         nel = size(elements,1);
+%         Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
+%         nset3 = {};
+%         fixedPoint = 0.8;
+%         for el=1:nel   
+%             for n=1:size(elements,2)
+%                 if  nodes(elements(el,n),1)>-Lx*fixedPoint && nodes(elements(el,n),1)<-Lx*(fixedPoint-0.15) ...
+%                     && ~any(cat(2, nset3{:}) == elements(el,n)) && nodes(elements(el,n),2) == 0
+%                     nset3{end+1} = elements(el,n);    
+%                 end
+% 
+%             end   
+%         end
+%         disp(nset3)
+%         for l=1:length(nset3)
+%            MeshNominal2.set_essential_boundary_condition([nset3{l}],2,0)
+%         end
+        % end of test
+        
+        NominalAssembly2 = Assembly(MeshNominal2);
+        Mn2 = NominalAssembly2.mass_matrix();
+        u02 = zeros( MeshNominal2.nDOFs, 1);
+        [Kn2,~] = NominalAssembly.tangent_stiffness_and_force(u0);
+        n_VMs2 = 3;
+        Kc2 = NominalAssembly2.constrain_matrix(Kn2);
+        Mc2 = NominalAssembly2.constrain_matrix(Mn2);
+        [VMn2,om2] = eigs(Kc2, Mc2, n_VMs2, 'SM');
+        [f0n2,ind2] = sort(sqrt(diag(om2))/2/pi);
+        VMn2 = VMn2(:,ind2);
+        VMn2 = NominalAssembly2.unconstrain_vector(VMn2);
+        VMn = [VMn,VMn2];
+    end    
+    
     for ii = 1:n_VMs
         VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
     end
-    VMn = NominalAssembly.unconstrain_vector(VMn);
+%     VMn = NominalAssembly.unconstrain_vector(VMn);
     
     if ~isreal(VMn)
         fprintf('Modes contain non-real parts \n')
@@ -84,17 +138,31 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % FORMULATION);
     
     % ROB formulation
-    % V  = [VMn MDn DS];
     mSingle = [1 0 0];    % horizontal displacement, rigid body mode
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];    % vertical displacement, rigid body mode
     m2 = repmat(mSingle,1,nNodes)';
+    if translation == 1
+        V = [m1 VMn MDn];
+    elseif translation == 2
+        V = [m1 m2 VMn MDn];
+    else
+        V  = [VMn MDn];
+    end
     
-    solBending = matfile('FOM_sol.mat');
-    dispBending = solBending.sol(:,80);
+    % V  = [VMn MDn DS];
+%     mSingle = [1 0 0];    % horizontal displacement, rigid body mode
+%     m1 = repmat(mSingle,1,nNodes)';
+%     mSingle = [0 1 0];    % vertical displacement, rigid body mode
+%     m2 = repmat(mSingle,1,nNodes)';
+%     
+%     solBending = matfile('FOM_sol.mat');
+%     dispBending = solBending.sol(:,80);
+% 
+%     V  = [m1,VMn MDn];
+% %     V = [VMn MDn];
 
-    V  = [m1,VMn MDn];
-%     V = [VMn MDn];
+
     V  = orth(V);
     
 
@@ -188,7 +256,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     headxDOF = 3*headNode-2;
     VHead = V(headxDOF,:);
     rho = 1000;
-    kFactor = 2;
+    kFactor = 2.0;
     tensors_drag = compute_drag_tensors_ROM(ROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;

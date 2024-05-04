@@ -42,13 +42,13 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=12; 
+    k=3.0; 
     
-    actuSignalT = @(t) k/2*(-0.2*sin(t*4*pi));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(0.2*sin(t*4*pi));
+    actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
+    actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
     
-    fActu = @(t,q)  k/2*(-0.2*sin(t*4*pi))*(B1T+B2T*q) + ...
-                    k/2*(0.2*sin(t*4*pi))*(B1B+B2B*q);
+    fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
+                    k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
 
     % tail pressure force properties
     A = tailProperties.A;
@@ -89,6 +89,7 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
             + ttv(ttv(ttv(TVV4,q,4),qd,3),qd,2) ...
             + ttv(ttv(TxV3,qd,3),qd,2) ...
             + ttv(ttv(ttv(TVV4,qd,4),q,3),qd,2));
+
     else
         Txx = spineProperties.tensors.Txx;
         TxV = spineProperties.tensors.TxV;

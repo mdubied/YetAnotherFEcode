@@ -72,7 +72,12 @@ for kk = 1 : nd
     for ii = 1 : nm
         Phi_i = myAssembly.constrain_vector( Phi(:, ii) );
         Xi = - K0 \ (dK_dxi_k * Phi_i);
-        DS(:, cc) =  myAssembly.unconstrain_vector( Xi ) / max(abs(Xi));
+        if max(abs(Xi)) ~= 0
+            DS(:, cc) =  myAssembly.unconstrain_vector( Xi ) / max(abs(Xi));
+        else
+            DS(:, cc) =  myAssembly.unconstrain_vector( Xi );
+        end
+        
         names(cc, :) = [ii kk]';
         cc = cc+1;
     end

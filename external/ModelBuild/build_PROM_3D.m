@@ -71,13 +71,17 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
     [f0n,ind] = sort(sqrt(diag(om))/2/pi);
     VMn = VMn(:,ind);
-    
     for ii = 1:n_VMs
         VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
     end
-    % to delete when done with test:
-    % VMn = [VMn(:,1),VMn(:,4)];
+    
     VMn = NominalAssembly.unconstrain_vector(VMn);
+    
+    
+    
+    if ~isreal(VMn)
+        fprintf('Modes contain non-real parts \n')
+    end
 
     % modal derivatives
     [MDn, MDname] = modal_derivatives(NominalAssembly, elements, VMn);
@@ -91,31 +95,8 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     m1 = repmat(mSingle,1,nNodes)';
     mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
-    
-    disp('yes')
-    
-    % rotation mode
-%     m3 = zeros(nNodes*3,1);
-%     rotMat = [sqrt(2)/2, -sqrt(2)/2, 0;
-%                sqrt(2)/2, sqrt(2)/2, 0;
-%                0, 0, 1];
-%     Lx = abs(max(nodes(:,1))-min(nodes(:,1)));
-%     desiredFixedPoint = - 0.4*Lx;
-%     fixedPoint = find_fixed_point(nodes,desiredFixedPoint);
-%     tMat1 = [1,0, fixedPoint;
-%             0, 1, 0;
-%             0, 0, 1];
-%     tMat2 = [1,0, -fixedPoint;
-%             0, 1, 0;
-%             0, 0, 1];
-%     
-%     for n = 1:size(nodes,1)
-%         m3(n*3-2:n*3) = nodes(n,:)'+ rotMat*(nodes(n,:)');
-%     end
-    % mSingle = [0 0 1];
-    % m3 = repmat(mSingle,1,nNodes)';
+%     V  = [m1 m2 VMn MDn];
     V  = [m1 m2 VMn MDn DS];
-%     V = [m1 m3 VMn MDn DS];
     V  = orth(V);
 
     % % plot
@@ -191,6 +172,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     tailProperties.iDOFs = iDOFs;
     tailProperties.zDOFIdx = matchedDorsalNodesIdx(spineElements==tailElement)*3;
     tailProperties.z = matchedDorsalNodesZPos(tailElement);
+%     disp(tailProperties.z)
     tailProperties.mTilde = 0.25*pi*1000*(tailProperties.z*2)^2;
     tailProperties.Uz = U(tailProperties.zDOFIdx,:);
 
@@ -230,7 +212,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx*1    %0.25, 0.8
             topMuscle(el) = 1;
         end      
     end
@@ -241,7 +223,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
    for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx*1
             bottomMuscle(el) = 1;
         end    
     end
