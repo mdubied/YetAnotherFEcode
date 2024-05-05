@@ -60,13 +60,12 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 5;
+    n_VMs = 1;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
     [f0n,ind] = sort(sqrt(diag(om))/2/pi);
     VMn = VMn(:,ind);
-    VMn = VMn(:,4); n_VMs = 1;
     for ii = 1:n_VMs
         VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
     end
@@ -79,22 +78,14 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     % modal derivatives
     [MDn, MDname] = modal_derivatives(NominalAssembly, elements, VMn);
 
-    % % shape variation/defect sensitivities (PROM)
-    % [DS, names] = defect_sensitivities(NominalAssembly, elements, VMn, U, ...
-    % FORMULATION);
     
     % ROB formulation
-    % V  = [VMn MDn DS];
     mSingle = [1 0 0];    % horizontal displacement, rigid body mode
     m1 = repmat(mSingle,1,nNodes)';
-    mSingle = [0 1 0];    % vertical displacement, rigid body mode
-    m2 = repmat(mSingle,1,nNodes)';
+%     mSingle = [0 1 0];    % vertical displacement, rigid body mode
+%     m2 = repmat(mSingle,1,nNodes)';
     
-    solBending = matfile('FOM_sol.mat');
-    dispBending = solBending.sol(:,80);
-
     V  = [m1,VMn MDn];
-%     V = [VMn MDn];
     V  = orth(V);
     
 
@@ -206,7 +197,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
             topMuscle(el) = 1;
         end    
     end
@@ -217,12 +208,15 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.8
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
             bottomMuscle(el) = 1;
         end    
     end
     actuBottom = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
-
+    
+%     figure
+%     set(gcf, 'Position',  [100, 100, 1200, 500])
+%     PlotFieldonDeformedMeshActuation2Muscles(nodes,elements,topMuscle,1,bottomMuscle,-1,zeros(length(nodes),3));
 
     fprintf('Time to build ROM: %.2fsec\n',toc(startROMBuilding))
 

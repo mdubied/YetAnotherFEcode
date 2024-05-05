@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
 % Accuracy and computational speed comparison.
 % 
-% Last modified: 04/02/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 04/05/2024, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -30,9 +30,13 @@ myElementConstructor = @()Tet4Element(myMaterial);
 
 % MESH ____________________________________________________________________
 
-filename = '3d_fish_for_mike';
+filename = '3d_rectangle_660el'; %3d_fish_for_mike';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 nel = size(elements,1);
+
+% convert to cm to m and reduce the initial y dimension
+nodes = nodes*0.01;
+nodes(:,2)=0.8*nodes(:,2);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -48,36 +52,66 @@ PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
 % boundary conditions of nominal mesh
-nset = {};
+nel = size(elements,1);
+fixedPortion = 0.7;
+nset1 = {};
+fixedElements = zeros(nel,1);
 for el=1:nel   
     for n=1:size(elements,2)
-        if  ~any(cat(2, nset{:}) == elements(el,n))
-            nset{end+1} = elements(el,n);
+        if  nodes(elements(el,n),1)>-Lx*fixedPortion && ~any(cat(2, nset1{:}) == elements(el,n))
+            nset1{end+1} = elements(el,n);    
         end
-%         if  nodes(elements(el,n),1)> fixedPoint-marginFixedPoint && ...
-%                 nodes(elements(el,n),1)< fixedPoint+marginFixedPoint && ...
-%                 ~any(cat(2, nset{:}) == elements(el,n))
-%             nset{end+1} = elements(el,n);
-%         end
+        
+        if  nodes(elements(el,n),1)>-Lx*fixedPortion
+            fixedElements(el)=1;
+        end
     end   
 end
 
-for l=1:length(nset)
-    MeshNominal.set_essential_boundary_condition([nset{l}],3,0)
-end   
+for l=1:length(nset1)
+    MeshNominal.set_essential_boundary_condition([nset1{l}],1:3,0)  % all DOFs constrained to get VMs. Rigid body modes are added in build_ROM
+end  
 
-
-
+% shape variations for PROM
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_tail,y_head,y_linLongTail,y_ellipseFish] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz);
+U = [z_tail,y_head,y_thinFish];
 
-% for testing
-U = [z_tail,y_head];
+%%
 
+%% FIGURE A1 (muscles, rigid part, VM) ____________________________________
+% Note: the position of the muscle is defined in the build_ROM/FOM/PROM
+% functions. The number of VMs used also. Only the constraints for the
+% rigid par of the fish is defined above (boundary conditions)
+% left muscle
+leftMuscle = zeros(nel,1);
+for el=1:nel
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+    if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
+        leftMuscle(el) = 1;
+    end    
+end
+
+% right muscle
+rightMuscle = zeros(nel,1);
+for el=1:nel
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+    if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
+        rightMuscle(el) = 1;
+    end    
+end
+
+f_A1 = figure;
+set(gcf, 'Position',  [10, 10, 120, 50])
+Plot2MusclesAndConstraints(nodes,elements, ...
+    leftMuscle,'blue',rightMuscle,'red', ...
+    fixedElements,'k')
 %% SIMULATION PARAMETERS __________________________________________________
-h = 0.005;
-tmax = 4;
+h = 0.01;
+tmax = 2;
 
 %% ROM ____________________________________________________________________
 tStartROM = tic;
@@ -85,18 +119,37 @@ tStartROM = tic;
 % build PROM
 fprintf('____________________\n')
 fprintf('Building ROM ... \n')
-[V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
+[V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
 build_ROM_3D(MeshNominal,nodes,elements,USEJULIA);  
 
 % solve EoMs 
 tic 
 fprintf('____________________\n')
 fprintf('Solving EoMs ...\n') 
-TI_NL_ROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
 toc
 
 fprintf('Time needed to solve the problem using ROM: %.2fsec\n',toc(tStartROM))
 timeROM = toc(tStartROM);
+
+%% FOM ____________________________________________________________________
+tStartFOM = tic;
+
+% build PROM
+fprintf('____________________\n')
+fprintf('Building FOM ... \n')
+[Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
+build_FOM_3D(MeshNominal,nodes,elements);   
+
+% solve EoMs
+tic 
+fprintf('____________________\n')
+fprintf('Solving EoMs and sensitivities...\n') 
+TI_NL_FOM = solve_EoMs_FOM(Assembly,elements,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+toc
+
+fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
+timeFOM = toc(tStartFOM);
 
 %% PROM ___________________________________________________________________
 tStartPROM = tic;
@@ -117,56 +170,45 @@ toc
 fprintf('Time needed to solve the problem using PROM: %.2fsec\n',toc(tStartPROM))
 timePROM = toc(tStartPROM);
 
-%% FOM ____________________________________________________________________
-tStartFOM = tic;
-
-% build PROM
-fprintf('____________________\n')
-fprintf('Building FOM ... \n')
-[Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_FOM_3D(MeshNominal,nodes,elements);   
-%%
-% solve EoMs
-tic 
-fprintf('____________________\n')
-fprintf('Solving EoMs and sensitivities...\n') 
-TI_NL_FOM = solve_EoMs_FOM(Assembly,elements,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
-toc
-
-fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
-timeFOM = toc(tStartFOM);
-
-%%
-
-
 
 %% PLOT ___________________________________________________________________
 uTail_ROM = zeros(3,tmax/h);
-uTail_PROM = zeros(3,tmax/h);
 uTail_FOM = zeros(3,tmax/h);
+uTail_PROM = zeros(3,tmax/h);
+sol_FOM = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
 timePlot = linspace(0,tmax-h,tmax/h);
 x0Tail = min(nodes(:,1));
+
 for t=1:tmax/h
     uTail_ROM(:,t) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_ROM.Solution.q(:,t);
-    uTail_PROM(:,t) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_PROM.Solution.q(:,t);
-    uTail_FOM(:,t) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_FOM.Solution.q(:,t);
-
+    uTail_FOM(:,t) = sol_FOM(tailProperties.tailNode*3-2:tailProperties.tailNode*3,t);
+%     uTail_PROM(:,t) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_PROM.Solution.q(:,t);
 end
 
 figure
+% x-position
 subplot(2,1,1);
-plot(timePlot,x0Tail+uTail(1,:),'DisplayName','k=0')
 hold on
+plot(timePlot,x0Tail+uTail_ROM(1,:),'DisplayName','ROM')
+plot(timePlot,x0Tail+uTail_FOM(1,:),'DisplayName','FOM')
+% plot(timePlot,x0Tail+uTail_PROM(1,:),'DisplayName','PROM')
+hold on
+grid on
 xlabel('Time [s]')
-ylabel('x-position tail node')
+ylabel('x-position tail node [m]')
 legend('Location','northwest')
+
+% y-position
 subplot(2,1,2);
-plot(timePlot,uTail(2,:),'DisplayName','k=0')
 hold on
+plot(timePlot,uTail_ROM(2,:),'DisplayName','ROM')
+plot(timePlot,uTail_FOM(2,:),'DisplayName','FOM')
+% plot(timePlot,uTail_PROM(2,:),'DisplayName','PROM')
+grid on
+ylim([-0.04,0.04])
 xlabel('Time [s]')
-ylabel('y-position tail node')
+ylabel('y-position tail node [m]')
 legend('Location','southwest')
-drawnow
 
 %% ANIMATION ______________________________________________________________
 elementPlot = elements(:,1:4); 

@@ -1,7 +1,7 @@
 % solve_EoMs
 %
 % Synthax:
-% TI_NL_PROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,actuTop,actuBottom,h,tmax)
+% TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tailProperties,spineProperties,actuTop,actuBottom,h,tmax)
 %
 % Description: Computes the solutions for eta,dot{eta}, ddot{eta} for 
 % [0,tmax] for a given ROM assembly and time step
@@ -22,14 +22,14 @@
 % (9) tmax:                 simulation for [0,tmax]
 %
 % OUTPUTS:
-% (1) TI_NL_PROM:           struct containing the solutions and related
+% (1) TI_NL_ROM:            struct containing the solutions and related
 %                           information
 %     
-% Last modified: 24/10/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 04/05/2024, Mathieu Dubied, ETH Zurich
 
-function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
+function TI_NL_ROM = solve_EoMs(V,ROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
 
-    fishDim = size(PROM_Assembly.Mesh.nodes,2);
+    fishDim = size(ROM_Assembly.Mesh.nodes,2);
 
     % SIMULATION PARAMETERS AND ICs _______________________________________
     eta0 = zeros(size(V,2),1);
@@ -42,7 +42,7 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=3.0; 
+    k = 3.0; 
     
     actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
     actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
@@ -61,7 +61,7 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
         tailProperties.mTilde = 0.25*pi*1000*(tailProperties.z*2)^2;
     end
 
-    x0 = reshape(PROM_Assembly.Mesh.nodes.',[],1);  
+    x0 = reshape(ROM_Assembly.Mesh.nodes.',[],1);  
                        
     fTail = @(q,qd)  0.5*tailProperties.mTilde*wTail^3*VTail.'*(dot(A*VTail*qd,R*B*(x0(tailProperties.iDOFs)+VTail*q))).^2* ...
                         B*(x0(tailProperties.iDOFs)+VTail*q);
@@ -118,10 +118,10 @@ function TI_NL_ROM = solve_EoMs(V,PROM_Assembly,fIntTensors,tailProperties,spine
     % modal nonlinear Residual evaluation function handle
     if isfield(spineProperties.tensors,'f0') == 1   % PROM was constructed
         Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro_PROM(eta,etad,etadd, ...
-            t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
+            t,ROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
     else
         Residual_NL_red = @(eta,etad,etadd,t)residual_reduced_nonlinear_actu_hydro(eta,etad,etadd, ...
-            t,PROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
+            t,ROM_Assembly,fIntTensors,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,dragProperties,R,x0);
     end
     % time integration 
     TI_NL_ROM.Integrate(eta0,etad0,etadd0,tmax,Residual_NL_red);

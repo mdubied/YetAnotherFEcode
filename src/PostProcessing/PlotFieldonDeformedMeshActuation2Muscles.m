@@ -28,7 +28,7 @@ function h = PlotFieldonDeformedMeshActuation2Muscles(Nodes,Elements,ActuationEl
 %                               disp(:,1), disp(:,2) or disp (:,3)
 %                               repectively.
 %
-% Additional notes: only tested for TRI3 elements
+% Additional notes: only tested for TET4 elements
 %
 % Last modified: 22/03/2023, Mathieu Dubied, ETH Zurich
 %--------------------------------------------------------------------------

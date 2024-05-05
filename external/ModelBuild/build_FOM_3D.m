@@ -13,7 +13,7 @@
 
 %
 % OUTPUTS:   
-% (1) ROM_Assembly:         FOM assembly
+% (1) FOM_Assembly:         FOM assembly
 % (2) tailProperties:       properties of the tail pressure force
 %                           (matrices, tail elements etc.)
 % (3) spineProperties:      properties of the spine change in momentum
@@ -27,7 +27,7 @@
 %
 % Additional notes: -
 %
-% Last modified: 06/02/2024, Mathieu Dubied, ETH Zürich
+% Last modified: 04/05/2024, Mathieu Dubied, ETH Zürich
 
 function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_FOM_3D(MeshNominal,nodes,elements)
@@ -145,7 +145,7 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.85
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
             topMuscle(el) = 1;
         end    
     end
@@ -157,7 +157,7 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.25 && elementCenterX > -Lx*0.85
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
             bottomMuscle(el) = 1;
         end    
     end
