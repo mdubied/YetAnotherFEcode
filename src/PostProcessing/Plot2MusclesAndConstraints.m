@@ -40,12 +40,13 @@ Y = Nodes(skinFaces',2); Y = reshape(Y, nodePerSkinFace, nSkinFaces);
 Z = Nodes(skinFaces',3); Z = reshape(Z, nodePerSkinFace, nSkinFaces);
 
 % open View->Camera Toolbar, and View->Properties Inspector (Axes,
-view(-1.5078,39.6338)   
-camproj('orthographic')
-campos([-0.949358102339665,-1.789111161270594,1.491057614878067])
-camtarget([-0.160061975241042,-0.004309698762181,0.011789814756804])
-camup([0.244316050410686,0.552461400881531,0.79692914870002])
-camva(11.0954365)
+% view(-1.5078,39.6338)   
+% camproj('orthographic')
+% campos([-0.949358102339665,-1.789111161270594,1.491057614878067])
+% camtarget([-0.160061975241042,-0.004309698762181,0.011789814756804])
+% camup([0.244316050410686,0.552461400881531,0.79692914870002])
+% camva(11.0954365)
+view(3)
 hold on;
 
 h{1} = patch(X,Y,Z,'white','EdgeColor',meshcolor,'DisplayName','Deformed Mesh');

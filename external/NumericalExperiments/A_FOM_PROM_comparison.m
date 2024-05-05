@@ -84,6 +84,8 @@ U = [z_tail,y_head,y_thinFish];
 % Note: the position of the muscle is defined in the build_ROM/FOM/PROM
 % functions. The number of VMs used also. Only the constraints for the
 % rigid par of the fish is defined above (boundary conditions)
+
+% MUSCLES _________________________________________________________________
 % left muscle
 leftMuscle = zeros(nel,1);
 for el=1:nel
@@ -104,6 +106,30 @@ for el=1:nel
     end    
 end
 
+% VIBRATION MODES _________________________________________________________
+% get first vibration mode
+NominalAssemblyForPlot = Assembly(MeshNominal);
+Mn = NominalAssemblyForPlot.mass_matrix();
+nNodes = size(nodes,1);
+u0 = zeros( MeshNominal.nDOFs, 1);
+[Kn,~] = NominalAssemblyForPlot.tangent_stiffness_and_force(u0);
+% store matrices
+NominalAssemblyForPlot.DATA.K = Kn;
+NominalAssemblyForPlot.DATA.M = Mn;
+
+% vibration modes
+n_VMs = 1;
+Kc = NominalAssemblyForPlot.constrain_matrix(Kn);
+Mc = NominalAssemblyForPlot.constrain_matrix(Mn);
+[VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');
+[f0n,ind] = sort(sqrt(diag(om))/2/pi);
+VMn = VMn(:,ind);
+for ii = 1:n_VMs
+    VMn(:,ii) = VMn(:,ii)/max(sqrt(sum(VMn(:,ii).^2,2)));
+end
+VMn = NominalAssemblyForPlot.unconstrain_vector(VMn);
+
+% FIGURE __________________________________________________________________
 f_A1 = figure('units','centimeters','position',[3 3 9 3.5]);
 pos1 = [0,0,0.5,1];
 pos2 = [0.5,0,0.5,1];
@@ -117,10 +143,15 @@ Plot2MusclesAndConstraints(nodes,elements, ...
 
 % subplot2: VM1
 ax2 = subplot(1,2,2,'Position',pos2);
-Plot2MusclesAndConstraints(nodes,elements, ...
-    leftMuscle,'green',rightMuscle,'blue', ...
-    fixedElements,'red');
+elementPlot = elements(:,1:4);
+L = [Lx,Ly,Lz];
+O = [-Lx,-Ly/2,-Lz/2];
+plotcube(L,O,.05,[0 0 0]);
+v1 = reshape(-VMn(:,1), 3, []).';
+PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
 
+axis([ax1 ax2],[-0.39 0 -0.08 0.08 -0.11 0.11])
+exportgraphics(f_A1,'A_muscles_placement_VM.pdf','Resolution',1400)
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
 tmax = 2;
