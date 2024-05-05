@@ -33,7 +33,7 @@ myElementConstructor = @()Tet4Element(myMaterial);
 
 % MESH ____________________________________________________________________
 
-filename = %3d_rectangle_660el'; %3d_fish_for_mike';'3d_rectangle_2385el' % need to set 0.2*k
+filename = '3d_rectangle_660el'; %3d_fish_for_mike';'3d_rectangle_2385el' % need to set 0.2*k for the actuation forces
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 nel = size(elements,1);
 
