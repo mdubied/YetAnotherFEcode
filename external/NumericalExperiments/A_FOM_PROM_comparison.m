@@ -53,7 +53,7 @@ hold off
 
 % boundary conditions of nominal mesh
 nel = size(elements,1);
-fixedPortion = 0.7;
+fixedPortion = 0.5;
 nset1 = {};
 fixedElements = zeros(nel,1);
 for el=1:nel   
@@ -104,11 +104,23 @@ for el=1:nel
     end    
 end
 
-f_A1 = figure;
-set(gcf, 'Position',  [10, 10, 120, 50])
+f_A1 = figure('units','centimeters','position',[3 3 9 3.5]);
+pos1 = [0,0,0.5,1];
+pos2 = [0.5,0,0.5,1];
+
+% subplot 1: muscles' placement
+ax1 = subplot(1,2,1,'Position',pos1);
+
 Plot2MusclesAndConstraints(nodes,elements, ...
-    leftMuscle,'blue',rightMuscle,'red', ...
-    fixedElements,'k')
+    leftMuscle,'green',rightMuscle,'blue', ...
+    fixedElements,'red');
+
+% subplot2: VM1
+ax2 = subplot(1,2,2,'Position',pos2);
+Plot2MusclesAndConstraints(nodes,elements, ...
+    leftMuscle,'green',rightMuscle,'blue', ...
+    fixedElements,'red');
+
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
 tmax = 2;
