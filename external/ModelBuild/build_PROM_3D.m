@@ -96,7 +96,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     mSingle = [0 1 0];
     m2 = repmat(mSingle,1,nNodes)';
 %     V  = [m1 m2 VMn MDn];
-    V  = [m1 m2 VMn MDn DS];
+    V  = [m1 VMn MDn DS];
     V  = orth(V);
 
     % % plot
@@ -192,7 +192,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     headxDOF = 3*headNode-2;
     VHead = V(headxDOF,:);
     rho = 1000;
-    kFactor = 1;
+    kFactor = 2;
     tensors_drag = compute_drag_tensors_PROM(PROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
