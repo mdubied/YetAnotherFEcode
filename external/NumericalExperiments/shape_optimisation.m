@@ -67,16 +67,24 @@ nset = {};
 %     end   
 % end
 
-fixedPortion = 0.7;
+fixedPortion = 0.6;
 nset = {};
+
+fixedElements = zeros(nel,1);
 for el=1:nel   
-    for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)>-Lx*fixedPortion && ~any(cat(2, nset{:}) == elements(el,n))
-            nset{end+1} = elements(el,n);    
-        end
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+    if elementCenterX >= -Lx*fixedPortion
+        for n=1:size(elements,2) 
+            if  ~any(cat(2, nset{:}) == elements(el,n))
+                nset{end+1} = elements(el,n); 
+            end
         
-    end   
+        end   
+    end
+    
 end
+
 
 %% SHAPE VARIATIONS _______________________________________________________
 
@@ -124,33 +132,9 @@ set(f1,'PaperUnits','centimeters');
 set(f1,'Units','centimeters');
 
 
-%%
-xiTest = [0;0;0];%[-0.4;0.2;0.4];
-xiTest=[0.5;-0.5]
-% shape-varied mesh 
-df = U*xiTest;                       % displacement field introduced by shape variations
-dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
-nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
-svMesh = Mesh(nodes_sv);
-svMesh.create_elements_table(elements,myElementConstructor);
-
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes_sv, elementPlot, 0);
-hold off
-
-
-%%
-nNodes = size(nodes,1);
-matrix_inp = [linspace(1,nNodes,nNodes)',nodes_sv];
-matrix_inp(:,1) = cast(matrix_inp(:,1),"uint8");
-disp(matrix_inp)
-writematrix(matrix_inp,'M.csv')
- 
 %% OPTIMIZATION PARAMETERS
 h = 0.01;
 tmax = 2.0;
-
 
 %% OPTIMISATION SO1 _______________________________________________________
 
@@ -162,7 +146,7 @@ A = [1 0 0 ;
     0 -1 0;
     0 0 1;
     0 0 -1];
-b = [0.6;0.6;0.5;0.5;0.4;0.4];
+b = [0.5;0.5;0.5;0.5;0.3;0.3];
 
 barrierParam = 10*ones(1,length(b));
 
@@ -171,17 +155,18 @@ tStart = tic;
     nodes,elements,U,h,tmax,A,b, ...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
-    'maxIteration',25, ...
+    'maxIteration',35, ...
     'convCrit',0.004, ...
-    'convCritCost',0.1, ...
+    'convCritCost',0.3, ...
     'barrierParam',barrierParam, ...
-    'gStepSize',0.005, ...
+    'gStepSize',0.002, ...
     'nRebuild',6, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
-
+filename='SO1_results';
+save(filename,'xiStar','xiEvo','LEvo','LwoBEvo','topti')
 
 %% OPTIMISATION SO2 _______________________________________________________
 
@@ -195,7 +180,7 @@ end
 yTotConstr = [0 0 1 0 1;0 0  -1 0 -1;
               0 0 0 1 1;0 0  0 -1 -1];
 A = [A;yTotConstr];
-disp(A);
+% disp(A);
 b = [0.5;0.5;
     0.5;0.5;
     0.4;0.4;
@@ -215,14 +200,16 @@ tStart = tic;
     'VOLUME',VOLUME, ...
     'maxIteration',50, ...
     'convCrit',0.004, ...
-    'convCritCost',0.8, ...
+    'convCritCost',0.1, ...
     'barrierParam',barrierParam, ...
-    'gStepSize',0.0004,...
-    'nRebuild',15, ...
+    'gStepSize',0.003,...
+    'nRebuild',7, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+filename='SO2_results';
+save(filename,'xiStar','xiEvo','LEvo','LwoBEvoSO2','topti')
 
 %% OPTIMISATION SO5 _______________________________________________________
 
@@ -288,7 +275,7 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,1);
+subU = U(:,3);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
@@ -299,7 +286,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,2);
+subU = U(:,4);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -310,7 +297,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,3);
+subU = U(:,5);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -336,7 +323,7 @@ axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO5_shapes_V1.pdf','Resolution',600)
+exportgraphics(f1,'SO2_shapes_V1.pdf','Resolution',1200)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -367,11 +354,11 @@ grid on
 ylabel('$$\xi$$','Interpreter','latex')
 xlabel('Iterations')
 legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
-    'Position',[0.8 0.45 0.2 0.2])
+    'Position',[0.78 0.38 0.2 0.2])
 
 % legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
 %     'Position',[0.35 0.64 0.2 0.35])
-exportgraphics(f2,'SO1_evo_V1.pdf','Resolution',600)
+exportgraphics(f2,'SO1_evo_V1.pdf','Resolution',1200)
 
 %% PLOT COST FUNCTIONS, SO2 + SO3 _________________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -404,6 +391,29 @@ hold off
 
 exportgraphics(f2,'SO2-5_cost_V1.pdf','Resolution',600)
 
+%%
+xiTest = [0;0;0];%[-0.4;0.2;0.4];
+xiTest=[0.5;-0.5]
+% shape-varied mesh 
+df = U*xiTest;                       % displacement field introduced by shape variations
+dd = [df(1:3:end) df(2:3:end) df(3:3:end)];   % rearrange as two columns matrix
+nodes_sv = nodes + dd;          % nominal + dd ---> shape-varied nodes 
+svMesh = Mesh(nodes_sv);
+svMesh.create_elements_table(elements,myElementConstructor);
+
+elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMeshAxis(nodes_sv, elementPlot, 0);
+hold off
+
+
+%%
+nNodes = size(nodes,1);
+matrix_inp = [linspace(1,nNodes,nNodes)',nodes_sv];
+matrix_inp(:,1) = cast(matrix_inp(:,1),"uint8");
+disp(matrix_inp)
+writematrix(matrix_inp,'M.csv')
+ 
 
 %% PLOT PARAMETERS' EVOLUTION OVER ITERATIONS _____________________________
 figure('Position',[100,100,600,200])

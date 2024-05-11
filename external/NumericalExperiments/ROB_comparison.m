@@ -92,7 +92,7 @@ tmax = 2;
 % build ROM
 nel = size(elements,1);
 
-fixedPortion = 0.7;
+fixedPortion = 0.6;
 nset1 = {};
 fixedElements = zeros(nel,1);
 for el=1:nel   
@@ -136,7 +136,7 @@ nset2 = {};
 %         end
 %     end   
 % end
-translation = 2;    %0,1,or 2
+translation = 1;    %0,1,or 2
 
 
 figure

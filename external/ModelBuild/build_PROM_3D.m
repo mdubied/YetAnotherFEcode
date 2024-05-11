@@ -192,7 +192,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     headxDOF = 3*headNode-2;
     VHead = V(headxDOF,:);
     rho = 1000;
-    kFactor = 2;
+    kFactor = 1.5;
     tensors_drag = compute_drag_tensors_PROM(PROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
