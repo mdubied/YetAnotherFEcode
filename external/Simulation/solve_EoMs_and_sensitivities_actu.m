@@ -47,7 +47,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k=300; % k=400 for 3D
+    k = 3.0; % k=400 for 3D
     
     actuSignalT = @(t) actuation_signal_6(k,t,p);    
     actuSignalB = @(t) -actuation_signal_6(k,t,p);

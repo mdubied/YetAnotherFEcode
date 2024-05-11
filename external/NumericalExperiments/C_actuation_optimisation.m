@@ -12,14 +12,14 @@ elementType = 'TET4';
 
 FORMULATION = 'N1t'; % N1/N1t/N0
 VOLUME = 1;         % integration over defected (1) or nominal volume (0)
-USEJULIA = 0;
+USEJULIA = 1;
 
 %% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
-E       = 2600000;      % Young's modulus [Pa]
+E       = 260000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
-nu      = 0.499;        % Poisson's ratio 
+nu      = 0.4;        % Poisson's ratio 
 
 % material
 myMaterial = KirchoffMaterial();
@@ -34,8 +34,11 @@ end
 
 % MESH ____________________________________________________________________
 % nominal mesh
-filename = '3d_fish_for_mike';%'3d_rectangle_660el';%'fish3_664el';
+filename = '3d_rectangle_660el';%'fish3_664el';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
+
+nodes = nodes*0.01;
+nodes(:,2)=0.8*nodes(:,2);
 
 MeshNominal = Mesh(nodes);
 MeshNominal.create_elements_table(elements,myElementConstructor);
@@ -50,20 +53,28 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
-% boundary conditions of nominal mesh
-nel = size(elements,1);
+fixedPortion = 0.58;
 nset = {};
+
+fixedElements = zeros(nel,1);
 for el=1:nel   
-    for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
-            nset{end+1} = elements(el,n);
-        end
-    end   
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+    if elementCenterX >= -Lx*fixedPortion
+        for n=1:size(elements,2) 
+            if  ~any(cat(2, nset{:}) == elements(el,n))
+                nset{end+1} = elements(el,n); 
+            end
+        
+        end   
+    end
+    
 end
+
 
 %% OPTIMIZATION PARAMETERS
 dSwim = [1;0;0]; %swimming direction
-h = 0.005;
+h = 0.01;
 tmax = 2.0;
 
 %% OPTIMISATION ___________________________________________________________
@@ -81,8 +92,9 @@ AActu = [1 0 0;
         0 0 1;
         0 0 -1];
 bActu = [0.31;-0.1;2.6;-1.4;1.05;0.05];
-barrierParam = [3,3,30,30,30,30];
-gradientWeights = [0.4,10,10];
+% start with [0.2;2;0] % amplitude, frequency, quantity of easing
+barrierParam = [30,30,300,300,300,300];
+gradientWeights = [1,1,10];
 
 tStart = tic;
 [pStar,pEvo,LEvo, LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset, ...
@@ -92,9 +104,9 @@ tStart = tic;
     'convCritCost',0.002, ...
     'barrierParam',barrierParam, ...
     'gradientWeights',gradientWeights, ...
-    'gStepSize',0.003, ...
+    'gStepSize',0.01, ...
     'nResolve',12, ...
-    'resolveThreshold',0.25);
+    'resolveThreshold',0.1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
 

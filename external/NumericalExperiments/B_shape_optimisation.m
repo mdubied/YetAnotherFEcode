@@ -1,7 +1,7 @@
 % ------------------------------------------------------------------------ 
 % 3D shape optimisation of a fish.
 % 
-% Last modified: 19/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 11/05/2024, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
@@ -67,7 +67,7 @@ nset = {};
 %     end   
 % end
 
-fixedPortion = 0.6;
+fixedPortion = 0.58;
 nset = {};
 
 fixedElements = zeros(nel,1);

@@ -192,7 +192,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     headxDOF = 3*headNode-2;
     VHead = V(headxDOF,:);
     rho = 1000;
-    kFactor = 1.5;
+    kFactor = 1.0;
     tensors_drag = compute_drag_tensors_PROM(PROM_Assembly, skinElements, skinElementFaces, kFactor*rho,VHead) ;
     dragProperties.tensors = tensors_drag;
     dragProperties.skinElements = skinElements;
@@ -212,7 +212,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx*1    %0.25, 0.8
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.58 && elementCenterX > -Lx*1    %0.25, 0.8
             topMuscle(el) = 1;
         end      
     end
@@ -223,7 +223,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
    for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx*1
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.58 && elementCenterX > -Lx*1
             bottomMuscle(el) = 1;
         end    
     end
