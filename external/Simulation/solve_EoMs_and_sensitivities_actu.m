@@ -49,10 +49,10 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
     B2B = actuBottom.B2;
     k = 3.0; % k=400 for 3D
     
-    actuSignalT = @(t) actuation_signal_6(k,t,p);    
-    actuSignalB = @(t) -actuation_signal_6(k,t,p);
+    actuSignalT = @(t) actuation_signal_2(k,t,p);    
+    actuSignalB = @(t) -actuation_signal_2(k,t,p);
     
-    fActu = @(t,q) actuation_force_6(k,t,q,B1T,B2T, B1B,B2B,p);
+    fActu = @(t,q) actuation_force_2(k,t,q,B1T,B2T, B1B,B2B,p);
 
     % tail pressure force properties
     A = tailProperties.A;
@@ -71,19 +71,39 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
                         B*(x0(tailProperties.iDOFs)+VTail*q);
     
     % spine change  momentum
-    Txx = spineProperties.tensors.Txx;
-    TxV = spineProperties.tensors.TxV;
-    TVx = spineProperties.tensors.TVx;
-    TVV = spineProperties.tensors.TVV;
-    
-    fSpine = @(q,qd,qdd) double(Txx)*qdd ...
-        + double(ttv(ttv(TxV,q,3),qdd,2) ...
-        + ttv(ttv(TVx,q,3),qdd,2) ...
-        + ttv(ttv(ttv(TVV,q,4),q,3),qdd,2) ...
-        + ttv(ttv(TVx,qd,3),qd,2) ...
-        + ttv(ttv(ttv(TVV,q,4),qd,3),qd,2) ...
-        + ttv(ttv(TxV,qd,3),qd,2) ...
-        + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
+%     Txx = spineProperties.tensors.Txx;
+%     TxV = spineProperties.tensors.TxV;
+%     TVx = spineProperties.tensors.TVx;
+%     TVV = spineProperties.tensors.TVV;
+%     
+%     fSpine = @(q,qd,qdd) double(Txx)*qdd ...
+%         + double(ttv(ttv(TxV,q,3),qdd,2) ...
+%         + ttv(ttv(TVx,q,3),qdd,2) ...
+%         + ttv(ttv(ttv(TVV,q,4),q,3),qdd,2) ...
+%         + ttv(ttv(TVx,qd,3),qd,2) ...
+%         + ttv(ttv(ttv(TVV,q,4),qd,3),qd,2) ...
+%         + ttv(ttv(TxV,qd,3),qd,2) ...
+%         + ttv(ttv(ttv(TVV,qd,4),q,3),qd,2));
+    if isfield(spineProperties.tensors,'f0') == 1   % PROM was constructed
+        Txx2 = spineProperties.tensors.Txx.f0;
+        TxV3 = spineProperties.tensors.TxV.f0;
+        TVx3 = spineProperties.tensors.TVx.f0;
+        TVV4 = spineProperties.tensors.TVV.f0;
+    else                                            % ROM was constructed
+        Txx2 = spineProperties.tensors.Txx; 
+        TxV3 = spineProperties.tensors.TxV;
+        TVx3 = spineProperties.tensors.TVx;
+        TVV4 = spineProperties.tensors.TVV;
+    end
+
+    fSpine = @(q,qd,qdd) double(Txx2)*qdd ...
+        + double(ttv(ttv(TxV3,q,3),qdd,2) ...
+        + ttv(ttv(TVx3,q,3),qdd,2) ...
+        + ttv(ttv(ttv(TVV4,q,4),q,3),qdd,2) ...
+        + ttv(ttv(TVx3,qd,3),qd,2) ...
+        + ttv(ttv(ttv(TVV4,q,4),qd,3),qd,2) ...
+        + ttv(ttv(TxV3,qd,3),qd,2) ...
+        + ttv(ttv(ttv(TVV4,qd,4),q,3),qd,2));
 
 
     % drag force
@@ -92,7 +112,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
 
     % ACTUATION FORCES DERIVATIVES FOR SENSITIVITY ANALYSIS _______________
     % actuation forces
-    pd_actu = @(t,q,p)derivatives_actuation_force_6(k,t,q,B1T,B2T, B1B,B2B,p);
+    pd_actu = @(t,q,p)derivatives_actuation_force_2(k,t,q,B1T,B2T,B1B,B2B,p);
         
     % NONLINEAR TIME INTEGRATION __________________________________________
     

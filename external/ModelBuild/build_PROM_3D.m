@@ -38,9 +38,11 @@
 % Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
 
 function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION)
+    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION,varargin)
 
     startPROMBuilding = tic;
+    
+    [USE_GIVEN_DORSAL_NODES, dorsalNodesStructFromUser] = parse_inputs(varargin);
     
     % 2D or 3D? ___________________________________________________________
     fishDim = size(nodes,2);
@@ -135,8 +137,22 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     wTail = normalisationFactors(tailElement);
 
     % get dorsal nodes
-    [~,matchedDorsalNodesIdx,dorsalNodesElementsVec,matchedDorsalNodesZPos] = ....
-        find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
+    if USE_GIVEN_DORSAL_NODES
+        matchedDorsalNodesIdx = dorsalNodesStructFromUser{2}.matchedDorsalNodesIdx;
+        dorsalNodesElementsVec = dorsalNodesStructFromUser{2}.dorsalNodesElementsVec;
+        nElements = length(elements(:,1));
+        matchedDorsalNodesZPos = zeros(nElements,1);
+        nSpineEl = length(spineElements);
+        for spElIdx =1:nSpineEl
+            spEl = spineElements(spElIdx);
+            matchedDorsalNodesZPos(spEl) = nodes(matchedDorsalNodesIdx(spElIdx),3);
+            
+        end
+        
+    else
+        [~,matchedDorsalNodesIdx,dorsalNodesElementsVec,matchedDorsalNodesZPos] = ....
+            find_dorsal_nodes(elements, nodes, spineElements, nodeIdxPosInElements);
+    end
 
     % tail pressure force: get matrices
     [A,B] = compute_AB_tail_pressure_TET4(nodeIdxPosInElements(tailElement,:));
@@ -185,6 +201,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     spineProperties.nodeIdxPosInElements = nodeIdxPosInElements;
     spineProperties.dorsalNodeIdx = matchedDorsalNodesIdx;
     spineProperties.zPos = matchedDorsalNodesZPos;
+    spineProperties.dorsalNodesElementVec = dorsalNodesElementsVec;
 
     % drag force (reduced order)
     [~,~,skinElements, skinElementFaces] = getSkin3D(elements);
@@ -232,3 +249,21 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     fprintf('Time to build PROM: %.2fsec\n',toc(startPROMBuilding))
 
 end 
+
+% parse optional input: dorsal nodes provided by the user
+function [USE_GIVEN_DORSAL_NODES, dorsalNodes] = parse_inputs(varargin)
+    
+    defaultDorsalNodes = [];
+
+    p = inputParser;
+    addOptional(p,'dorsalNodes',defaultDorsalNodes);
+       
+    parse(p,varargin{:});
+    
+    dorsalNodes = p.Results.dorsalNodes;
+    if ~isempty(dorsalNodes)
+        USE_GIVEN_DORSAL_NODES = true;
+    else
+        USE_GIVEN_DORSAL_NODES = false;
+    end
+end

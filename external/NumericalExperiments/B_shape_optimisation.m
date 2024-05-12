@@ -139,7 +139,7 @@ tmax = 2.0;
 %% OPTIMISATION SO1 _______________________________________________________
 
 U = [z_tail,z_head,y_thinFish]; 
-% U = [z_tail,z_head, x_concaveTail];
+U = [z_tail,z_head, x_concaveTail];
 A = [1 0 0 ;
     -1 0 0;
     0 1 0;
@@ -275,7 +275,7 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,3);
+subU = U(:,1);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
@@ -286,7 +286,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,4);
+subU = U(:,2);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -297,7 +297,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,5);
+subU = U(:,3);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -319,7 +319,7 @@ subplotName = '$$\mathbf{\xi}^\ast$$';
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 
-axis([ax1 ax2 ax3 ax4],[-0.35 0 -0.04 0.04 -0.16 0.16])
+axis([ax1 ax2 ax3 ax4],[-0.40 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 

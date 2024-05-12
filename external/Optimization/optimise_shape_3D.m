@@ -71,7 +71,12 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
     fprintf('Building PROM ... \n')
 
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION);      
+    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION); 
+    
+    % store dorsal nodes for future use
+    dorsalNodesStructFromUser.matchedDorsalNodesIdx = spineProperties.dorsalNodeIdx;
+    dorsalNodesStructFromUser.dorsalNodesElementsVec = spineProperties.dorsalNodesElementVec;
+    dorsalNodesStructFromUser.matchedDorsalNodesZPos = spineProperties.zPos;
     
 
     % Solve EoMs
@@ -160,7 +165,7 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
 
             % build PROM
             [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-                 build_PROM_3D(svMesh,nodes_defected,elements,U,USEJULIA,VOLUME,FORMULATION);
+                 build_PROM_3D(svMesh,nodes_defected,elements,U,USEJULIA,VOLUME,FORMULATION,'dorsalNodes',dorsalNodesStructFromUser);
 
             % Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
             % Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil

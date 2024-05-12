@@ -53,6 +53,7 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
+nel = size(elements,1);
 fixedPortion = 0.58;
 nset = {};
 
@@ -82,6 +83,60 @@ tmax = 2.0;
 %   solve_EoMs_and_sensitivities_actu
 % The initial conditions should be changed in the following script:
 %   optimise_actuation_3D
+%% TESTING 
+
+AActu = [1 ;
+        -1];
+
+% bActu = [0.31;-0.1;2.6;-1.4];
+bActu = [2.5;0-1.5];
+% start with [0.2;2;0] % amplitude, frequency, quantity of easing
+barrierParam = [1,1];
+gradientWeights = [1];
+
+
+tStart = tic;
+[pStar,pEvo,LEvo, LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset, ...
+    nodes,elements,dSwim,h,tmax,AActu,bActu, ...
+    'maxIteration',30, ...
+    'convCrit',0.0002, ...
+    'convCritCost',0.002, ...
+    'barrierParam',barrierParam, ...
+    'gradientWeights',gradientWeights, ...
+    'gStepSize',0.0001, ...
+    'nResolve',6, ...
+    'resolveThreshold',0.03);
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
+%% TESTING 
+
+AActu = [1 0 ;
+        -1 0 ;
+        0 1 ;
+        0 -1];
+
+% bActu = [0.31;-0.1;2.6;-1.4];
+bActu = [0.1;0.1;0.6;0.6];
+% start with [0.2;2;0] % amplitude, frequency, quantity of easing
+barrierParam = [30,30,300,300];
+gradientWeights = [1,1];
+
+
+tStart = tic;
+[pStar,pEvo,LEvo, LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset, ...
+    nodes,elements,dSwim,h,tmax,AActu,bActu, ...
+    'maxIteration',30, ...
+    'convCrit',0.02, ...
+    'convCritCost',0.002, ...
+    'barrierParam',barrierParam, ...
+    'gradientWeights',gradientWeights, ...
+    'gStepSize',0.0001, ...
+    'nResolve',12, ...
+    'resolveThreshold',0.1);
+topti = toc(tStart);
+fprintf('Computation time: %.2fmin\n',topti/60)
+
 
 %% AO1
 % actuation_force_6, ran with k=300. Results: [0.3027,2.58.43,1.0161]
@@ -94,7 +149,8 @@ AActu = [1 0 0;
 bActu = [0.31;-0.1;2.6;-1.4;1.05;0.05];
 % start with [0.2;2;0] % amplitude, frequency, quantity of easing
 barrierParam = [30,30,300,300,300,300];
-gradientWeights = [1,1,10];
+gradientWeights = [1,1,1];
+
 
 tStart = tic;
 [pStar,pEvo,LEvo, LwoBEvo] = optimise_actuation_3D(myElementConstructor,nset, ...

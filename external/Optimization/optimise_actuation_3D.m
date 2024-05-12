@@ -56,7 +56,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     % p_k = [0.8;2*pi;0];   % actuation_force_3
 %      p_k = [1;0;0;1];    % actuation_force_4
         
-    p_k = [0.2;2.1;0.1];    % actuation_force_6, AO1
+    p_k = [2.0];    % actuation_force_6, AO1
 
 %     % actuation_force_5:
 %     nParam = size(A,2);
@@ -91,7 +91,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
 
     % build PROM
     fprintf('____________________\n')
-    fprintf('Building PROM ... \n')
+    fprintf('Building ROM ... \n')
 
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
     build_ROM_3D(MeshNominal,nodes,elements,USEJULIA);    
@@ -145,10 +145,10 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     
     % computing initial cost function value
     fprintf('____________________\n')
-    fprintf('Computing cost function...\n') 
+    fprintf('Computing cost function...\n')             
     N = size(eta,2);
-    dr = reduced_constant_vector(d,V,3);
-    [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));  
+    dr = reduced_constant_vector(d,V,3);                
+    [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V);  
     LEvo = L;
     LwoBEvo = LwoB;
     nablaEvo = zeros(size(A,2),1);
@@ -205,21 +205,35 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
                 S=tensor(S);
                 eta_k = eta_0k + double(ttv(S,deltaP_k,2));
                 % plot solution
-%                 uTail = zeros(3,tmax/h);
-%                 for a=1:tmax/h
-%                     uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
-%                 end 
-%                 subplot(2,1,1);
-%                 plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
-%                 legend
-%                 drawnow
-% 
-%                 subplot(2,1,2);
-%                 plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
-%                 legend
-%                 drawnow
+                uTail = zeros(3,tmax/h);
+                for a=1:tmax/h
+                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+                end 
+                subplot(2,1,1);
+                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
+
+                subplot(2,1,2);
+                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
             else
                 eta_k = eta_0k + S*deltaP_k;
+                % plot solution
+                uTail = zeros(3,tmax/h);
+                for a=1:tmax/h
+                    uTail(:,a) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*eta_k(:,a);
+                end 
+                subplot(2,1,1);
+                plot(timePlot,x0Tail+uTail(1,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
+
+                subplot(2,1,2);
+                plot(timePlot,uTail(2,:),'DisplayName',strcat('k=',num2str(k)))
+                legend
+                drawnow
             end
             
         end 
@@ -227,8 +241,8 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
         % compute cost function and its gradient
         fprintf('____________________\n')
         fprintf('Computing cost function and its gradient...\n')   
-        nablaLr = gradient_cost_function_w_constraints_TET4(p_k,eta_k,S,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));
-        [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:));
+        nablaLr = gradient_cost_function_w_constraints_TET4(p_k,eta_k,S,A,b,barrierParam,V);
+        [L,LwoB] = reduced_cost_function_w_constraints_TET4(N,eta_k,p_k,A,b,barrierParam,V);
         LEvo = [LEvo, L];
         LwoBEvo = [LwoBEvo, LwoB];
 
