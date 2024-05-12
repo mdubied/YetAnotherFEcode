@@ -147,7 +147,7 @@ end
         axis off;
     % Colorbar Setting
     if ~isempty(c)
-        % SetColorbar
+        SetColorbar
     end
 
 end

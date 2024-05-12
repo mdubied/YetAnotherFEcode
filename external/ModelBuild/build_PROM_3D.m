@@ -67,7 +67,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
     % ROB _________________________________________________________________
     
     % vibration modes
-    n_VMs = 2;
+    n_VMs = 1;
     Kc = NominalAssembly.constrain_matrix(Kn);
     Mc = NominalAssembly.constrain_matrix(Mn);
     [VMn,om] = eigs(Kc, Mc, n_VMs, 'SM');

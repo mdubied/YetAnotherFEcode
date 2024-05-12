@@ -33,7 +33,7 @@ myElementConstructor = @()Tet4Element(myMaterial);
 
 % MESH ____________________________________________________________________
 
-filename = '3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; % need to set 0.3*k for the actuation forces
+filename = '3d_rectangle_660el';%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; % need to set 0.3*k for the actuation forces
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 nel = size(elements,1);
 
@@ -97,7 +97,7 @@ end
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_tail,y_head,y_linLongTail,y_ellipseFish] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz);
-U = [z_tail,y_head,y_thinFish];
+U = [z_tail,y_head,y_thinFish,z_head,z_linLongTail];
 
 
 %% FIGURE A1 (muscles, rigid part, VM) ____________________________________
@@ -151,8 +151,8 @@ VMn = NominalAssemblyForPlot.unconstrain_vector(VMn);
 
 % FIGURE __________________________________________________________________
 f_A1 = figure('units','centimeters','position',[3 3 9 3.5]);
-pos1 = [0,0,0.5,1];
-pos2 = [0.5,0,0.5,1];
+pos1 = [0.0,0,0.43,1];
+pos2 = [0.43,0,0.43,1];
 
 % subplot 1: muscles' placement
 ax1 = subplot(1,2,1,'Position',pos1);
@@ -167,8 +167,15 @@ elementPlot = elements(:,1:4);
 L = [Lx,Ly,Lz];
 O = [-Lx,-Ly/2,-Lz/2];
 plotcube(L,O,.05,[0 0 0]);
-v1 = reshape(-VMn(:,1), 3, []).';
+v1 = reshape(VMn(:,1), 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', max(nodes(:,2)));
+
+text('Rotation',90,'String','deformation',...
+    'Position',[0.0706175580073714 -0.125871238772628 -0.135237833426755],...
+    'Visible','on');
+
+
+
 
 axis([ax1 ax2],[-0.39 0 -0.08 0.08 -0.11 0.11])
 % exportgraphics(f_A1,'A_muscles_placement_VM.pdf','Resolution',1400)
@@ -282,7 +289,17 @@ ylim([-0.04,0.04])
 xlabel('Time [s]')
 ylabel('tail y-position [m]')
 % legend('Location','southwest', 'interpreter','latex')
-% exportgraphics(f_A2,'A_FOM_vs_ROM_2385el.pdf','Resolution',1400)
+% exportgraphics(f_A2,'A_FOM_vs_ROM_1272el.pdf','Resolution',1400)
+
+%% COMPUTE AVERAGE ERROR
+error_x_vector = zeros(1,tmax/h);
+error_y_vector = zeros(1,tmax/h);
+for t=2:tmax/h
+    error_x_vector(t) = (uHead_FOM(1,t) - uHead_ROM(1,t))/uHead_FOM(1,t);
+    error_y_vector(t) = (uTail_FOM(2,t) - uTail_ROM(2,t))/uTail_FOM(2,t);
+end
+mean(error_x_vector)
+mean(error_y_vector)
 
 %% ANIMATION ______________________________________________________________
 elementPlot = elements(:,1:4); 

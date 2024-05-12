@@ -139,7 +139,7 @@ tmax = 2.0;
 %% OPTIMISATION SO1 _______________________________________________________
 
 U = [z_tail,z_head,y_thinFish]; 
-U = [z_tail,z_head, x_concaveTail];
+% U = [z_tail,z_head, x_concaveTail];
 A = [1 0 0 ;
     -1 0 0;
     0 1 0;
