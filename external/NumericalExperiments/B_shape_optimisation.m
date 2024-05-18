@@ -191,8 +191,6 @@ b = [0.5;0.5;
 
 barrierParam = ones(1,length(b));
 
-%%
-
 tStart = tic;
 [xiStar,xiEvo,LEvo, LwoBEvoSO2] = optimise_shape_3D(myElementConstructor,nset, ...
     nodes,elements,U,h,tmax,A,b,...
@@ -215,8 +213,8 @@ save(filename,'xiStar','xiEvo','LEvo','LwoBEvoSO2','topti')
 
 %[0.1968;-0.4929;0.3093;-0.2883;0.2715;0.4913;0.4962;0.3890]
 
-U = [z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
-    y_head,y_linLongTail,y_ellipseFish,x_concaveTail];
+U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish,...
+    z_smallFish, z_notch, x_concaveTail];
 %%
 % Constraints
 nParam = 8;
@@ -224,22 +222,18 @@ A = zeros(2 * nParam, nParam);
 for i = 1:nParam
     A(2*i-1:2*i,i) =[1;-1];
 end
-yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
-              0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
-A = [A;yTotConstr];
+% yTotConstr = [0 0 0 0 0 0 1 1;0 0 0 0 0 0 -1 -1;
+%               0 0 0 0 0 1 0 1;0 0 0 0 0 -1 0 -1];
+% A = [A;yTotConstr];
 
-b = [0.2;0.2;
-    0.5;0.5;
-    0.5;0.5;
-    0.3;0.3;
-    0.3;0.3;
-    0.5;0.5;
-    0.5;0.5;
+b = [0.4;0.4;
     0.4;0.4;
-    0.9;0.9;
-    0.9;0.9];
-
-
+    0.4;0.4;
+    0.3;0.3;
+    0.5;0.5;
+    0.3;0.3;
+    0.3;0.3;
+    0.3;0.3];
 barrierParam = 3*ones(1,length(b));
 
 %%
@@ -249,16 +243,19 @@ tStart = tic;
     nodes,elements,U,h,tmax,A,b, ...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
-    'maxIteration',80, ...
+    'maxIteration',40, ...
     'convCrit',0.01, ...
-    'convCritCost',2, ...
+    'convCritCost',0.5, ...
     'barrierParam',barrierParam, ...
-    'gStepSize',0.0003, ...
-    'nRebuild',20, ...
+    'gStepSize',0.003, ...
+    'nRebuild',8, ...
     'rebuildThreshold',0.15, ...
     'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+
+filename='SO3_results';
+save(filename,'xiStar','xiEvo','LEvo','LwoBEvoSO5','topti')
 
 %% PLOT SHAPE VARIATIONS AND OPTIMAL SHAPE ________________________________
 f1 = figure('units','centimeters','position',[3 3 9 7]);
@@ -275,35 +272,35 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,1);
+subU = U(:,6);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
 dm = PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_4=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_7=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,2);
+subU = U(:,7);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v2, 'factor', 1);
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_5=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_8=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,3);
+subU = U(:,8);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v3, 'factor', 1); 
 plotcube(L,O,.05,[0 0 0]);
-subplotName = strcat('$$\xi_6=',num2str(xiPlot),'$$');
+subplotName = strcat('$$\xi_9=',num2str(xiPlot),'$$');
 text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
@@ -323,7 +320,7 @@ axis([ax1 ax2 ax3 ax4],[-0.40 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO2_shapes_V1.pdf','Resolution',1200)
+exportgraphics(f1,'SO3_shapes_V1.pdf','Resolution',1200)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -354,11 +351,11 @@ grid on
 ylabel('$$\xi$$','Interpreter','latex')
 xlabel('Iterations')
 legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
-    'Position',[0.78 0.38 0.2 0.2])
+    'Position',[0.8 0.44 0.2 0.2])
 
 % legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
 %     'Position',[0.35 0.64 0.2 0.35])
-exportgraphics(f2,'SO1_evo_V1.pdf','Resolution',1200)
+exportgraphics(f2,'SO3_evo_V1.pdf','Resolution',1200)
 
 %% PLOT COST FUNCTIONS, SO2 + SO3 _________________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -376,6 +373,7 @@ annotation('textbox',[.35 .6 .3 .3],'String','SO2','EdgeColor','None','Interpret
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations','Interpreter','latex')
+ylim([-100,-18])
 hold off
 
 
@@ -383,13 +381,14 @@ hold off
 ax2 = nexttile;
 plot(LwoBEvoSO5)
 hold on
-annotation('textbox',[.87 .6 .3 .3],'String','SO5','EdgeColor','None','Interpreter','latex');
+annotation('textbox',[.87 .6 .3 .3],'String','SO3','EdgeColor','None','Interpreter','latex');
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations','Interpreter','latex')
+ylim([-100,-18])
 hold off
 
-exportgraphics(f2,'SO2-5_cost_V1.pdf','Resolution',600)
+exportgraphics(f2,'SO2-3_cost_V1.pdf','Resolution',600)
 
 %%
 xiTest = [0;0;0];%[-0.4;0.2;0.4];
