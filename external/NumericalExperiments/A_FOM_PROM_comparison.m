@@ -4,7 +4,6 @@
 % Description: Accuracy and computational speed comparison between the FOM
 % and the ROM formulations.
 %
-% 
 % Last modified: 02/09/2024, Mathieu Dubied, ETH Zurich
 % ------------------------------------------------------------------------
 clear; 
@@ -21,6 +20,7 @@ load('parameters.mat')
 % specify and create FE mesh
 filename = '3d_rectangle_8086el'; %'3d_rectangle_660el';
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; % need to set 0.3*k for the actuation forces
+kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
 [Mesh_ROM, ~, ~, ~, ~] = create_mesh(filename, myElementConstructor, propRigid);
 [Mesh_FOM, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
 [Lx, Ly, Lz] = mesh_dimensions(nodes);
@@ -68,7 +68,7 @@ build_FOM_3D(Mesh_FOM,nodes,elements);
 tic 
 fprintf('____________________\n')
 fprintf('Solving EoMs ...\n') 
-TI_NL_FOM = solve_EoMs_FOM(Assembly,elements,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+TI_NL_FOM = solve_EoMs_FOM(Assembly,elements,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax); 
 toc
 
 fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
@@ -87,7 +87,7 @@ build_ROM_3D(Mesh_ROM,nodes,elements,USEJULIA);
 tic
 fprintf('____________________\n')
 fprintf('Solving EoMs ...\n') 
-TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+TI_NL_ROM = solve_EoMs(V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax); 
 toc
 
 fprintf('Time needed to solve the problem using ROM: %.2fsec\n',toc(tStartROM))
@@ -106,7 +106,7 @@ build_PROM_3D(Mesh_ROM,nodes,elements,U,USEJULIA,VOLUME,FORMULATION);
 tic 
 fprintf('____________________\n')
 fprintf('Solving EoMs and sensitivities...\n') 
-TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax); 
 toc
 
 fprintf('Time needed to solve the problem using PROM: %.2fsec\n',toc(tStartPROM))

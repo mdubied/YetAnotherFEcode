@@ -27,7 +27,7 @@
 % (1) TI_NL_PROM:           struct containing the solutions and related
 %                           information
 %     
-% Last modified: 06/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 02/09/2024, Mathieu Dubied, ETH Zurich
 
 function TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax)
 
