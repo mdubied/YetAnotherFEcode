@@ -37,7 +37,7 @@ end
 % MESH ____________________________________________________________________
 
 % nominal mesh
-filename = '3d_rectangle_660el';%'fish3_664el';
+filename = '3d_rectangle_8086el';%'3d_rectangle_70424el';%'3d_rectangle_8086el'; %'3d_rectangle_660el';%'fish3_664el';
 [nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
 
 nodes = nodes*0.01;
@@ -305,9 +305,11 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
-xiPlot = xiStar;
+xiPlot = [-0.3;0.3;0.1;0.4;0.4;0.1;0.2;0.1];%xiStar;
+% [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish,...
+%     z_smallFish, z_notch, x_concaveTail];
 % xiPlot(1) = 0.2;
-xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
+% xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
@@ -320,7 +322,7 @@ axis([ax1 ax2 ax3 ax4],[-0.40 0 -0.04 0.04 -0.16 0.16])
 % set(ax2, 'box', 'on', 'Visible', 'on')
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
-exportgraphics(f1,'SO3_shapes_V1.pdf','Resolution',1200)
+% exportgraphics(f1,'SO3_shapes_V1.pdf','Resolution',1200)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  

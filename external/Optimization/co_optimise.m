@@ -57,7 +57,7 @@ function [pStar,pEvo,LEvo,LwoBEvo] = co_optimise(myElementConstructor,nset,nodes
 
     % shape parameters
     xi_k = zeros(size(U,2),1);%[-0.0694;-0.487;0.2420;-0.287;0.058;0.3603;0.475;0.2852];%zeros(size(U,2),1);
-    xi_k(8) = 0.2;%[-0.3941;0.3941]
+%     xi_k(8) = 0.2;%[-0.3941;0.3941]
     xiAtLastRebuild = xi_k;%zeros(size(U,2),1);
     deltaXi_k = xi_k - xiAtLastRebuild;
     

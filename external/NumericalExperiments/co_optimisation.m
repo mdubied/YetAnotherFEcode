@@ -18,9 +18,9 @@ USEJULIA = 1;
 %% PREPARE MODEL                                                    
 
 % DATA ____________________________________________________________________
-E       = 2600000;      % Young's modulus [Pa]
+E       = 260000;      % Young's modulus [Pa]
 rho     = 1070;         % density [kg/m^3]
-nu      = 0.499;        % Poisson's ratio 
+nu      = 0.4;        % Poisson's ratio 
 
 % material
 myMaterial = KirchoffMaterial();
@@ -56,15 +56,34 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
+
 % boundary conditions of nominal mesh
 nel = size(elements,1);
 nset = {};
+% for el=1:nel   
+%     for n=1:size(elements,2)
+%         if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
+%             nset{end+1} = elements(el,n);
+%         end
+%     end   
+% end
+
+fixedPortion = 0.58;
+nset = {};
+
+fixedElements = zeros(nel,1);
 for el=1:nel   
-    for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
-            nset{end+1} = elements(el,n);
-        end
-    end   
+    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+    if elementCenterX >= -Lx*fixedPortion
+        for n=1:size(elements,2) 
+            if  ~any(cat(2, nset{:}) == elements(el,n))
+                nset{end+1} = elements(el,n); 
+            end
+        
+        end   
+    end
+    
 end
 
 %% SHAPE VARIATIONS _______________________________________________________
@@ -133,11 +152,12 @@ disp(matrix_inp)
 writematrix(matrix_inp,'M.csv')
  
 %% OPTIMIZATION PARAMETERS
-h = 0.0025;
+h = 0.01;
 tmax = 2.0;
 
 %% OPTIMISATION TEST ______________________________________________________
 % 2 shape variations, 3 signal parameters: total of 5 parameters
+U = [z_tail,y_head];
 nPShape = 2;
 nPActu = 3;
 
@@ -165,7 +185,7 @@ barrierParamShape = [0.2,0.2,0.2,0.2];
 barrierParamActu = [1,1,1,1,1,1];
 barrierParam = [barrierParamShape,barrierParamActu];
 
-gradientWeights = [1,1,0.1,0.1,2];
+gradientWeights = [1,1,0.01,0.5,2];
 
 tStart = tic;
 [pStar,pEvo,LEvo, LwoBEvo] = co_optimise(myElementConstructor,nset, ...
@@ -174,10 +194,10 @@ tStart = tic;
     'VOLUME',VOLUME, ...
     'maxIteration',50, ...
     'convCrit',0.004, ...
-    'convCritCost',1, ...
+    'convCritCost',0.1, ...
     'barrierParam',barrierParam, ...
     'gradientWeights', gradientWeights, ...
-    'gStepSize',0.00005, ...
+    'gStepSize',0.005, ...
     'nRebuild',12, ...
     'rebuildThreshold',0.15, ...
     'nResolve',12, ...

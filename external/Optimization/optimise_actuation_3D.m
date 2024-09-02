@@ -56,7 +56,7 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     % p_k = [0.8;2*pi;0];   % actuation_force_3
 %      p_k = [1;0;0;1];    % actuation_force_4
         
-    p_k = [2.0];    % actuation_force_6, AO1
+    p_k = [1];    % actuation_force_6, AO1
 
 %     % actuation_force_5:
 %     nParam = size(A,2);
@@ -84,6 +84,14 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
             
     MeshNominal = Mesh(nodes);
     MeshNominal.create_elements_table(elements,myElementConstructor);
+    
+    Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
+    Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
+    Lz = abs(max(nodes(:,3))-min(nodes(:,3)));  % vertical length of airfoil
+    [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
+    y_tail,y_head,y_linLongTail,y_ellipseFish, x_concaveTail] = ...
+    shape_variations_3D(nodes,Lx,Ly,Lz);
+    U = [z_tail,z_head,y_thinFish];
  
     for l=1:length(nset)
         MeshNominal.set_essential_boundary_condition([nset{l}],1:3,0)   
@@ -94,15 +102,23 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     fprintf('Building ROM ... \n')
 
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA);    
+        build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,1,'N1t'); 
+%     build_ROM_3D(MeshNominal,nodes,elements,USEJULIA);    
     
 
     % Solve EoMs
+%     tic 
+%     fprintf('____________________\n')
+%     fprintf('Solving EoMs and sensitivities ...\n')
+%     TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax,p_k);                        
+%     toc
     tic 
     fprintf('____________________\n')
-    fprintf('Solving EoMs and sensitivities ...\n')
-    TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax,p_k);                        
+    fprintf('Solving EoMs ...\n')
+    TI_NL_PROM = solve_EoMs_custom_actu(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax,p_k); 
     toc
+    
+
 
     % Displaying solution
     uTail = zeros(3,tmax/h);
@@ -131,10 +147,20 @@ function [xiStar,pEvo,LEvo,LwoBEvo] = optimise_actuation_3D(myElementConstructor
     eta = TI_NL_PROM.Solution.q;
     etad = TI_NL_PROM.Solution.qd;
     etadd = TI_NL_PROM.Solution.qdd;
+    
+    % Solve sensitivities
+    tic 
+    fprintf('____________________\n')
+    fprintf('Solving Sensitivities ...\n')
+    TI_NL_PROM_sens = solve_sensitivities_actu(V,p_k,PROM_Assembly,actuTop,actuBottom,eta,etad,etadd,h,tmax);
+    toc
 
-    S = TI_NL_PROM.Solution.s;
-    Sd = TI_NL_PROM.Solution.sd;
-    Sdd = TI_NL_PROM.Solution.sdd;
+%     S = TI_NL_PROM.Solution.s;
+%     Sd = TI_NL_PROM.Solution.sd;
+%     Sdd = TI_NL_PROM.Solution.sdd;
+    S = TI_NL_PROM_sens.Solution.q;
+
+    
     eta_0k = TI_NL_PROM.Solution.q;
     eta_k = eta;
     etad_k = etad;

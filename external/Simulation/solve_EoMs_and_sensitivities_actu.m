@@ -49,10 +49,10 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
     B2B = actuBottom.B2;
     k = 3.0; % k=400 for 3D
     
-    actuSignalT = @(t) actuation_signal_2(k,t,p);    
-    actuSignalB = @(t) -actuation_signal_2(k,t,p);
+    actuSignalT = @(t) actuation_signal_1(k,t,p);    
+    actuSignalB = @(t) -actuation_signal_1(k,t,p);
     
-    fActu = @(t,q) actuation_force_2(k,t,q,B1T,B2T, B1B,B2B,p);
+    fActu = @(t,q) actuation_force_1(k,t,q,B1T,B2T, B1B,B2B,p);
 
     % tail pressure force properties
     A = tailProperties.A;
@@ -112,7 +112,7 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities_actu(V,PROM_Assembly,fIntTens
 
     % ACTUATION FORCES DERIVATIVES FOR SENSITIVITY ANALYSIS _______________
     % actuation forces
-    pd_actu = @(t,q,p)derivatives_actuation_force_2(k,t,q,B1T,B2T,B1B,B2B,p);
+    pd_actu = @(t,q,p)derivatives_actuation_force_1(k,t,q,B1T,B2T,B1B,B2B,p);
         
     % NONLINEAR TIME INTEGRATION __________________________________________
     
