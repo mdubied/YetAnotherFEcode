@@ -19,8 +19,9 @@
 %                           muscle at the top
 % (7) actuBottom:           vectors and matrices related to the actuation
 %                           muscle at the bottom
-% (8) h:                    time step for time integration
-% (9) tmax:                 simulation for [0,tmax]
+% (8) kActu:                multiplicative factor for the actuation forces
+% (9) h:                    time step for time integration
+% (10) tmax:                simulation for [0,tmax]
 %
 % OUTPUTS:
 % (1) TI_NL_PROM:           struct containing the solutions and related
@@ -28,7 +29,7 @@
 %     
 % Last modified: 06/11/2023, Mathieu Dubied, ETH Zurich
 
-function TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
+function TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,fIntTensors,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax)
 
     fishDim = size(PROM_Assembly.Mesh.nodes,2);
 
@@ -48,13 +49,12 @@ function TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,fIntTensors,t
     B1B = actuBottom.B1;
     B2T = actuTop.B2;
     B2B = actuBottom.B2;
-    k = 0.005; 
     
-    actuSignalT = @(t) k/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
-    actuSignalB = @(t) k/2*(0.2*sin(t*2*pi));
+    actuSignalT = @(t) kActu/2*(-0.2*sin(t*2*pi));    % to change below as well if needed
+    actuSignalB = @(t) kActu/2*(0.2*sin(t*2*pi));
     
-    fActu = @(t,q)  k/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
-                    k/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+    fActu = @(t,q)  kActu/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
+                    kActu/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
 
     % tail pressure force properties
     A = tailProperties.A;
