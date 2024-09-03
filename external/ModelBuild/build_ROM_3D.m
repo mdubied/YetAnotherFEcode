@@ -197,7 +197,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.58 && elementCenterX > -Lx
+        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
             topMuscle(el) = 1;
         end    
     end
@@ -208,7 +208,7 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.58 && elementCenterX > -Lx
+        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
             bottomMuscle(el) = 1;
         end    
     end

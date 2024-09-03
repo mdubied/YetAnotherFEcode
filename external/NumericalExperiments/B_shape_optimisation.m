@@ -1,54 +1,26 @@
 % ------------------------------------------------------------------------ 
 % 3D shape optimisation of a fish.
 % 
-% Last modified: 11/05/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 03/09/2024, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
 close all; 
 clc
+set(groot,'defaulttextinterpreter','latex');
 
-elementType = 'TET4';
+%% PREPARE MODELS _________________________________________________________                                                   
 
-FORMULATION = 'N1t'; % N1/N1t/N0
-VOLUME = 1;         % integration over defected (1) or nominal volume (0)
+% load material parameters
+load('parameters.mat') 
 
-USEJULIA = 1;
+% specify and create FE mesh
+filename ='3d_rectangle_660el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
+%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; % need to set 0.3*k for the actuation forces
+kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
+[MeshNominal, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
+[Lx, Ly, Lz] = mesh_dimensions(nodes);
 
-%% PREPARE MODEL                                                    
-
-% DATA ____________________________________________________________________
-E       = 260000;      % Young's modulus [Pa]
-rho     = 1070;         % density [kg/m^3]
-nu      = 0.4;        % Poisson's ratio 
-
-% material
-myMaterial = KirchoffMaterial();
-set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
-myMaterial.PLANE_STRESS = true;	    % set "false" for plane_strain
-
-% element
-switch elementType
-    case 'TET4'
-        myElementConstructor = @()Tet4Element(myMaterial);
-    case 'TET10'
-        myElementConstructor = @()Tet10Element(myMaterial);
-end
-% MESH ____________________________________________________________________
-
-% nominal mesh
-filename = '3d_rectangle_8086el';%'3d_rectangle_70424el';%'3d_rectangle_8086el'; %'3d_rectangle_660el';%'fish3_664el';
-[nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
-
-nodes = nodes*0.01;
-nodes(:,2)=0.8*nodes(:,2);
-
-MeshNominal = Mesh(nodes);
-MeshNominal.create_elements_table(elements,myElementConstructor);
-
-Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
-Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
-Lz = abs(max(nodes(:,3))-min(nodes(:,3)));  % vertical length of airfoil
 
 % plot nominal mesh
 elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
@@ -56,46 +28,12 @@ figure('units','normalized','position',[.2 .1 .6 .8])
 PlotMeshAxis(nodes, elementPlot, 0);
 hold off
 
-% boundary conditions of nominal mesh
-nel = size(elements,1);
-nset = {};
-% for el=1:nel   
-%     for n=1:size(elements,2)
-%         if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
-%             nset{end+1} = elements(el,n);
-%         end
-%     end   
-% end
-
-fixedPortion = 0.58;
-nset = {};
-
-fixedElements = zeros(nel,1);
-for el=1:nel   
-    elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
-    elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-    if elementCenterX >= -Lx*fixedPortion
-        for n=1:size(elements,2) 
-            if  ~any(cat(2, nset{:}) == elements(el,n))
-                nset{end+1} = elements(el,n); 
-            end
-        
-        end   
-    end
-    
-end
-
 
 %% SHAPE VARIATIONS _______________________________________________________
 
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_tail,y_head,y_linLongTail,y_ellipseFish, x_concaveTail] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz);
-
-% shape variations basis
-% U = [thinFish,fishTailsv,fishHeadsv];    % shape variations basis
-% U = [y_thinFish,z_tail, z_head, y_head,y_ellipseFish];    % shape variations basis
-% U = fishEllipseYZ;
 
 % SO1
 U = [z_tail,z_head,y_thinFish];
@@ -135,6 +73,7 @@ set(f1,'Units','centimeters');
 %% OPTIMIZATION PARAMETERS
 h = 0.01;
 tmax = 2.0;
+kActu = 3.0;
 
 %% OPTIMISATION SO1 _______________________________________________________
 
@@ -151,8 +90,8 @@ b = [0.5;0.5;0.5;0.5;0.3;0.3];
 barrierParam = 10*ones(1,length(b));
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b, ...
+[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nsetBC, ...
+    nodes,elements,kActu,U,h,tmax,A,b, ...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',35, ...
@@ -192,8 +131,8 @@ b = [0.5;0.5;
 barrierParam = ones(1,length(b));
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvoSO2] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b,...
+[xiStar,xiEvo,LEvo, LwoBEvoSO2] = optimise_shape_3D(myElementConstructor,nsetBC, ...
+    nodes,elements,kActu,U,h,tmax,A,b,...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',50, ...
@@ -239,8 +178,8 @@ barrierParam = 3*ones(1,length(b));
 %%
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvoSO5] = optimise_shape_3D(myElementConstructor,nset, ...
-    nodes,elements,U,h,tmax,A,b, ...
+[xiStar,xiEvo,LEvo, LwoBEvoSO5] = optimise_shape_3D(myElementConstructor,nsetBC, ...
+    nodes,elements,kActu,U,h,tmax,A,b, ...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',40, ...
@@ -272,7 +211,7 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,6);
+subU = U(:,1);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
@@ -283,7 +222,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,7);
+subU = U(:,2);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -294,7 +233,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,8);
+subU = U(:,3);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -305,11 +244,11 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % optimal shape
 ax4 = subplot(2,2,4,'Position',pos4);
-xiPlot = [-0.3;0.3;0.1;0.4;0.4;0.1;0.2;0.1];%xiStar;
+xiPlot = xiStar;% [-0.3;0.3;0.1;0.4;0.4;0.1;0.2;0.1];%xiStar;
 % [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish,...
 %     z_smallFish, z_notch, x_concaveTail];
 % xiPlot(1) = 0.2;
-% xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
+xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
 
 v1 = reshape(U*xiPlot, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);

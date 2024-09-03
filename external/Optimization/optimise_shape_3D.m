@@ -12,33 +12,36 @@
 % (2) nset:                 set of element to apply boundary conditions             
 % (3) nodes:                nodes and their coordinates
 % (4) elements:             elements described by their nodes
-% (5) U:                    shape variation basis
-% (6) h:                    time step for time integration
-% (7) tmax:                 simulation for [0,tmax]
-% (8)-(9) A,b               constraints on xi of the form Axi<b
+% (5) kActu:                multiplicative factor for the actuation forces
+% (6) U:                    shape variation basis
+% (7) h:                    time step for time integration
+% (8) tmax:                 simulation for [0,tmax]
+% (9)-(10) A,b              constraints on xi of the form Axi<b
 %
 % possible additional name-value pair arguments
-% (10) maxIteration:maximum number of iterations
-% (11) convCrit:    convergence criterium. Norm between two successive
+% (11) maxIteration:maximum number of iterations
+% (12) convCrit:    convergence criterium. Norm between two successive
 %                   optimal paramter vectors
-% (12) FORMULATION: order of the Neumann approximation (N0/N1/N1t)
-% (13) VOLUME:      integration over defected (1) or nominal volume (0)
-% (14) USEJULIA:    use of JULIA (1) for the computation of internal forces
+% (13) FORMULATION: order of the Neumann approximation (N0/N1/N1t)
+% (14) VOLUME:      integration over defected (1) or nominal volume (0)
+% (15) USEJULIA:    use of JULIA (1) for the computation of internal forces
 %                   tensors
-% (15) barrierParam:parameter to scale the barrier function for the 
+% (16) barrierParam:parameter to scale the barrier function for the 
 %                   constraints (1/barrierParam)
-% (16) gStepSize:   step size used in the gradient descent algorithm
-% (17) nRebuild:    number of step between each re-build of a PROM
+% (17) gStepSize:   step size used in the gradient descent algorithm
+% (18) nRebuild:    number of step between each re-build of a PROM
 %
 % OUTPUTS:
 % (1) xiStar:       optimal shape parameter(s) (scalar or vector)
 % (2) xiEvo:        evolution of the optimal shape parameter(s)
-% (3) LrEvo:        evolution of the cost function values
+% (3) LEvo:         evolution of the cost function values
+% (4) LwoBEvo:      evolution of the cost function values without barrier
+%                   function part
 %     
 %
-% Last modified: 12/11/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 03/09/2024, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,h,tmax,A,b,varargin)
+function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,kActu,U,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,...
@@ -84,7 +87,7 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
     fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
     % TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);      
-    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax); 
+    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax); 
                 
     toc
 
@@ -191,7 +194,7 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
             tic 
             fprintf('____________________\n')
             fprintf('Solving EoMs and sensitivity...\n') 
-            TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);                        
+            TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax);                        
             toc
             
                 

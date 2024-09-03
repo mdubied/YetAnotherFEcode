@@ -62,7 +62,7 @@ function TI_NL_FOM = solve_EoMs_FOM(Assembly, elements, tailProperties,spineProp
     % NONLINEAR TIME INTEGRATION __________________________________________
     
     % instantiate object for nonlinear time integration
-    TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-6);
+    TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',5e-5);
 
     % modal nonlinear Residual evaluation function handle
     Residual_NL = @(q,qd,qdd,t)residual_nonlinear_actu_hydro(q,qd,qdd, ...

@@ -18,7 +18,7 @@ set(groot,'defaulttextinterpreter','latex');
 load('parameters.mat') 
 
 % specify and create FE mesh
-filename = '3d_rectangle_8086el'; %'3d_rectangle_660el';
+filename ='3d_rectangle_8086el'; %'3d_rectangle_8086el'
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; % need to set 0.3*k for the actuation forces
 kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
 [Mesh_ROM, ~, ~, ~, ~] = create_mesh(filename, myElementConstructor, propRigid);
@@ -49,11 +49,12 @@ U = [z_tail,y_head,y_thinFish,z_head,z_linLongTail];
 % rigid par of the fish is defined above (boundary conditions)
 
 f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements, propRigid, esetBC);
-exportgraphics(f_A1,'A_muscles_placement_VM.pdf','Resolution',1400)
+% exportgraphics(f_A1,'A_muscles_placement_VM.pdf','Resolution',1400)
 
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
 tmax = 2.0;
+kActu = 0.08;    % 3.0, 2.5 for 660, 1.5, 1.1 for 1272, 0.22 for 4270, 0.08++ for 8086
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -121,25 +122,37 @@ uHead_FOM = zeros(3,tmax/h);
 uHead_ROM = zeros(3,tmax/h);
 uHead_PROM = zeros(3,tmax/h);
 
-sol_FOM = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
+modelToPlot = ['ROM','FOM'];
+
+if contains(modelToPlot,'FOM')
+    sol_FOM = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
+end
 timePlot = linspace(0,tmax-h,tmax/h);
 x0Tail = min(nodes(:,1));
 
 headNode = find_node(0,0,0,nodes);
 
 for t=1:tmax/h
-    uTail_FOM(:,t) = sol_FOM(tailProperties.tailNode*3-2:tailProperties.tailNode*3,t);
-    uHead_FOM(:,t) = sol_FOM(headNode*3-2:headNode*3,t);
-    uTail_ROM(:,t) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_ROM.Solution.q(:,t);  
-    uHead_ROM(:,t) = V(headNode*3-2:headNode*3,:)*TI_NL_ROM.Solution.q(:,t);  
+     if contains(modelToPlot,'FOM')
+        uTail_FOM(:,t) = sol_FOM(tailProperties.tailNode*3-2:tailProperties.tailNode*3,t);
+        uHead_FOM(:,t) = sol_FOM(headNode*3-2:headNode*3,t);
+     end
+     if contains(modelToPlot,'ROM')
+        uTail_ROM(:,t) = V(tailProperties.tailNode*3-2:tailProperties.tailNode*3,:)*TI_NL_ROM.Solution.q(:,t);  
+        uHead_ROM(:,t) = V(headNode*3-2:headNode*3,:)*TI_NL_ROM.Solution.q(:,t); 
+     end
 end
 
 f_A2 = figure('units','centimeters','position',[3 3 9 6]);
 % x-position
 subplot(2,1,1);
 hold on
-plot(timePlot,x0Tail+uHead_FOM(1,:),'--','DisplayName','FOM')
-plot(timePlot,x0Tail+uHead_ROM(1,:),'DisplayName','ROM')
+if contains(modelToPlot,'FOM')
+    plot(timePlot,x0Tail+uHead_FOM(1,:),'--','DisplayName','FOM')
+end
+if contains(modelToPlot,'ROM')
+    plot(timePlot,x0Tail+uHead_ROM(1,:),'DisplayName','ROM')
+end
 % plot(timePlot,x0Tail+uTail_PROM(1,:),'DisplayName','PROM')
 hold on
 grid on
@@ -150,8 +163,12 @@ legend('Location','northwest', 'interpreter','latex')
 % y-position
 subplot(2,1,2);
 hold on
-plot(timePlot,uTail_FOM(2,:),'--','DisplayName','FOM')
-plot(timePlot,uTail_ROM(2,:),'DisplayName','ROM')
+if contains(modelToPlot,'FOM')
+    plot(timePlot,uTail_FOM(2,:),'--','DisplayName','FOM')
+end
+if contains(modelToPlot,'ROM')
+    plot(timePlot,uTail_ROM(2,:),'DisplayName','ROM')
+end
 
 % plot(timePlot,uTail_PROM(2,:),'DisplayName','PROM')
 grid on
