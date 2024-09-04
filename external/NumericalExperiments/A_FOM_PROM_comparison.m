@@ -75,6 +75,7 @@ toc
 fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
 timeFOM = toc(tStartFOM);
 
+
 %% ROM ____________________________________________________________________
 tStartROM = tic;
 

@@ -15,8 +15,8 @@ set(groot,'defaulttextinterpreter','latex');
 load('parameters.mat') 
 
 % specify and create FE mesh
-filename ='3d_rectangle_660el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
-%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; % need to set 0.3*k for the actuation forces
+filename ='3d_rectangle_8086el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
+%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 
 kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
 [MeshNominal, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
 [Lx, Ly, Lz] = mesh_dimensions(nodes);
@@ -73,7 +73,7 @@ set(f1,'Units','centimeters');
 %% OPTIMIZATION PARAMETERS
 h = 0.01;
 tmax = 2.0;
-kActu = 3.0;
+kActu = 0.1;    % tested with 3.0 for 660el, 1.3 for 1272el, 0.25 for 4270el, 0.1 for 8086
 
 %% OPTIMISATION SO1 _______________________________________________________
 
@@ -90,20 +90,22 @@ b = [0.5;0.5;0.5;0.5;0.3;0.3];
 barrierParam = 10*ones(1,length(b));
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvo] = optimise_shape_3D(myElementConstructor,nsetBC, ...
+[xiStar,xiEvo,LEvo, LwoBEvo, nIt] = optimise_shape_3D(myElementConstructor,nsetBC, ...
     nodes,elements,kActu,U,h,tmax,A,b, ...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',35, ...
     'convCrit',0.004, ...
-    'convCritCost',0.3, ...
+    'convCritCost',1.0, ... % 1.0 for 8086, 0.3 below
     'barrierParam',barrierParam, ...
-    'gStepSize',0.002, ...
+    'gStepSize',0.0005, ...  % 0.0005 for 8086, 0.002 below
     'nRebuild',6, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+fprintf('Number of built models and solved EoMs: %5d\n',nIt)
+fprintf('Computation time per models/EoMs: %.2f\n',topti/60/nIt)
 filename='SO1_results';
 save(filename,'xiStar','xiEvo','LEvo','LwoBEvo','topti')
 
@@ -119,7 +121,6 @@ end
 yTotConstr = [0 0 1 0 1;0 0  -1 0 -1;
               0 0 0 1 1;0 0  0 -1 -1];
 A = [A;yTotConstr];
-% disp(A);
 b = [0.5;0.5;
     0.5;0.5;
     0.4;0.4;
@@ -131,20 +132,22 @@ b = [0.5;0.5;
 barrierParam = ones(1,length(b));
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvoSO2] = optimise_shape_3D(myElementConstructor,nsetBC, ...
+[xiStar,xiEvo,LEvo, LwoBEvoSO2,nIt] = optimise_shape_3D(myElementConstructor,nsetBC, ...
     nodes,elements,kActu,U,h,tmax,A,b,...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',50, ...
     'convCrit',0.004, ...
-    'convCritCost',0.1, ...
+    'convCritCost',0.5, ... % set to 0.5 for 4270 el, 0.1 below
     'barrierParam',barrierParam, ...
-    'gStepSize',0.003,...
-    'nRebuild',7, ...
+    'gStepSize',0.0005,...   % set to 0.001 for 4270 el, 0.03 below, 0.005 for 8086
+    'nRebuild',5, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+fprintf('Number of built models and solved EoMs: %5d\n',nIt)
+fprintf('Computation time per models/EoMs: %.2f\n',topti/60/nIt)
 filename='SO2_results';
 save(filename,'xiStar','xiEvo','LEvo','LwoBEvoSO2','topti')
 
@@ -154,7 +157,7 @@ save(filename,'xiStar','xiEvo','LEvo','LwoBEvoSO2','topti')
 
 U = [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish,...
     z_smallFish, z_notch, x_concaveTail];
-%%
+
 % Constraints
 nParam = 8;
 A = zeros(2 * nParam, nParam);
@@ -172,26 +175,28 @@ b = [0.4;0.4;
     0.5;0.5;
     0.3;0.3;
     0.3;0.3;
-    0.3;0.3];
+    0.3;0.01];  % concave tail only in one direction 
 barrierParam = 3*ones(1,length(b));
 
 %%
 
 tStart = tic;
-[xiStar,xiEvo,LEvo, LwoBEvoSO5] = optimise_shape_3D(myElementConstructor,nsetBC, ...
+[xiStar,xiEvo,LEvo, LwoBEvoSO5,nIt] = optimise_shape_3D(myElementConstructor,nsetBC, ...
     nodes,elements,kActu,U,h,tmax,A,b, ...
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',40, ...
-    'convCrit',0.01, ...
-    'convCritCost',0.5, ...
+    'convCrit',0.015, ...    % set to 0.015 for 8086el, 0.01 below
+    'convCritCost',5.0, ...% set to 0.5 for 4270 el, 0.2 below, 5.0 for 8086
     'barrierParam',barrierParam, ...
-    'gStepSize',0.003, ...
-    'nRebuild',8, ...
+    'gStepSize',0.0002, ... % set to 0.005 for 4270 el, 0.003 below, 0.0002 for 8086
+    'nRebuild',5, ...
     'rebuildThreshold',0.15, ...
     'USEJULIA',1);
 topti = toc(tStart);
 fprintf('Computation time: %.2fmin\n',topti/60)
+fprintf('Number of built models and solved EoMs: %5d\n',nIt)
+fprintf('Computation time per models/EoMs: %.2f\n',topti/60/nIt)
 
 filename='SO3_results';
 save(filename,'xiStar','xiEvo','LEvo','LwoBEvoSO5','topti')
@@ -211,7 +216,7 @@ textPosZ = -0.14;
 
 % shape variation 1
 ax1 = subplot(2,2,1,'Position',pos1);
-subU = U(:,1);
+subU = U(:,6);
 xiPlot = 0.5;
 
 v1 = reshape(subU*xiPlot, 3, []).';
@@ -222,7 +227,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 2
 ax2 = subplot(2,2,2,'Position',pos2);
-subU = U(:,2);
+subU = U(:,7);
 xiPlot = 0.5;
 
 v2 = reshape(subU*xiPlot, 3, []).';
@@ -233,7 +238,7 @@ text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
 
 % shape variation 3
 ax3 = subplot(2,2,3,'Position',pos3);
-subU = U(:,3);
+subU = U(:,8);
 xiPlot = 0.5;
 
 v3 = reshape(subU*xiPlot, 3, []).';
@@ -262,6 +267,7 @@ axis([ax1 ax2 ax3 ax4],[-0.40 0 -0.04 0.04 -0.16 0.16])
 % set(ax1, 'box', 'on', 'Visible', 'on')
 
 % exportgraphics(f1,'SO3_shapes_V1.pdf','Resolution',1200)
+exportgraphics(f1,'SO3_shapes_V1.jpg','Resolution',600)
 
 %% PLOT COST FUNCTION WITH PARAMETERS _____________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -296,7 +302,8 @@ legend('$$\xi_1$$','$$\xi_2$$','$$\xi_3$$','Interpreter','latex', ...
 
 % legend('$$\xi_1$$','$$\xi_2$$','$$\xi_4$$','$$\xi_5$$','$$\xi_6$$','Interpreter','latex', ...
 %     'Position',[0.35 0.64 0.2 0.35])
-exportgraphics(f2,'SO3_evo_V1.pdf','Resolution',1200)
+% exportgraphics(f2,'SO3_evo_V1.pdf','Resolution',1200)
+exportgraphics(f2,'SO3_evo_V1.jpg','Resolution',600)
 
 %% PLOT COST FUNCTIONS, SO2 + SO3 _________________________________________
 set(groot,'defaultAxesTickLabelInterpreter','latex');  
@@ -314,7 +321,7 @@ annotation('textbox',[.35 .6 .3 .3],'String','SO2','EdgeColor','None','Interpret
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations','Interpreter','latex')
-ylim([-100,-18])
+ylim([-1200,-18])
 hold off
 
 
@@ -326,10 +333,11 @@ annotation('textbox',[.87 .6 .3 .3],'String','SO3','EdgeColor','None','Interpret
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations','Interpreter','latex')
-ylim([-100,-18])
+ylim([-1200,-18])
 hold off
 
-exportgraphics(f2,'SO2-3_cost_V1.pdf','Resolution',600)
+% exportgraphics(f2,'SO2-3_cost_V1.pdf','Resolution',600)
+exportgraphics(f2,'SO2-3_cost_V1.jpg','Resolution',600)
 
 %%
 xiTest = [0;0;0];%[-0.4;0.2;0.4];

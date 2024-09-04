@@ -39,9 +39,9 @@
 %                   function part
 %     
 %
-% Last modified: 03/09/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 04/09/2024, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,kActu,U,h,tmax,A,b,varargin)
+function [xiStar,xiEvo,LEvo,LwoBEvo,nIt] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,kActu,U,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,...
@@ -87,10 +87,10 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
     fprintf('____________________\n')
     fprintf('Solving EoMs...\n') 
     % TI_NL_PROM = solve_EoMs(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax);      
-    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax); 
-                
+    TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax);          
     toc
-
+    nIt = 1;
+    
     uTail = zeros(3,tmax/h);
     timePlot = linspace(0,tmax-h,tmax/h);
     x0Tail = min(nodes(:,1));
@@ -196,7 +196,7 @@ function [xiStar,xiEvo,LEvo,LwoBEvo] = optimise_shape_3D(myElementConstructor,ns
             fprintf('Solving EoMs and sensitivity...\n') 
             TI_NL_PROM = solve_EoMs_and_sensitivities(V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax);                        
             toc
-            
+            nIt = nIt+1;
                 
             eta_0k = TI_NL_PROM.Solution.q;
             eta_k = TI_NL_PROM.Solution.q;
