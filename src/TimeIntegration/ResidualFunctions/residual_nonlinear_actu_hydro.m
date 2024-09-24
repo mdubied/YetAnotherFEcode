@@ -31,8 +31,8 @@ r = F_inertial + F_damping + F_elastic - F_external ;
 drdqdd = M_red;
 drdqd = C_red;
 drdq = K_red ...
-    - actuSignalRight(t)*Assembly.constrain_matrix(actuRight.B2) ...
-    - actuSignalLeft(t)*Assembly.constrain_matrix(actuLeft.B2);
+     - actuSignalRight(t)*Assembly.constrain_matrix(actuRight.B2) ...
+     - actuSignalLeft(t)*Assembly.constrain_matrix(actuLeft.B2);
 
 % comparison norm of residual
 c0 = norm(F_inertial) + norm(F_damping) + norm(F_elastic) + norm(F_external);

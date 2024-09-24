@@ -15,7 +15,7 @@ set(groot,'defaulttextinterpreter','latex');
 load('parameters.mat') 
 
 % specify and create FE mesh
-filename ='3d_rectangle_8086el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
+filename ='3d_rectangle_24822el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 
 kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
 [MeshNominal, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
@@ -73,7 +73,7 @@ set(f1,'Units','centimeters');
 %% OPTIMIZATION PARAMETERS
 h = 0.01;
 tmax = 2.0;
-kActu = 0.1;    % tested with 3.0 for 660el, 1.3 for 1272el, 0.25 for 4270el, 0.1 for 8086
+kActu = 0.03;    % tested with 3.0 for 660el, 1.3 for 1272el, 0.25 for 4270el, 0.1 for 8086, 0.03 or 24822
 
 %% OPTIMISATION SO1 _______________________________________________________
 
@@ -96,9 +96,9 @@ tStart = tic;
     'VOLUME',VOLUME, ...
     'maxIteration',35, ...
     'convCrit',0.004, ...
-    'convCritCost',1.0, ... % 1.0 for 8086, 0.3 below
+    'convCritCost',5.0, ... % 1.0 for 8086, 0.3 below, 5.0 for 24822
     'barrierParam',barrierParam, ...
-    'gStepSize',0.0005, ...  % 0.0005 for 8086, 0.002 below
+    'gStepSize',0.0001, ...  % 0.0005 for 8086, 0.002 below, 0.0001 for 24822
     'nRebuild',6, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);
@@ -125,7 +125,7 @@ b = [0.5;0.5;
     0.5;0.5;
     0.4;0.4;
     0.5;0.5;
-    0.5;0.5;
+    0.4;0.4;    % set to 0.4 for 24822, otherwise 0.5
     0.8;0.8;
     0.8;0.8];
 
@@ -137,10 +137,10 @@ tStart = tic;
     'FORMULATION',FORMULATION, ...
     'VOLUME',VOLUME, ...
     'maxIteration',50, ...
-    'convCrit',0.004, ...
-    'convCritCost',0.5, ... % set to 0.5 for 4270 el, 0.1 below
+    'convCrit',0.01, ...   % set to 0.01 for 8086el, 0.004 below
+    'convCritCost',5.0, ... % set to 0.5 for 4270 el, 0.1 below, 5 for 24822
     'barrierParam',barrierParam, ...
-    'gStepSize',0.0005,...   % set to 0.001 for 4270 el, 0.03 below, 0.005 for 8086
+    'gStepSize',0.0002,...   % set to 0.001 for 4270 el, 0.003 below, 0.005 for 8086, 0.0002 for 24822
     'nRebuild',5, ...
     'rebuildThreshold',0.15,...
     'USEJULIA',1);
@@ -172,7 +172,7 @@ b = [0.4;0.4;
     0.4;0.4;
     0.4;0.4;
     0.3;0.3;
-    0.5;0.5;
+    0.4;0.4;    % set to 0.4 for 24822 elements, 0.5 else
     0.3;0.3;
     0.3;0.3;
     0.3;0.01];  % concave tail only in one direction 
@@ -321,7 +321,7 @@ annotation('textbox',[.35 .6 .3 .3],'String','SO2','EdgeColor','None','Interpret
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations','Interpreter','latex')
-ylim([-1200,-18])
+ylim([-3300,-18])
 hold off
 
 
@@ -333,7 +333,7 @@ annotation('textbox',[.87 .6 .3 .3],'String','SO3','EdgeColor','None','Interpret
 grid on
 ylabel('$$L$$','Interpreter','latex')
 xlabel('Iterations','Interpreter','latex')
-ylim([-1200,-18])
+ylim([-3300,-18])
 hold off
 
 % exportgraphics(f2,'SO2-3_cost_V1.pdf','Resolution',600)
@@ -424,4 +424,37 @@ PlotMeshAxis(nodes_sv, elementPlot, 0);
 hold off
 
 
+
+%%
+nElVec = [660,1272,4270,8086,24822];
+timePerIt5 = [0.42,0.46,0.65,0.95,2.09];
+timePerIt8 = [0.56,0.74,1.61,2.28,6.49];
+f3 = figure('units','centimeters','position',[3 3 9 5]);
+plot(nElVec,timePerIt5,'-x')
+hold on
+plot(nElVec,timePerIt8,'-*')
+xlabel('Number of FE')
+ylabel('Time per Build + EoMs')
+legend('5 parameters', '8 parameters','Interpreter','latex', 'Location','North West')
+grid on
+hold off
+exportgraphics(f3,'comp_time_analysis_FE.jpg','Resolution',600)
+
+%%
+nParamVec = [3,5,8];
+timePerIt24822 = [1.81,2.09,6.49];
+timePerIt8086 = [0.78,0.95,2.28];
+timePerIt4270= [0.59,0.65,1.61];
+
+f4 = figure('units','centimeters','position',[3 3 9 5]);
+plot(nParamVec,timePerIt4270,'-x')
+hold on
+plot(nParamVec,timePerIt8086,'-*')
+plot(nParamVec,timePerIt24822,'-o')
+xlabel('Number of parameters')
+ylabel('Time per Build + EoMs')
+legend('4270 elements', '8086 elements', '24822 elements', 'Interpreter','latex', 'Location','North West')
+grid on
+hold off
+exportgraphics(f4,'comp_time_analysis_param.jpg','Resolution',600)
 
