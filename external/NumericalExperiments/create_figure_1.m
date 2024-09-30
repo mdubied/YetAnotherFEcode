@@ -1,63 +1,24 @@
 % -------------------------------------------------------------------------
 % Creation of a figure for the fish position
 %
-% Last modified: 23/01/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 30/09/2024, Mathieu Dubied, ETH Zurich
 % -------------------------------------------------------------------------
 clear; 
 close all; 
 clc
 
-elementType = 'TET4';
+%% PREPARE MODEL   
 
-FORMULATION = 'N1t'; % N1/N1t/N0
-VOLUME = 1;         % integration over defected (1) or nominal volume (0)
+% load material parameters
+load('parameters.mat') 
 
-USEJULIA = 1;
+% specify and create FE mesh
+filename ='3d_rectangle_8086el'; % 24822el' ;%'3d_rectangle_8086el'; 
+kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
+[MeshNominal, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
+[Lx, Ly, Lz] = mesh_dimensions(nodes);
+n_elements = size(elements,1);
 
-%% PREPARE MODEL                                                    
-% DATA ____________________________________________________________________
-E       = 2600000;      % Young's modulus [Pa]
-rho     = 1070;         % density [kg/m^3]
-nu      = 0.499;        % Poisson's ratio 
-
-% material
-myMaterial = KirchoffMaterial();
-set(myMaterial,'YOUNGS_MODULUS',E,'DENSITY',rho,'POISSONS_RATIO',nu);
-myMaterial.PLANE_STRESS = true;	    % set "false" for plane_strain
-myElementConstructor = @()Tet4Element(myMaterial);
-
-% MESH ____________________________________________________________________
-
-% nominal mesh
-filename = '3d_rectangle_660el';%'fish3_664el';
-[nodes, elements, ~, elset] = mesh_ABAQUSread(filename);
-
-nodes = nodes*0.01;
-nodes(:,2)=0.8*nodes(:,2);
-
-MeshNominal = Mesh(nodes);
-MeshNominal.create_elements_table(elements,myElementConstructor);
-
-Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
-Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil
-Lz = abs(max(nodes(:,3))-min(nodes(:,3)));  % vertical length of airfoil
-
-% plot nominal mesh
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes, elementPlot, 0);
-hold off
-
-% boundary conditions of nominal mesh
-nel = size(elements,1);
-nset = {};
-for el=1:nel   
-    for n=1:size(elements,2)
-        if  nodes(elements(el,n),1)>-Lx*0.1 && ~any(cat(2, nset{:}) == elements(el,n))
-            nset{end+1} = elements(el,n);
-        end
-    end   
-end
 
 %% SHAPE VARIATIONS _______________________________________________________
 % gather all shape variations
@@ -141,28 +102,6 @@ ylabel('y-position tail node')
 legend('Location','southwest')
 drawnow
 
-%% CREATE ACTUATION FIGURE
-f2 = figure('units','centimeters','position',[3 3 10 2]);
-set(groot,'defaulttextinterpreter','latex');
-set(groot,'defaultLegendInterpreter','latex');
-set(groot,'defaultAxesTickLabelInterpreter','latex'); 
-timePlot = linspace(0,tmax-h,tmax/h);
-pPlot = [0.3;2.4;1];
-k=300;
-actuPlot = zeros(1,length(timePlot));
-actuStar = zeros(1,length(timePlot));
-for i = 1:length(timePlot)
-    actuPlot(i) = actuation_signal_6(k,timePlot(i),pPlot);
-end
-plot(timePlot,actuPlot)
-hold on
-grid on
-ylabel('Actuation','Interpreter','latex')
-xlabel('Time [s]')
-hold off
-
-print(f2,'graphical_abstract_actu_optimal_V0.svg','-dsvg','-r800');
-
 
 
 %% CREATE SHAPE FIGURE
@@ -196,6 +135,39 @@ for idx = 1:length(timesToPlot)
 end
 
 print(f2,'figure1.svg','-dsvg','-r800');
+
+
+
+
+
+
+
+
+
+
+
+
+%% CREATE ACTUATION FIGURE
+f2 = figure('units','centimeters','position',[3 3 10 2]);
+set(groot,'defaulttextinterpreter','latex');
+set(groot,'defaultLegendInterpreter','latex');
+set(groot,'defaultAxesTickLabelInterpreter','latex'); 
+timePlot = linspace(0,tmax-h,tmax/h);
+pPlot = [0.3;2.4;1];
+k=300;
+actuPlot = zeros(1,length(timePlot));
+actuStar = zeros(1,length(timePlot));
+for i = 1:length(timePlot)
+    actuPlot(i) = actuation_signal_6(k,timePlot(i),pPlot);
+end
+plot(timePlot,actuPlot)
+hold on
+grid on
+ylabel('Actuation','Interpreter','latex')
+xlabel('Time [s]')
+hold off
+
+print(f2,'graphical_abstract_actu_optimal_V0.svg','-dsvg','-r800');
 
 
 

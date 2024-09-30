@@ -360,6 +360,39 @@ end
 % The results_matrix now contains all results for all configurations.
 
 
+%%
+nElVec = [660,1272,4270,8086,24822];
+timePerIt5 = [0.42,0.46,0.65,0.95,2.09];
+timePerIt8 = [0.56,0.74,1.61,2.28,6.49];
+f3 = figure('units','centimeters','position',[3 3 9 5]);
+plot(nElVec,timePerIt5,'-x')
+hold on
+plot(nElVec,timePerIt8,'-*')
+xlabel('Number of FE')
+ylabel('Time per Build + EoMs')
+legend('5 parameters', '8 parameters','Interpreter','latex', 'Location','North West')
+grid on
+hold off
+exportgraphics(f3,'comp_time_analysis_FE.jpg','Resolution',600)
+
+%%
+nParamVec = [3,5,8];
+timePerIt24822 = [1.81,2.09,6.49];
+timePerIt8086 = [0.78,0.95,2.28];
+timePerIt4270= [0.59,0.65,1.61];
+
+f4 = figure('units','centimeters','position',[3 3 9 5]);
+plot(nParamVec,timePerIt4270,'-x')
+hold on
+plot(nParamVec,timePerIt8086,'-*')
+plot(nParamVec,timePerIt24822,'-o')
+xlabel('Number of parameters')
+ylabel('Time per Build + EoMs')
+legend('4270 elements', '8086 elements', '24822 elements', 'Interpreter','latex', 'Location','North West')
+grid on
+hold off
+exportgraphics(f4,'comp_time_analysis_param.jpg','Resolution',600)
+
 
 %% ANIMATION ______________________________________________________________
 elementPlot = elements(:,1:4); 

@@ -36,30 +36,24 @@ hold off
 U = z_notch;
 
 %% CREATE FIGURE __________________________________________________________
-f1 = figure('units','centimeters','position',[3 3 9 7]);
+f1 = figure('units','centimeters','position',[3 3 11 3]);
 elementPlot = elements(:,1:4); hold on
 L = [Lx,Ly,Lz];
 O = [-Lx,-Ly/2,-Lz/2];
-pos1 = [0,0.5,0.5,0.5];
-pos2 = [0.5,0.5,0.5,0.5];
-pos3 = [0,0,0.5,0.5];
-pos4 = [0.5,0,0.5,0.5];
-textPosX = -0.2;
-textPosY = -0.05;
-textPosZ = -0.14;
+t = tiledlayout(1, 3, 'TileSpacing', 'loose', 'Padding', 'loose', 'InnerPosition',[0.04, 0.01 ,0.92,0.98]);
 
-
-% shape variation 
-ax1 = subplot(2,2,1,'Position',pos1);
+% Shape variation 
+ax1 = nexttile(t);
 variation = reshape(U*1, 3, []).';
 PlotFieldonDeformedMesh(nodes, elementPlot, variation, 'factor', 1);
-view(ax1,[-7.138557064977 29.9999999681973]);
+view(ax1,[0.219559017020941,1.058624487082271]);
 
-% nominal mesh
-ax2 = subplot(2,2,2,'Position',pos2);
+% Nominal mesh
+ax2 =  nexttile(t);
 variationNominal = reshape(U*0, 3, []).';
 dm = PlotFieldonDeformedMesh(nodes, elementPlot, variationNominal, 'factor', 1);
-view(ax2,[-7.138557064977 29.9999999681973]);
+view(ax2,[0.219559017020941,1.058624487082271]);
+% view(ax2,[-7.138557064977 29.9999999681973]);
 
 % compute vectors to show variation field
 vecShapeVariation = [];
@@ -73,40 +67,37 @@ for n=1:size(nodes,1)
 end
 
 
-
-% shape variation 3
-ax3 = subplot(2,2,3,'Position',pos3);
+% Vector field
+ax3 =  nexttile(t);
 quiver3(vecShapeVariation(1,:),vecShapeVariation(2,:),vecShapeVariation(3,:),...
         vecShapeVariation(4,:),vecShapeVariation(5,:),vecShapeVariation(6,:),...
         0,'r', 'LineWidth', 0.8)
 axis equal
 axis off;
 plotcube(L,O,.05,[0 0 0]);
-view(ax3,[-7.138557064977 29.9999999681973]);
+view(ax3,[0.219559017020941,1.058624487082271]);
+
+% Axis limits
+axis([ax1 ax2 ax3],[-0.35 0 -0.045 0.045 -0.1 0.1])
+
+% Add annotation
+annotation('textbox',[0.291,0.57,0.1,0.1], 'String','$$-$$', ...
+    'FontSize', 20,'Interpreter','latex',...
+    'FitBoxToText','on', 'LineStyle','none')
+annotation('textbox',[0.625,0.57,0.1,0.1], 'String','$$=$$', ...
+    'FontSize', 20,'Interpreter','latex',...
+    'FitBoxToText','on', 'LineStyle','none')
+annotation('textbox',[0.0,0.07,0.2,0.1], 'String','Shape-varied mesh', ...
+    'FontSize', 11,'Interpreter','latex',...
+    'FitBoxToText','on', 'LineStyle','none')
+annotation('textbox',[0.37,0.07,0.1,0.1], 'String','Nominal mesh', ...
+    'FontSize', 11,'Interpreter','latex',...
+    'FitBoxToText','on', 'LineStyle','none')
+annotation('textbox',[0.725,0.07,0.1,0.1], 'String','Vector field', ...
+    'FontSize', 11,'Interpreter','latex',...
+    'FitBoxToText','on', 'LineStyle','none')
 
 
 
-% optimal shape
-ax4 = subplot(2,2,4,'Position',pos4);
-xiPlot = 0.5;% [-0.3;0.3;0.1;0.4;0.4;0.1;0.2;0.1];%xiStar;
-% [z_tail,z_head,y_linLongTail,y_head,y_ellipseFish,...
-%     z_smallFish, z_notch, x_concaveTail];
-% xiPlot(1) = 0.2;
-% xiPlotName = strcat('[',num2str(xiStar(1)),', ',num2str(xiStar(2)),', ',num2str(xiStar(3)),']^\top$$');
-
-v1 = reshape(U*xiPlot, 3, []).';
-PlotFieldonDeformedMesh(nodes, elementPlot, v1, 'factor', 1);
-plotcube(L,O,.05,[0 0 0]);
-subplotName = '$$\mathbf{\xi}^\ast$$';
-text(textPosX, textPosY, textPosZ, subplotName,'Interpreter','latex')
-
-
-annotation('textbox',[0,0,0.5,0.5],'String','Variation ()','EdgeColor','none','Interpreter','latex');
-annotation('arrow',[0.5,0.5],[0.5,0.0])
-
-axis([ax1 ax2 ax3 ax4],[-0.40 0 -0.05 0.05 -0.16 0.16])
-% set(ax2, 'box', 'on', 'Visible', 'on')
-% set(ax1, 'box', 'on', 'Visible', 'on')
-
-% exportgraphics(f1,'SO3_shapes_V1.pdf','Resolution',1200)
-% exportgraphics(f1,'SO3_shapes_V1.jpg','Resolution',600)
+exportgraphics(f1,'shape_variation_procedure.pdf','Resolution',1200)
+% exportgraphics(f1,'shape_variation_procedure.jpg','Resolution',600)
