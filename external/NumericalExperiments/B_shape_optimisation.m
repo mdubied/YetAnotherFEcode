@@ -117,7 +117,7 @@ fprintf('Number of built models and solved EoMs: %5d\n',nIt_1)
 fprintf('Computation time per models/EoMs: %.2f\n',tPerIt_1)
 
 % Save results
-filename = sprintf('SO1_results_%d_el_kActu_%.3f', n_elements, kActu);
+filename = sprintf('results/data/SO1_results_%d_el_kActu_%.3f.mat', n_elements, kActu);
 save(filename,'xiStar_1','xiEvo_1','LEvo_1','LwoBEvo_1','tOpti_1','nIt_1','tPerIt_1')
 
 %% OPTIMISATION SO2 _______________________________________________________
@@ -166,7 +166,7 @@ fprintf('Number of built models and solved EoMs: %5d\n',nIt_2)
 fprintf('Computation time per models/EoMs: %.2f\n',tPerIt_2)
 
 % Save results
-filename = sprintf('SO2_results_%d_el_kActu_%.3f', n_elements, kActu);
+filename = sprintf('results/data/SO2_results_%d_el_kActu_%.3f.mat', n_elements, kActu);
 save(filename,'xiStar_2','xiEvo_2','LEvo_2','LwoBEvo_2','tOpti_2','nIt_2','tPerIt_2')
 
 %% OPTIMISATION SO3 _______________________________________________________
@@ -213,9 +213,8 @@ fprintf('Computation time: %.2fmin\n',tOpti_3)
 fprintf('Number of built models and solved EoMs: %5d\n',nIt_3)
 fprintf('Computation time per models/EoMs: %.2f\n',tPerIt_3)
 
-%%
 % Save results
-filename = sprintf('SO3_results_%d_el_kActu_%.3f', n_elements, kActu);
+filename = sprintf('results/data/SO3_results_%d_el_kActu_%.3f.mat', n_elements, kActu);
 save(filename,'xiStar_3','xiEvo_3','LEvo_3','LwoBEvo_3','tOpti_3','nIt_3','tPerIt_3')
 
 
@@ -241,9 +240,8 @@ view(ax2,[23.28863587057058,35.063216347984103])
 
 axis([ax1 ax2],[-0.40 0 -0.04 0.04 -0.16 0.16])
 
-fig_title = sprintf('SO3_opt_shape_%d_el_kActu_%.3f', n_elements, kActu);
+fig_title = sprintf('results/figures/SO3_opt_shape_%d_el_kActu_%.3f', n_elements, kActu);
 exportgraphics(f_opt_shape,strcat(fig_title,'.pdf'),'Resolution',1200)
-% exportgraphics(ff_opt_shape,fig_title,'Resolution',600)
 
 %% PLOT COST FUNCTION FOR THE 3 EXPERIMENTS _______________________________
 f_cost = figure('units','centimeters','position',[3 3 9 6]);
@@ -257,8 +255,8 @@ xlabel('Iterations')
 legend('SO1','SO2','SO3')
 hold off
 
-exportgraphics(f_cost,'SO_cost_evolution.pdf','Resolution',1200)
-% exportgraphics(f_cost,'SO_cost_evolution.jpg','Resolution',600)
+exportgraphics(f_cost,'results/figures/SO_cost_evolution.pdf','Resolution',1200)
+% exportgraphics(f_cost,'results/figures/SO_cost_evolution.jpg','Resolution',600)
 
 
 
