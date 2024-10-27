@@ -54,7 +54,7 @@ function TI_NL_FOM = solve_EoMs_FOM(Assembly, elements, tailProperties,spineProp
     fTail = @(q,qd) tail_force_FOM(q,qd,Assembly,elements,tailProperties);
 
     % spine force
-    fSpine = @(q,qd,qdd) spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties);
+    fSpine = @(q,qd,qdd) 0*spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties);
 
     % drag force
     fDrag = @(qd) drag_force_FOM(qd,dragProperties);

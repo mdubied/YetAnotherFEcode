@@ -18,7 +18,7 @@ set(groot,'defaulttextinterpreter','latex');
 load('parameters.mat') 
 
 % specify and create FE mesh
-filename = '3d_fish_for_mike';%3d_rectangle_8086el' ;%_24822el'; %'3d_rectangle_8086el'
+filename = 'input_files/3d_rectangle_1272el' ;%_24822el'; %'3d_rectangle_8086el'
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el';
 
 [Mesh_ROM, ~, ~, ~, ~] = create_mesh(filename, myElementConstructor, propRigid);
@@ -54,7 +54,7 @@ f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements, propRigid, eset
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
 tmax = 2.0;
-kActu = 3.0;    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
+kActu = 2.0;    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -123,7 +123,7 @@ uHead_FOM = zeros(3,tmax/h);
 uHead_ROM = zeros(3,tmax/h);
 uHead_PROM = zeros(3,tmax/h);
 
-modelToPlot = ['ROM'];%,'FOM'];
+modelToPlot = ['FOM'];%,'FOM'];
 
 if contains(modelToPlot,'FOM')
     sol_FOM = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
@@ -178,7 +178,7 @@ xlabel('Time [s]')
 ylabel('tail y-position [m]')
 % legend('Location','southwest', 'interpreter','latex')
 % exportgraphics(f_A2,'A_FOM_vs_ROM_1272el.pdf','Resolution',1400)
-exportgraphics(f_A2,strcat('A_FOM_vs_ROM_',num2str(size(elements,1)),'.jpg'),'Resolution',600)
+% exportgraphics(f_A2,strcat('A_FOM_vs_ROM_',num2str(size(elements,1)),'.jpg'),'Resolution',600)
 
 %% COMPUTE AVERAGE ERROR
 error_x_vector = zeros(1,tmax/h);

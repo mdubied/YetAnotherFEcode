@@ -168,7 +168,7 @@ classdef ImplicitNewmark < handle
                 time = [time t];
                 NR = [NR it];
                 R = [R epsilon];
-                if mod(100* t/tmax,20) < 0.35
+                if mod(100* t/tmax,5) < 0.35
                     disp(['time integration completed: ', num2str(100* t/tmax), '%'])
                 end
 %                 disp(['time integration completed: ', num2str(100* t/tmax), '%'])
