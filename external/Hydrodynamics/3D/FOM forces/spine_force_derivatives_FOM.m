@@ -41,7 +41,7 @@ function der = spine_force_derivatives_FOM(q,qd,qdd,tensors)
             + ttv(ttv(T4d,qd,4),q,3) + ttv(ttv(T4d,q,3),qd,2);
             
     % dfdqdd ______________________________________________________________
-    dfdqdd = T2a + ttv(T3b,q,3) + ttv(T3c,q,3) + ttv(ttv(4d,q,4),q,3);
+    dfdqdd = T2a + ttv(T3b,q,3) + ttv(T3c,q,3) + ttv(ttv(T4d,q,4),q,3);
  
     % store results in output struct ______________________________________
     der.dfdq = double(dfdq);
