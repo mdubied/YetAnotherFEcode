@@ -33,6 +33,7 @@ function [mesh, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myEleme
     % our examples)
     nodes = nodes*0.01;
     nodes(:,2) = 0.8*nodes(:,2);
+    nodes(:,:) = 0.5*nodes(:,:);
 
     % create mesh
     mesh = Mesh(nodes);

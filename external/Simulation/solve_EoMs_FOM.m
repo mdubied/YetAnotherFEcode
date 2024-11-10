@@ -3,8 +3,8 @@
 % Synthax:
 % TI_NL_FOM = solve_EoMs_FOM(Assembly, elements, tailProperties,spineProperties,dragProperties,actuTop,actuBottom,h,tmax)
 %
-% Description: Computes the solutions for eta,dot{eta}, ddot{eta} for 
-% [0,tmax] for a given ROM assembly and time step
+% Description: Computes the solutions for u, \dot{u}, \ddot{u} for 
+% [0,tmax] for a given FOM assembly and time step
 %
 % INPUTS:  
 % (1) Assembly:             FOM assembly    
@@ -26,7 +26,7 @@
 % (1) TI_NL_FOM:            struct containing the solutions and related
 %                           information
 %     
-% Last modified: 02/09/2023, Mathieu Dubied, ETH Zurich
+% Last modified: 17/10/2024, Mathieu Dubied, ETH Zurich
 
 function TI_NL_FOM = solve_EoMs_FOM(Assembly, elements, tailProperties,spineProperties,dragProperties,actuTop,actuBottom,kActu,h,tmax)
     
@@ -51,22 +51,22 @@ function TI_NL_FOM = solve_EoMs_FOM(Assembly, elements, tailProperties,spineProp
                     kActu/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
     
     % tail pressure force
-    fTail = @(q,qd) tail_force_FOM(q,qd,Assembly,elements,tailProperties);
+    fTail = @(q,qd) 0*tail_force_FOM(q,qd,Assembly,elements,tailProperties);
 
     % spine force
     fSpine = @(q,qd,qdd) 0*spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties);
 
     % drag force
-    fDrag = @(qd) drag_force_FOM(qd,dragProperties);
+    fDrag = @(qd) 0*drag_force_FOM(qd,dragProperties);
 
     % NONLINEAR TIME INTEGRATION __________________________________________
     
     % instantiate object for nonlinear time integration
-    TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-4);
+    TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-2);
 
     % modal nonlinear Residual evaluation function handle
     Residual_NL = @(q,qd,qdd,t)residual_nonlinear_actu_hydro(q,qd,qdd, ...
-        t,Assembly,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB);
+        t,Assembly,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties);
 
     % time integration 
     TI_NL_FOM.Integrate(q0,qd0,qdd0,tmax,Residual_NL);

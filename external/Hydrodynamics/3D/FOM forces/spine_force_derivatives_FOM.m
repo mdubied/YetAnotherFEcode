@@ -21,8 +21,9 @@
 %   
 % Last modified: 27/10/2024, Mathieu Dubied, ETH Zürich
 function der = spine_force_derivatives_FOM(q,qd,qdd,tensors)
+
     % get tensors   
-    T2a = tensors.T2a;
+    T2a = tensor(tensors.T2a);
     T3b = tensors.T3b;
     T3c = tensors.T3c;
     T4d = tensors.T4d;
@@ -41,7 +42,7 @@ function der = spine_force_derivatives_FOM(q,qd,qdd,tensors)
             + ttv(ttv(T4d,qd,4),q,3) + ttv(ttv(T4d,q,3),qd,2);
             
     % dfdqdd ______________________________________________________________
-    dfdqdd = T2a + ttv(T3b,q,3) + ttv(T3c,q,3) + ttv(ttv(T4d,q,4),q,3);
+    dfdqdd = T2a  + ttv(T3b,q,3) + ttv(T3c,q,3) + ttv(ttv(T4d,q,4),q,3);
  
     % store results in output struct ______________________________________
     der.dfdq = double(dfdq);

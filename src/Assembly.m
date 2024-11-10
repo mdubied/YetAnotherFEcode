@@ -244,6 +244,217 @@ classdef Assembly < handle
             K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
 
         end
+        
+        function [K] = tensor_spine_force_T2a(self,elementMethodName,varargin)
+            % This function assembles the T2a finite element matrix from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the spine
+            % elements/nodes of the structure.
+            
+            n_e = self.Mesh.nElements;
+
+            I = cell(n_e,1); % row indices
+            J = cell(n_e,1); % column indices
+            K = cell(n_e,1); % values
+            Elements = self.Mesh.Elements;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+
+            % Computing element level contributions            
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                
+                index = thisElement.iDOFs;
+                d = length(index);
+                I{j} = kron(true(d,1), index);
+                J{j} = kron(index, true(d,1));
+                
+                x0 = reshape(thisElement.nodes.',[],1);
+
+                [Ke] = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                [Ke] = 4*inputs{3}(j)^2*einsum('IJkl,kK,lL->IJKL',Ke,x0,x0);
+                K{j} = Ke(:);
+            end
+
+            I = vertcat(I{:});
+            J = vertcat(J{:});
+            K = vertcat(K{:});
+
+            K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
+
+        end
+        
+        function [T] = tensor_spine_force_T3b(self,elementMethodName,varargin)
+            % This function assembles the T3b finite element tensor from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the spine
+            % elements/nodes of the structure.
+            
+            n_e = self.Mesh.nElements;
+            nDOFs = self.Mesh.nDOFs;
+            Elements = self.Mesh.Elements;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            for j = elementSet
+                thisElement = Elements(j).Object;
+
+                % Get the third-order tensor for this element
+                x0 = reshape(thisElement.nodes.',[],1);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Te = 4*inputs{3}(j)^2*einsum('IJkL,kK->IJKL',Te,x0);
+                Te = ttv(tensor(Te),1,3);   % change size from 12x12x1x12 to 12x12x12
+    
+                % Get the DOFs for the current element
+                elementDOFs = thisElement.iDOFs;
+
+                % Assume each dimension of the tensor Te corresponds to these DOFs
+                tensorSize = size(Te);  % Should match the dimensions of the DOFs
+                assert(all(tensorSize == length(elementDOFs)), 'Tensor dimensions do not match DOFs.');
+
+                % Generate all possible subscripts for the third-order tensor
+                [sub1, sub2, sub3] = ndgrid(1:tensorSize(1), 1:tensorSize(2), 1:tensorSize(3));
+
+                % Flatten subscripts and tensor values
+                subsLocal = [sub1(:), sub2(:), sub3(:)];
+                valsLocal = Te(:);
+
+                % Map local indices to global indices using element DOFs
+                subsGlobal = [elementDOFs(subsLocal(:,1)), elementDOFs(subsLocal(:,2)), elementDOFs(subsLocal(:,3))];
+
+                % Store results for final assembly
+                subs{j} = subsGlobal;
+                T{j} = valsLocal;
+            end
+
+            % Combine all subscripts and values into final arrays
+            subs = vertcat(subs{:});
+            T = vertcat(T{:});
+
+            % Assemble into a sparse tensor with specified SIZE
+            T = sptensor(subs, T, [ nDOFs, nDOFs, nDOFs]);
+
+
+        end
+        
+        function [T] = tensor_spine_force_T3c(self,elementMethodName,varargin)
+            % This function assembles the T3b finite element tensor from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the spine
+            % elements/nodes of the structure.
+            
+            n_e = self.Mesh.nElements;
+            nDOFs = self.Mesh.nDOFs;
+            Elements = self.Mesh.Elements;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            for j = elementSet
+                thisElement = Elements(j).Object;
+
+                % Get the third-order tensor for this element
+                x0 = reshape(thisElement.nodes.',[],1);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Te = 4*inputs{3}(j)^2*einsum('IJKl,lL->IJKL',Te,x0);
+                
+                % Get the DOFs for the current element
+                elementDOFs = thisElement.iDOFs;
+
+                % Assume each dimension of the tensor Te corresponds to these DOFs
+                tensorSize = size(Te);  % Should match the dimensions of the DOFs
+                assert(all(tensorSize == length(elementDOFs)), 'Tensor dimensions do not match DOFs.');
+
+                % Generate all possible subscripts for the third-order tensor
+                [sub1, sub2, sub3] = ndgrid(1:tensorSize(1), 1:tensorSize(2), 1:tensorSize(3));
+
+                % Flatten subscripts and tensor values
+                subsLocal = [sub1(:), sub2(:), sub3(:)];
+                valsLocal = Te(:);
+
+                % Map local indices to global indices using element DOFs
+                subsGlobal = [elementDOFs(subsLocal(:,1)), elementDOFs(subsLocal(:,2)), elementDOFs(subsLocal(:,3))];
+
+                % Store results for final assembly
+                subs{j} = subsGlobal;
+                T{j} = valsLocal;
+            end
+
+            % Combine all subscripts and values into final arrays
+            subs = vertcat(subs{:});
+            T = vertcat(T{:});
+
+            % Assemble into a sparse tensor with specified SIZE
+            T = sptensor(subs, T, [ nDOFs, nDOFs, nDOFs]);
+
+        end
+        
+        function [T] = tensor_spine_force_T4d(self,elementMethodName,varargin)
+            % This function assembles the T3b finite element tensor from
+            % its element level counterpart. The method allows to pass
+            % extra argument to access and work with the spine
+            % elements/nodes of the structure.
+            
+            n_e = self.Mesh.nElements;
+            nDOFs = self.Mesh.nDOFs;
+            Elements = self.Mesh.Elements;
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            for j = elementSet
+                thisElement = Elements(j).Object;
+
+                % Get the third-order tensor for this element
+                x0 = reshape(thisElement.nodes.',[],1);
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Te = 4*inputs{3}(j)^2*Te;
+                
+                % Get the DOFs for the current element
+                elementDOFs = thisElement.iDOFs;
+
+                % Assume each dimension of the tensor Te corresponds to these DOFs
+                tensorSize = size(Te);  % Should match the dimensions of the DOFs
+                assert(all(tensorSize == length(elementDOFs)), 'Tensor dimensions do not match DOFs.');
+
+                % Generate all possible subscripts for the third-order tensor
+                [sub1, sub2, sub3, sub4] = ndgrid(1:tensorSize(1), 1:tensorSize(2), 1:tensorSize(3), 1:tensorSize(4));
+
+                % Flatten subscripts and tensor values
+                subsLocal = [sub1(:), sub2(:), sub3(:), sub4(:)];
+                valsLocal = Te(:);
+
+                % Map local indices to global indices using element DOFs
+                subsGlobal = [elementDOFs(subsLocal(:,1)), elementDOFs(subsLocal(:,2)), elementDOFs(subsLocal(:,3)), elementDOFs(subsLocal(:,4))];
+
+                % Store results for final assembly
+                subs{j} = subsGlobal;
+                T{j} = valsLocal;
+            end
+
+            % Combine all subscripts and values into final arrays
+            subs = vertcat(subs{:});
+            T = vertcat(T{:});
+
+            % Assemble into a sparse tensor with specified SIZE
+            T = sptensor(subs, T, [ nDOFs, nDOFs, nDOFs, nDOFs]);
+
+        end
+        
 
         function [K] = matrix_skin_PFOM(self,elementMethodName,U,varargin)
             % This function assembles a finite element matrix from

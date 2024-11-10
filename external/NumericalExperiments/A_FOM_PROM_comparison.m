@@ -43,6 +43,9 @@ end
     shape_variations_3D(nodes,Lx,Ly,Lz);
 U = [z_tail,y_head,y_thinFish,z_head,z_linLongTail];
 
+%% FIGURE HIGHLIGHTING THE SPINE AND TAIL ELEMENT _________________________
+f_spine = create_fig_spine(elements, nodes, 'cyan', 'r', [3 3 18 10]);
+
 %% FIGURE A1 (muscles, rigid part, VM) ____________________________________
 % Note: the position of the muscle is defined in the build_ROM/FOM/PROM
 % functions. The number of VMs used also. Only the constraints for the
@@ -53,8 +56,8 @@ f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements, propRigid, eset
 
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
-tmax = 2.0;
-kActu = 2.0;    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
+tmax = 1.0;
+kActu = 0.02;%0.25; 0.02    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -78,7 +81,7 @@ timeFOM = toc(tStartFOM);
 
 %% ROM ____________________________________________________________________
 tStartROM = tic;
-
+kActu = kActu*1.6;
 % build PROM
 fprintf('____________________\n')
 fprintf('Building ROM ... \n')
@@ -123,7 +126,7 @@ uHead_FOM = zeros(3,tmax/h);
 uHead_ROM = zeros(3,tmax/h);
 uHead_PROM = zeros(3,tmax/h);
 
-modelToPlot = ['FOM'];%,'FOM'];
+modelToPlot = ['FOM'];%,'ROM'];
 
 if contains(modelToPlot,'FOM')
     sol_FOM = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
@@ -173,7 +176,7 @@ end
 
 % plot(timePlot,uTail_PROM(2,:),'DisplayName','PROM')
 grid on
-ylim([-0.04,0.04])
+ylim([-0.03,0.03])
 xlabel('Time [s]')
 ylabel('tail y-position [m]')
 % legend('Location','southwest', 'interpreter','latex')

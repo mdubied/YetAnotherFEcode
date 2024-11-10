@@ -110,9 +110,9 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuTop,act
     tailProperties.mTilde = 0.25*pi*1000*(tailProperties.z*2)^2;
     
     
-%     % spine momentum change tensor (reduced order)
-%     spineTensors = compute_spine_momentum_tensor_TET4(Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,matchedDorsalNodesZPos);
-%     spineProperties.tensors = spineTensors;
+    % spine momentum change tensor (FOM)           
+    spineTensors = compute_spine_force_tensors_FOM(FOM_Assembly, spineElementWeights,nodeIdxPosInElements,normalisationFactors,matchedDorsalNodesZPos);
+    spineProperties.tensors = spineTensors;
     spineProperties.spineNodes = spineNodes;
     spineProperties.spineElements = spineElements;
     spineProperties.nodeIdxPosInElements = nodeIdxPosInElements;

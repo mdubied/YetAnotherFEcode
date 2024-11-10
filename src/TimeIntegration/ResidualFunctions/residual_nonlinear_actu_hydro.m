@@ -1,5 +1,5 @@
 function [ r, drdqdd,drdqd,drdq, c0] = residual_nonlinear_actu_hydro(q,qd,qdd,...
-    t,Assembly,fActu,fTail,fSpine,fDrag,actuLeft,actuRight,actuSignalLeft,actuSignalRight,fSpineProp)
+    t,Assembly,fActu,fTail,fSpine,fDrag,actuLeft,actuRight,actuSignalLeft,actuSignalRight,fTailProp,fSpineProp)
 % ,fTailProp,fSpineProp,fDragProp,R,x0
 
 % getting data 
@@ -25,19 +25,26 @@ F_external = Assembly.constrain_vector(fActu(t,u)) + ...
     Assembly.constrain_vector(fSpine(u,ud,udd)) + ...
     Assembly.constrain_vector(fDrag(ud));
 
+% disp(norm(Assembly.constrain_vector(fSpine(u,ud,udd))))
+% disp(norm(Assembly.constrain_vector(fActu(t,u))))
+
 % residual
 r = F_inertial + F_damping + F_elastic - F_external ;
 
+% derivatives tail force
+der_tail_force = tail_force_derivatives_FOM(u,ud,Assembly,fTailProp);
+
 % derivatives spine force
-der_spine_force = spine_force_derivatives_FOM(q,qd,qdd,fSpineProp.tensors);
+der_spine_force = spine_force_derivatives_FOM(u,ud,udd,fSpineProp.tensors);
 
 % residual derivatives
-drdqdd = M_red - der_spine_force.dfdqdd;
-drdqd = C_red - der_spine_force.dfdqd;
+drdqdd = M_red; %- Assembly.constrain_matrix(der_spine_force.dfdqdd);
+drdqd = C_red; %- Assembly.constrain_matrix(der_tail_force.dfdqd);% - Assembly.constrain_matrix(der_spine_force.dfdqd);
 drdq = K_red ...
      - actuSignalRight(t)*Assembly.constrain_matrix(actuRight.B2) ...
-     - actuSignalLeft(t)*Assembly.constrain_matrix(actuLeft.B2) ...
-     - der_spine_force.dfdq;
+     - actuSignalLeft(t)*Assembly.constrain_matrix(actuLeft.B2);% ...
+     %- Assembly.constrain_matrix(der_tail_force.dfdqd);% ...
+     %- Assembly.constrain_matrix(der_spine_force.dfdq);
 
 % comparison norm of residual
 c0 = norm(F_inertial) + norm(F_damping) + norm(F_elastic) + norm(F_external);
