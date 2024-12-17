@@ -49,24 +49,30 @@ function TI_NL_FOM = solve_EoMs_FOM(Assembly, elements, tailProperties,spineProp
     
     fActu = @(t,q)  kActu/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
                     kActu/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+%                 
+%     fActu = @(t,q) kActu*tip_actuation_force_FOM(t,q,Assembly,elements,tailProperties);
+%     actuSignalT = kActu;
+%     fActu = @(t,q) kActu*tip_actuation_force_FOM(t,q,Assembly,elements,tailProperties);
+    
+%     fActu = @(t) tip_actuation_force_FOM_1(t,kActu,Assembly,tailProperties);
     
     % tail pressure force
-    fTail = @(q,qd) 0*tail_force_FOM(q,qd,Assembly,elements,tailProperties);
+    fTail = @(q,qd) 1*tail_force_FOM(q,qd,Assembly,elements,tailProperties);
 
     % spine force
-    fSpine = @(q,qd,qdd) 0*spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties);
+    fSpine = @(q,qd,qdd) 1*spine_force_FOM(q,qd,qdd,Assembly,elements,spineProperties);
 
     % drag force
-    fDrag = @(qd) 0*drag_force_FOM(qd,dragProperties);
+    fDrag = @(qd) 1*drag_force_FOM(qd,dragProperties);
 
     % NONLINEAR TIME INTEGRATION __________________________________________
     
     % instantiate object for nonlinear time integration
-    TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-2);
+    TI_NL_FOM = ImplicitNewmark('timestep',h,'alpha',0.005,'MaxNRit',60,'RelTol',1e-5);
 
     % modal nonlinear Residual evaluation function handle
     Residual_NL = @(q,qd,qdd,t)residual_nonlinear_actu_hydro(q,qd,qdd, ...
-        t,Assembly,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties);
+        t,Assembly,fActu,fTail,fSpine,fDrag,actuTop,actuBottom,actuSignalT,actuSignalB,tailProperties,spineProperties,elements);
 
     % time integration 
     TI_NL_FOM.Integrate(q0,qd0,qdd0,tmax,Residual_NL);

@@ -4,7 +4,7 @@
 % Description: Accuracy and computational speed comparison between the FOM
 % and the ROM formulations.
 %
-% Last modified: 02/09/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 22/11/2024, Mathieu Dubied, ETH Zurich
 % ------------------------------------------------------------------------
 clear; 
 close all; 
@@ -18,18 +18,19 @@ set(groot,'defaulttextinterpreter','latex');
 load('parameters.mat') 
 
 % specify and create FE mesh
-filename = 'input_files/3d_rectangle_1272el' ;%_24822el'; %'3d_rectangle_8086el'
-%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el';
+filename = 'input_files/3d_rectangle_1272el';%_24822el'; %'3d_rectangle_8086el'
+%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 4270
+propRigid = 0.55;
 
 [Mesh_ROM, ~, ~, ~, ~] = create_mesh(filename, myElementConstructor, propRigid);
 [Mesh_FOM, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
 [Lx, Ly, Lz] = mesh_dimensions(nodes);
 
 % plot mesh
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes, elementPlot, 0);
-hold off
+% elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
+% figure('units','normalized','position',[.2 .1 .6 .8])
+% PlotMeshAxis(nodes, elementPlot, 0);
+% hold off
 
 % set boundary conditions
 for l=1:length(nsetBC)
@@ -56,18 +57,62 @@ f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements, propRigid, eset
 
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
-tmax = 1.0;
-kActu = 0.02;%0.25; 0.02    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
+tmax = 2.0;
+kActu = 0.035;%0.25;%0.25; 0.02    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
 
-%% FOM ____________________________________________________________________
+
+    %% FOM ____________________________________________________________________
 tStartFOM = tic;
 
 % build PROM
 fprintf('____________________\n')
 fprintf('Building FOM ... \n')
 [Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_FOM_3D(Mesh_FOM,nodes,elements);   
+build_FOM_3D(Mesh_FOM,nodes,elements);  
 
+% %%
+% % static solution
+% Fext = tip_actuation_force_FOM_1(0.25,kActu,Assembly,tailProperties);
+% [ u_lin, u ] = static_equilibrium(Assembly, Fext);
+% 
+% % y displacement of tail
+% disp(u_lin(tailProperties.tailNode*3-1))
+% disp(u(tailProperties.tailNode*3-1))   
+% 
+% %% Plot
+% elementPlot = elements(:,1:4);
+% u_plot = reshape(u, 3, []).';
+% figure
+% PlotFieldonDeformedMesh(nodes, elementPlot, u_plot, 'factor', 1);
+% hold off
+
+%% TEST ACTUATION FORCE
+% quiver3(X,Y,Z,U,V,W) plots arrows with directional components U, V, and W at the Cartesian coordinates specified by X, Y, and Z
+% actuation force
+B1T = actuTop.B1;
+B1B = actuBottom.B1;
+B2T = actuTop.B2;
+B2B = actuBottom.B2; 
+
+
+fActu = @(t,q)  kActu/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
+                kActu/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
+            
+nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
+nDOFs = Assembly.Mesh.nDOFs;
+q0 = zeros(nUncDOFs,1);
+u0 = Assembly.unconstrain_vector(q0);
+            
+fActuTest = fActu(0.2,u0);
+fActuPlot = reshape(fActuTest, 3, []).';
+figure
+variation = reshape(u0*1, 3, []).';
+% PlotFieldonDeformedMesh(nodes, elements, variation, 'factor', 1);
+quiver3(nodes(:,1),nodes(:,2),nodes(:,3),fActuPlot(:,1),fActuPlot(:,2),fActuPlot(:,3),5)
+axis equal
+
+            
+%%
 % solve EoMs
 tic 
 fprintf('____________________\n')
@@ -77,7 +122,52 @@ toc
 
 fprintf('Time needed to solve the problem using FOM: %.2fsec\n',toc(tStartFOM))
 timeFOM = toc(tStartFOM);
+sol_FOM = TI_NL_FOM.Solution.u;
+fprintf('Tail node lateral displacement, dynamic: %.4f\n', max(sol_FOM(tailProperties.tailNode*3-1,:))*100)
 
+%% Plot
+elementPlot = elements(:,1:4);
+sol_FOM = TI_NL_FOM.Solution.u;
+u_plot = reshape(sol_FOM(:,0.25/h), 3, []).';
+figure
+PlotFieldonDeformedMesh(nodes, elementPlot, u_plot, 'factor', 1);
+
+% hold off
+
+%%
+sol_FOM = TI_NL_FOM.Solution.u;
+fprintf('\n')
+fprintf('______________________\n')
+fprintf('Tail node lateral displacement, static : %.4f\n', u(tailProperties.tailNode*3-1)*100)
+% fprintf('Tail node lateral displacement, dynamic: %.4f\n', max(sol_FOM(tailProperties.tailNode*3-1,:))*100)
+fprintf('-------\n')
+
+left_node = find_node(-0.2,0.02,0,nodes);
+fprintf('Left node lateral displacement, static : %.4f\n', u(left_node*3-1)*100)
+% fprintf('Left node lateral displacement, dynamic: %.4f\n', max(sol_FOM(left_node*3-1,:))*100)
+fprintf('-------\n')
+
+top_left_node = find_node(-0.2,0.02,0.05,nodes);
+fprintf('Top left node lateral displacement, static : %.4f\n', u(top_left_node*3-1)*100)
+% fprintf('Top left node lateral displacement, dynamic: %.4f\n', max(sol_FOM(top_left_node*3-1,:))*100)
+fprintf('-------\n')
+
+fprintf('Max lateral displacement, static : %.4f\n', max(u(2:3:end))*100)
+% fprintf('Max lateral displacement, dynamic: %.4f\n', max(sol_FOM(2:3:end,:),[],'all')*100)
+fprintf('-------\n')
+
+%%
+xdata = [1272,4270,8086,16009,24822];
+ydata = [2.35,3.24,3.81,4.02,4.19];
+ydata = [1.21,1.71,1.98,2.07,2.18];
+ydata = [1.26,1.80,2.18,2.37,2.50];
+figure
+plot(xdata,ydata)
+xlabel('Number of FEs')
+ylabel('Lateral displacement (tail node)')
+xticks([1000,5000,10000,15000,20000, 25000])
+xticklabels({1000,5000,10000,15000,20000,25000})
+grid on
 
 %% ROM ____________________________________________________________________
 tStartROM = tic;
@@ -129,7 +219,7 @@ uHead_PROM = zeros(3,tmax/h);
 modelToPlot = ['FOM'];%,'ROM'];
 
 if contains(modelToPlot,'FOM')
-    sol_FOM = Assembly.unconstrain_vector(TI_NL_FOM.Solution.q);
+    sol_FOM = TI_NL_FOM.Solution.u;
 end
 timePlot = linspace(0,tmax-h,tmax/h);
 x0Tail = min(nodes(:,1));
@@ -176,7 +266,7 @@ end
 
 % plot(timePlot,uTail_PROM(2,:),'DisplayName','PROM')
 grid on
-ylim([-0.03,0.03])
+% ylim([-0.03,0.03])
 xlabel('Time [s]')
 ylabel('tail y-position [m]')
 % legend('Location','southwest', 'interpreter','latex')
@@ -407,7 +497,7 @@ topMuscle = zeros(nel,1);
 for el=1:nel
     elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
     elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-    if elementCenterY>0.00 &&  elementCenterX < -Lx*propRigid && elementCenterX > -Lx*1
+    if elementCenterY>0.00 &&  elementCenterX < -Lx*propRigid && elementCenterX > -Lx*0.9
         topMuscle(el) = 1;
     end    
 end
@@ -417,22 +507,22 @@ bottomMuscle = zeros(nel,1);
 for el=1:nel
     elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
     elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-    if elementCenterY<0.00 &&  elementCenterX < -Lx*propRigid && elementCenterX > -Lx*1
+    if elementCenterY<0.00 &&  elementCenterX < -Lx*propRigid && elementCenterX > -Lx*0.9
         bottomMuscle(el) = 1;
     end    
 
 end
 
-actuationValues = zeros(size(TI_NL_ROM.Solution.u,2),1);
-for t=1:size(TI_NL_ROM.Solution.u,2)
+actuationValues = zeros(size(TI_NL_FOM.Solution.u,2),1);
+for t=1:size(TI_NL_FOM.Solution.u,2)
     actuationValues(t) = 0;
 end
 
-actuationValues2 = zeros(size(TI_NL_ROM.Solution.u,2),1);
-for t=1:size(TI_NL_ROM.Solution.u,2)
+actuationValues2 = zeros(size(TI_NL_FOM.Solution.u,2),1);
+for t=1:size(TI_NL_FOM.Solution.u,2)
     actuationValues2(t) = 0;
 end
-sol = TI_NL_ROM.Solution.u(:,1:end);
+sol = TI_NL_FOM.Solution.u(:,1:end);
 AnimateFieldonDeformedMeshActuation2Muscles(nodes, elementPlot,topMuscle,actuationValues,...
     bottomMuscle,actuationValues2,sol, ...
     'factor',1,'index',1:3,'filename','result_video','framerate',1/h)

@@ -39,7 +39,7 @@ function fig = create_fig_muscle_placement_VM(Mesh, nodes, elements, propRigid, 
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX<-Lx*propRigid && elementCenterX>-Lx
+        if elementCenterY>0.00 &&  elementCenterX<-Lx*propRigid && elementCenterX>-0.9*Lx
             leftMuscle(el) = 1;
         end    
     end
@@ -49,7 +49,7 @@ function fig = create_fig_muscle_placement_VM(Mesh, nodes, elements, propRigid, 
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX<-Lx*propRigid && elementCenterX>-Lx
+        if elementCenterY<0.00 &&  elementCenterX<-Lx*propRigid && elementCenterX>-0.9*Lx
             rightMuscle(el) = 1;
         end    
     end

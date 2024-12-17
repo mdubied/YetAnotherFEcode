@@ -170,6 +170,7 @@ classdef ImplicitNewmark < handle
                 R = [R epsilon];
                 if mod(100* t/tmax,2) < 0.35
                     disp(['time integration completed: ', num2str(100* t/tmax), '%'])
+                    disp(['Number of iterations: ', num2str(it)])
                 end
 %                 disp(['time integration completed: ', num2str(100* t/tmax), '%'])
                 

@@ -18,6 +18,7 @@ load('parameters.mat')
 filename ='3d_rectangle_8086el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 
 kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
+propRigid = 0.6;
 [MeshNominal, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
 [Lx, Ly, Lz] = mesh_dimensions(nodes);
 
