@@ -1,16 +1,13 @@
 % build_ROM_non_optimisation
 %
-% Synthax:
-% [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-%    build_ROM_non_optimisation(MeshNominal,nodes,elements,USEJULIA)
-%
 % Description: Builds a ROM based on the nominal mesh
 %
 % INPUTS: 
 % (1) MeshNominal:  nominal mesh converted from Abaqus              
 % (2) nodes:        nodes and their coordinates
 % (3) elements:     elements and corresponding nodes
-% (4) USEJULIA:     use of JULIA (1) for the computation of internal forces
+% (4) muscleBoudnaries: boundaries of the muscles, along the x axis
+% (5) USEJULIA:     use of JULIA (1) for the computation of internal forces
 %                   tensors 
 %
 % OUTPUTS:
@@ -22,18 +19,15 @@
 % (5) spineProperties:      properties of the spine change in momentum
 %                           (tensor, spine elements etc.)
 % (6) draProperties         properties of the form drag forces
-% (7) actuTop:              vectors and matrices related to the actuation
-%                           muscle at the top
-% (8) actuBottom:           vectors and matrices related to the actuation
-%                           muscle at the bottom
-%     
+% (7) actuLeft:             vectors and matrices related to the actuation
+%                           muscle on the left (y>0)
+% (8) actuRight:            vectors and matrices related to the actuation
+%                           muscle on the right (y<0)
 %
-% Additional notes: -
-%
-% Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
+% Last modified: 14/01/2024, Mathieu Dubied, ETH Zürich
 
-function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_ROM_3D(MeshNominal,nodes,elements,USEJULIA)
+function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuLeft,actuRight] = ...
+    build_ROM_3D(MeshNominal,nodes,elements,muscleBoundaries,USEJULIA)
 
     startROMBuilding = tic;
     
@@ -187,36 +181,33 @@ function [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperti
 
     % ACTUATION FORCES ____________________________________________________
     
-    Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of the nominal fish
-    
+    [Lx,~,~] = mesh_dimensions_3D(nodes);
     nel = size(elements,1);
-    actuationDirection = [1;0;0;0;0;0];               %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
+    actuationDirection = [1;0;0;0;0;0]; %[1;0;0]-->[1;0;0;0;0;0] (Voigt notation)
 
-    % left muscle
-    topMuscle = zeros(nel,1);
+    % left muscle (y>0)
+    leftMuscle = zeros(nel,1);
     for el=1:nel
         elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
         elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY>0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
-            topMuscle(el) = 1;
+        if elementCenterY>0.00 &&  elementCenterX<-Lx*muscleBoundaries(2) && elementCenterX>-Lx*muscleBoundaries(1)
+            leftMuscle(el) = 1;
         end    
     end
-    actuTop = reduced_tensors_actuation_ROM(NominalAssembly, V, topMuscle, actuationDirection);
-
-    % right muscle
-    bottomMuscle = zeros(nel,1);
-    for el=1:nel
-        elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
-        elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
-        if elementCenterY<0.00 &&  elementCenterX < -Lx*0.6 && elementCenterX > -Lx
-            bottomMuscle(el) = 1;
-        end    
-    end
-    actuBottom = reduced_tensors_actuation_ROM(NominalAssembly, V, bottomMuscle, actuationDirection);
     
-%     figure
-%     set(gcf, 'Position',  [100, 100, 1200, 500])
-%     PlotFieldonDeformedMeshActuation2Muscles(nodes,elements,topMuscle,1,bottomMuscle,-1,zeros(length(nodes),3));
+    actuLeft = compute_actuation_tensors_FOM(FOM_Assembly,topMuscle,actuationDirection);
+
+    % right muscle (y<0)
+    rightMuscle = zeros(nel,1);
+    for el=1:nel
+        elementCenterY = (nodes(elements(el,1),2)+nodes(elements(el,2),2)+nodes(elements(el,3),2)+nodes(elements(el,4),2))/4;
+        elementCenterX = (nodes(elements(el,1),1)+nodes(elements(el,2),1)+nodes(elements(el,3),1)+nodes(elements(el,4),1))/4;
+        if elementCenterY<0.00 &&  elementCenterX<-Lx*muscleBoundaries(2) && elementCenterX>-Lx*muscleBoundaries(1)
+            rightMuscle(el) = 1;
+        end    
+    end
+
+    actuRight = compute_actuation_tensors_FOM(FOM_Assembly, bottomMuscle, actuationDirection);
 
     fprintf('Time to build ROM: %.2fsec\n',toc(startROMBuilding))
 

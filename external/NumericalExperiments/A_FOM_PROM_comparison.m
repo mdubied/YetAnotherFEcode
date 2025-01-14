@@ -71,7 +71,7 @@ tStartFOM = tic;
 fprintf('____________________\n')
 fprintf('Building FOM ... \n')
 [Assembly,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_FOM_3D(Mesh_FOM,nodes,elements);  
+build_FOM_3D(Mesh_FOM,nodes,elements,muscleBoundaries);  
 
 % %%
 % % static solution
@@ -179,7 +179,7 @@ kActu = kActu;
 fprintf('____________________\n')
 fprintf('Building ROM ... \n')
 [V,ROM_Assembly,tensors_ROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_ROM_3D(Mesh_ROM,nodes,elements,USEJULIA);  
+build_ROM_3D(Mesh_ROM,nodes,elements,muscleBoundaries,USEJULIA);  
 
 % solve EoMs 
 tic
@@ -198,7 +198,7 @@ tStartPROM = tic;
 fprintf('____________________\n')
 fprintf('Building PROM ... \n')
 [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-build_PROM_3D(Mesh_ROM,nodes,elements,U,USEJULIA,VOLUME,FORMULATION);      
+build_PROM_3D(Mesh_ROM,nodes,elements,muscleBoundaries,U,USEJULIA,VOLUME,FORMULATION);      
 
 % solve EoMs (with sensitivities for the PROM)
 tic 
