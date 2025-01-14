@@ -23,7 +23,7 @@
 % Additional notes: this function is not written in the most generic way.
 % It purpose is to facilitate the creation of a mesh in our examples.
 %
-% Last modified: 02/09/2024, Mathieu Dubied, ETH Zürich
+% Last modified: 13/09/2024, Mathieu Dubied, ETH Zürich
 function [mesh, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid)
     
     % read Abaqus mesh
@@ -41,7 +41,7 @@ function [mesh, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myEleme
     
     % set for boundary conditions 
     nel = size(elements,1);
-    [Lx, ~, ~] = mesh_dimensions(nodes);
+    [Lx, ~, ~] = mesh_dimensions_3D(nodes);
     nsetBC = {};
     esetBC = zeros(nel,1);
     

@@ -2,9 +2,9 @@
 % A_FOM_PROM_comparison.m
 %
 % Description: Accuracy and computational speed comparison between the FOM
-% and the ROM formulations.
+% and the (P)ROM formulations.
 %
-% Last modified: 22/11/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 13/01/2025, Mathieu Dubied, ETH Zurich
 % ------------------------------------------------------------------------
 clear; 
 close all; 
@@ -14,23 +14,26 @@ set(groot,'defaulttextinterpreter','latex');
 
 %% PREPARE MODELS _________________________________________________________                                                   
 
-% load material parameters
+% load material and mesh parameters
 load('parameters.mat') 
 
+% parameters to test: propRigid, muscleBoundaries
+% propRigid = 0.55;
+%%
 % specify and create FE mesh
-filename = 'input_files/3d_rectangle_1272el';%_24822el'; %'3d_rectangle_8086el'
+filename = 'InputFiles/3d_rectangle_1272el';%_24822el'; %'3d_rectangle_8086el'
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 4270
-propRigid = 0.55;
+
 
 [Mesh_ROM, ~, ~, ~, ~] = create_mesh(filename, myElementConstructor, propRigid);
 [Mesh_FOM, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
-[Lx, Ly, Lz] = mesh_dimensions(nodes);
+[Lx, Ly, Lz] = mesh_dimensions_3D(nodes);
 
 % plot mesh
-% elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-% figure('units','normalized','position',[.2 .1 .6 .8])
-% PlotMeshAxis(nodes, elementPlot, 0);
-% hold off
+elementPlot = elements(:,1:4);
+figure('units','normalized','position',[.2 .1 .6 .8])
+PlotMeshAxis(nodes, elementPlot, 0);
+hold off
 
 % set boundary conditions
 for l=1:length(nsetBC)
@@ -58,10 +61,10 @@ f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements, propRigid, eset
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
 tmax = 2.0;
-kActu = 0.035;%0.25;%0.25; 0.02    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
+kActu = 0.25;%0.25;%0.25; 0.02    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
 
 
-    %% FOM ____________________________________________________________________
+%% FOM ____________________________________________________________________
 tStartFOM = tic;
 
 % build PROM
@@ -216,7 +219,7 @@ uHead_FOM = zeros(3,tmax/h);
 uHead_ROM = zeros(3,tmax/h);
 uHead_PROM = zeros(3,tmax/h);
 
-modelToPlot = ['FOM'];%,'ROM'];
+modelToPlot = ['ROM'];%,'ROM'];
 
 if contains(modelToPlot,'FOM')
     sol_FOM = TI_NL_FOM.Solution.u;

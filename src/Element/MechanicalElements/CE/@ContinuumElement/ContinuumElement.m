@@ -334,9 +334,9 @@ classdef ContinuumElement < Element
                 
                 B1Ein = tensor(einsum('Ij,jL->IL',H,G));
                 B1 = B1 + double(ttv(B1Ein,actuationDirection,1));
-                test = 2;
-
             end
+            
+            B1
 
         end
 
