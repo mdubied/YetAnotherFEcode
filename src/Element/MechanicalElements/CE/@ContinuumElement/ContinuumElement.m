@@ -336,7 +336,11 @@ classdef ContinuumElement < Element
                 B1 = B1 + double(ttv(B1Ein,actuationDirection,1));
             end
             
-            B1
+            if self.nDim == 2   % 2D case
+                B1 = B1*self.area;
+            else                % 3D case
+                B1 = B1*self.vol;
+            end
 
         end
 
@@ -359,6 +363,12 @@ classdef ContinuumElement < Element
                 B2Ein = tensor(einsum('Ijk,kL,jN->INL',L,G,G)+einsum('Ijk,kN,jM->INM',L,G,G));
                 B2 = B2 + double(ttv(B2Ein,actuationDirection,1));
             end
+            
+            if self.nDim == 2   % 2D case
+                B2 = B2*self.area;
+            else                % 3D case
+                B2 = B2*self.vol;
+            end
              
         end
         
@@ -367,8 +377,7 @@ classdef ContinuumElement < Element
             % to the linear component in ud of the nonlinear actuation 
             % force in global coordinates at the element level.
             X = self.quadrature.X;
-            m= self.nNodes*self.nDOFPerNode;
-            
+            m = self.nNodes*self.nDOFPerNode;    
 
             B3 = double(tenzeros([m,m]));
             for ii = 1:length(self.quadrature.W)
@@ -380,7 +389,13 @@ classdef ContinuumElement < Element
                 B3Ein = tensor(einsum('Ijk,kN,jM->INM',L,G,G)+2*einsum('Ijk,kl,jn->INL',L,G,G));
                 B3 = B3 + double(ttv(B3Ein,actuationDirection,1));
             end
-             
+            
+            if self.nDim == 2   % 2D case
+                B3 = B3*self.area;
+            else                % 3D case
+                B3 = B3*self.vol;
+            end
+            
         end
         % ANCILLARY FUNCTIONS _____________________________________________
         
