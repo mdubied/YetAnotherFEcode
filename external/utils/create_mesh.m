@@ -23,23 +23,24 @@
 % Additional notes: this function is not written in the most generic way.
 % It purpose is to facilitate the creation of a mesh in our examples.
 %
-% Last modified: 13/09/2024, Mathieu Dubied, ETH Zürich
+% Last modified: 14/01/2025, Mathieu Dubied, ETH Zürich
 function [mesh, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid)
     
     % read Abaqus mesh
     [nodes, elements, ~, ~] = mesh_ABAQUSread(filename);
 
-    % convert to cm to m and reduce the initial y dimension (specific to
-    % our examples)
+    % convert to cm to m and reshape (specific to our examples)
+    % original size: 35 x 10 x 20 [cm], final size: 20 x 4 x 10 [cm]
     nodes = nodes*0.01;
-    nodes(:,2) = 0.8*nodes(:,2);
-    nodes(:,:) = 0.5*nodes(:,:);
+    nodes(:,1) = 20/35*nodes(:,1);
+    nodes(:,2) = 0.4*nodes(:,2);
+    nodes(:,3) = 0.5*nodes(:,3);
 
     % create mesh
     mesh = Mesh(nodes);
     mesh.create_elements_table(elements,myElementConstructor);
     
-    % set for boundary conditions 
+    % set for boundary conditions (for TET4 meshes)
     nel = size(elements,1);
     [Lx, ~, ~] = mesh_dimensions_3D(nodes);
     nsetBC = {};

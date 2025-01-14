@@ -17,6 +17,7 @@ set(groot,'defaulttextinterpreter','latex');
 % load material and mesh parameters
 load('parameters.mat') 
 
+
 % parameters to test: propRigid, muscleBoundaries
 % propRigid = 0.55;
 %%
@@ -30,10 +31,10 @@ filename = 'InputFiles/3d_rectangle_1272el';%_24822el'; %'3d_rectangle_8086el'
 [Lx, Ly, Lz] = mesh_dimensions_3D(nodes);
 
 % plot mesh
-elementPlot = elements(:,1:4);
-figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes, elementPlot, 0);
-hold off
+% elementPlot = elements(:,1:4);
+% figure('units','normalized','position',[.2 .1 .6 .8])
+% PlotMeshAxis(nodes, elementPlot, 0);
+% hold off
 
 % set boundary conditions
 for l=1:length(nsetBC)
@@ -48,21 +49,20 @@ end
 U = [z_tail,y_head,y_thinFish,z_head,z_linLongTail];
 
 %% FIGURE HIGHLIGHTING THE SPINE AND TAIL ELEMENT _________________________
-f_spine = create_fig_spine(elements, nodes, 'cyan', 'r', [3 3 18 10]);
+f_spine = create_fig_spine(elements, nodes, 'cyan', 'r', [1 2 16 8]);
 
 %% FIGURE A1 (muscles, rigid part, VM) ____________________________________
 % Note: the position of the muscle is defined in the build_ROM/FOM/PROM
 % functions. The number of VMs used also. Only the constraints for the
 % rigid par of the fish is defined above (boundary conditions)
-
-f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements, propRigid, esetBC);
+muscleBoundaries = [0.9,0.60];
+f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements,muscleBoundaries, esetBC);
 % exportgraphics(f_A1,'A_muscles_placement_VM.pdf','Resolution',1400)
 
 %% SIMULATION PARAMETERS __________________________________________________
 h = 0.01;
-tmax = 2.0;
-kActu = 0.25;%0.25;%0.25; 0.02    % 3.0 for 660, 1.3 for 1272, 0.25 for 4270, 0.08 for 8086, 0.015 for 24822
-
+tmax = 1.0;
+kActu = 5e5;
 
 %% FOM ____________________________________________________________________
 tStartFOM = tic;
@@ -174,7 +174,7 @@ grid on
 
 %% ROM ____________________________________________________________________
 tStartROM = tic;
-kActu = kActu*1.6;
+kActu = kActu;
 % build PROM
 fprintf('____________________\n')
 fprintf('Building ROM ... \n')
