@@ -226,7 +226,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
         end    
     end
     
-    actuLeft = compute_actuation_tensors_FOM(FOM_Assembly,topMuscle,actuationDirection);
+    actuLeft = reduced_tensors_actuation_PROM(NominalAssembly, V, U, leftMuscle, actuationDirection);
 
     % right muscle (y<0)
     rightMuscle = zeros(nel,1);
@@ -238,8 +238,7 @@ function [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProper
         end    
     end
 
-    actuRight = compute_actuation_tensors_FOM(FOM_Assembly, bottomMuscle, actuationDirection);
-
+    actuRight = reduced_tensors_actuation_PROM(NominalAssembly, V, U, rightMuscle, actuationDirection);
     fprintf('Time to build PROM: %.2fsec\n',toc(startPROMBuilding))
 
 end 

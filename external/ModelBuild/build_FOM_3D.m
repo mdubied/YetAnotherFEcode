@@ -143,7 +143,7 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuLeft,ac
         end    
     end
     
-    actuLeft = compute_actuation_tensors_FOM(FOM_Assembly,topMuscle,actuationDirection);
+    actuLeft = compute_actuation_tensors_FOM(FOM_Assembly,leftMuscle,actuationDirection);
 
     % right muscle (y<0)
     rightMuscle = zeros(nel,1);
@@ -155,7 +155,7 @@ function [FOM_Assembly,tailProperties,spineProperties,dragProperties,actuLeft,ac
         end    
     end
 
-    actuRight = compute_actuation_tensors_FOM(FOM_Assembly, bottomMuscle, actuationDirection);
+    actuRight = compute_actuation_tensors_FOM(FOM_Assembly, rightMuscle, actuationDirection);
 
     fprintf('Time to build FOM: %.2fsec\n',toc(startROMBuilding))
 

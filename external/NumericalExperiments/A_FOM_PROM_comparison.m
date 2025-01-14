@@ -55,7 +55,6 @@ f_spine = create_fig_spine(elements, nodes, 'cyan', 'r', [1 2 16 8]);
 % Note: the position of the muscle is defined in the build_ROM/FOM/PROM
 % functions. The number of VMs used also. Only the constraints for the
 % rigid par of the fish is defined above (boundary conditions)
-muscleBoundaries = [0.9,0.60];
 f_A1 = create_fig_muscle_placement_VM(Mesh_ROM, nodes, elements,muscleBoundaries, esetBC);
 % exportgraphics(f_A1,'A_muscles_placement_VM.pdf','Resolution',1400)
 
@@ -89,30 +88,7 @@ build_FOM_3D(Mesh_FOM,nodes,elements,muscleBoundaries);
 % PlotFieldonDeformedMesh(nodes, elementPlot, u_plot, 'factor', 1);
 % hold off
 
-%% TEST ACTUATION FORCE
-% quiver3(X,Y,Z,U,V,W) plots arrows with directional components U, V, and W at the Cartesian coordinates specified by X, Y, and Z
-% actuation force
-B1T = actuTop.B1;
-B1B = actuBottom.B1;
-B2T = actuTop.B2;
-B2B = actuBottom.B2; 
 
-
-fActu = @(t,q)  kActu/2*(-0.2*sin(t*2*pi))*(B1T+B2T*q) + ...
-                kActu/2*(0.2*sin(t*2*pi))*(B1B+B2B*q);
-            
-nUncDOFs = size(Assembly.Mesh.EBC.unconstrainedDOFs,2);
-nDOFs = Assembly.Mesh.nDOFs;
-q0 = zeros(nUncDOFs,1);
-u0 = Assembly.unconstrain_vector(q0);
-            
-fActuTest = fActu(0.2,u0);
-fActuPlot = reshape(fActuTest, 3, []).';
-figure
-variation = reshape(u0*1, 3, []).';
-% PlotFieldonDeformedMesh(nodes, elements, variation, 'factor', 1);
-quiver3(nodes(:,1),nodes(:,2),nodes(:,3),fActuPlot(:,1),fActuPlot(:,2),fActuPlot(:,3),5)
-axis equal
 
             
 %%
