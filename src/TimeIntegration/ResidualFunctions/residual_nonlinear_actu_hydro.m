@@ -40,7 +40,7 @@ F_external = Assembly.constrain_vector(fActu(t,u)) + ...  % factu as function of
 % % disp(max(actuSignalRight(t)*Assembly.constrain_matrix(actuRight.B2) - actuSignalLeft(t)*Assembly.constrain_matrix(actuLeft.B2)))
 
 if norm(F_inertial + F_damping + F_elastic)>100
-    fprintf('Warning')
+    disp('Warning')
 end
 
 % disp(norm(Assembly.constrain_vector(fSpine(u,ud,udd))))
@@ -53,10 +53,10 @@ r = F_inertial + F_damping + F_elastic - F_external ;
 % der_actu = tip_actuation_force_derivatives_FOM(t,q,Assembly,fTailProp);
 
 % derivatives tail force
-der_tail_force = tail_force_derivatives_FOM(u,ud,Assembly,fTailProp);
+% der_tail_force = tail_force_derivatives_FOM(u,ud,Assembly,fTailProp);
 
 % derivatives spine force
-der_spine_force = spine_force_derivatives_FOM(u,ud,udd,fSpineProp.tensors);
+% der_spine_force = spine_force_derivatives_FOM(u,ud,udd,fSpineProp.tensors);
 
 % residual derivatives
 drdqdd = M_red ;%-Assembly.constrain_matrix(der_spine_force.dfdqdd);
