@@ -91,7 +91,7 @@ if dimension == 3   % For 3D plots
     
     view(3); hold on;
     h = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
-        'DisplayName','Deformed Mesh', 'FaceAlpha',1.0);
+        'DisplayName','Deformed Mesh', 'FaceAlpha',1.0, 'LineWidth', 0.2);
     rotate3d on;
 
 elseif dimension == 2           % For 2D plots
@@ -138,7 +138,7 @@ elseif dimension == 2           % For 2D plots
         h{1} = patch(defoX,defoY,profile,'EdgeColor',meshcolor,'EdgeAlpha',0.5);
         h{2} = plot(defoX(:),defoY(:),'.','Color', meshcolor, 'Markersize',5); %5 %10 
     else
-        h = plot(Nodes(:,1)+factor*ux,Nodes(:,2)+factor*uy,'.-','Color', meshcolor, 'Markersize',5); %10
+        h = plot(Nodes(:,1)+factor*ux,Nodes(:,2)+factor*uy,'.-','Color', meshcolor, 'Markersize',2); %10
         c = [];
     end
     
