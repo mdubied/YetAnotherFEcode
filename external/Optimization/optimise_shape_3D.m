@@ -1,8 +1,5 @@
 % optimise_shape_3D
 %
-% Synthax:
-% [xiStar,xiEvo,LrEvo] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,U,d,h,tmax,A,b,varargin)
-%
 % Description: Implementation of the (shape) optimisation pipeline
 % presented in the paper
 %
@@ -12,24 +9,25 @@
 % (2) nset:                 set of element to apply boundary conditions             
 % (3) nodes:                nodes and their coordinates
 % (4) elements:             elements described by their nodes
-% (5) kActu:                multiplicative factor for the actuation forces
-% (6) U:                    shape variation basis
-% (7) h:                    time step for time integration
-% (8) tmax:                 simulation for [0,tmax]
-% (9)-(10) A,b              constraints on xi of the form Axi<b
+% (5) muscleBoudnaries:     boundaries of the muscles, along the x axis
+% (6) kActu:                multiplicative factor for the actuation forces
+% (7) U:                    shape variation basis
+% (8) h:                    time step for time integration
+% (9) tmax:                 simulation for [0,tmax]
+% (10)-(11) A,b             constraints on xi of the form Axi<b
 %
 % possible additional name-value pair arguments
-% (11) maxIteration:maximum number of iterations
-% (12) convCrit:    convergence criterium. Norm between two successive
+% (12) maxIteration:maximum number of iterations
+% (13) convCrit:    convergence criterium. Norm between two successive
 %                   optimal paramter vectors
-% (13) FORMULATION: order of the Neumann approximation (N0/N1/N1t)
-% (14) VOLUME:      integration over defected (1) or nominal volume (0)
-% (15) USEJULIA:    use of JULIA (1) for the computation of internal forces
+% (14) FORMULATION: order of the Neumann approximation (N0/N1/N1t)
+% (15) VOLUME:      integration over defected (1) or nominal volume (0)
+% (16) USEJULIA:    use of JULIA (1) for the computation of internal forces
 %                   tensors
-% (16) barrierParam:parameter to scale the barrier function for the 
+% (17) barrierParam:parameter to scale the barrier function for the 
 %                   constraints (1/barrierParam)
-% (17) gStepSize:   step size used in the gradient descent algorithm
-% (18) nRebuild:    number of step between each re-build of a PROM
+% (18) gStepSize:   step size used in the gradient descent algorithm
+% (19) nRebuild:    number of step between each re-build of a PROM
 %
 % OUTPUTS:
 % (1) xiStar:       optimal shape parameter(s) (scalar or vector)
@@ -39,9 +37,9 @@
 %                   function part
 %     
 %
-% Last modified: 04/09/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 16/01/2025, Mathieu Dubied, ETH Zurich
 
-function [xiStar,xiEvo,LEvo,LwoBEvo,nIt] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,kActu,U,h,tmax,A,b,varargin)
+function [xiStar,xiEvo,LEvo,LwoBEvo,nIt] = optimise_shape_3D(myElementConstructor,nset,nodes,elements,muscleBoundaries,kActu,U,h,tmax,A,b,varargin)
 
     % parse input
     [maxIteration,convCrit,convCritCost,barrierParam,gStepSize,nRebuild,...
@@ -74,7 +72,7 @@ function [xiStar,xiEvo,LEvo,LwoBEvo,nIt] = optimise_shape_3D(myElementConstructo
     fprintf('Building PROM ... \n')
 
     [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-    build_PROM_3D(MeshNominal,nodes,elements,U,USEJULIA,VOLUME,FORMULATION); 
+    build_PROM_3D(MeshNominal,nodes,elements,muscleBoundaries,U,USEJULIA,VOLUME,FORMULATION); 
     
     % store dorsal nodes for future use
     dorsalNodesStructFromUser.matchedDorsalNodesIdx = spineProperties.dorsalNodeIdx;
@@ -168,7 +166,7 @@ function [xiStar,xiEvo,LEvo,LwoBEvo,nIt] = optimise_shape_3D(myElementConstructo
 
             % build PROM
             [V,PROM_Assembly,tensors_PROM,tailProperties,spineProperties,dragProperties,actuTop,actuBottom] = ...
-                 build_PROM_3D(svMesh,nodes_defected,elements,U,USEJULIA,VOLUME,FORMULATION,'dorsalNodes',dorsalNodesStructFromUser);
+                 build_PROM_3D(svMesh,nodes_defected,elements,muscleBoundaries,U,USEJULIA,VOLUME,FORMULATION,'dorsalNodes',dorsalNodesStructFromUser);
 
             % Lx = abs(max(nodes(:,1))-min(nodes(:,1)));  % horizontal length of airfoil
             % Ly = abs(max(nodes(:,2))-min(nodes(:,2)));  % vertical length of airfoil

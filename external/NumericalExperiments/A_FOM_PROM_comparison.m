@@ -22,7 +22,7 @@ load('parameters.mat')
 muscleBoundaries = [0.83,0.6]; % 0.82 for the plot
 %%
 % specify and create FE mesh
-filename = 'InputFiles/3d_rectangle_8086el';%_24822el'; %'3d_rectangle_8086el'
+filename = 'InputFiles/3d_rectangle_16009el';%_24822el'; %'3d_rectangle_8086el'
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 4270,
 %16009 3d_rectangle_47423el
 

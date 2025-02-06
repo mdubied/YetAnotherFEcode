@@ -16,9 +16,9 @@
 % (1) [...]:    11 shape variations
 %     
 %
-% Last modified: 18/02/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 06/02/2025, Mathieu Dubied, ETH Zurich
 function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch, ...
-    y_tail,y_head,y_linLongTail,y_ellipseFish,x_concaveTail] = ...
+    y_tail,y_head,y_linLongTail,y_ellipseFish,xz_concaveTail] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz)
 
     % (1) thinner fish (y direction)
@@ -161,14 +161,16 @@ function [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch, ...
     
     % (11) concave tail
     xDif = zeros(size(nodes,1),1);
+    zDif = zeros(size(nodes,1),1);
     for n = 1:size(nodes,1) 
         if nodes(n,1) == -Lx
-%             nodes_proj(n,:) = [nodes(n,1)-Lz/2*abs(nodes(n,3)), nodes(n,2), nodes(n,3)];                         % projection on linear curve
-            xDif(n) = -1*abs(nodes(n,3));  % z-difference projection vs nominal
+            xDif(n) = -1*abs(nodes(n,3));  
+            zDif(n) = 0.4*nodes(n,3); 
         end
     end
-    x_concaveTail = zeros(numel(nodes),1);
-    x_concaveTail(1:3:end) = xDif;
+    xz_concaveTail = zeros(numel(nodes),1);
+    xz_concaveTail(1:3:end) = xDif;
+    xz_concaveTail(3:3:end) = zDif;
     
 end
 
