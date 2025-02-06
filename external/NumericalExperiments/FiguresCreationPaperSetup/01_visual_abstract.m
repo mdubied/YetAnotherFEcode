@@ -8,7 +8,6 @@ close all;
 clc
 if(~isdeployed)
   cd(fileparts(matlab.desktop.editor.getActiveFilename));
-  scriptDir = fileparts(matlab.desktop.editor.getActiveFilename());
 end
 
 set(groot,'defaulttextinterpreter','latex');
