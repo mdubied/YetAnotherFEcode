@@ -28,7 +28,7 @@ function h = PlotFieldonDeformedMesh(Nodes,Elements,disp,varargin)
 
 
 %%
-[meshcolor,factor,c] = parse_inputs(varargin{:});
+[meshcolor,factor,c,lineWidth] = parse_inputs(varargin{:});
 
 nnodes = size(Nodes,1);      % number of nodes
 dimension = size(Nodes,2) ;  % Dimension of the mesh
@@ -91,7 +91,7 @@ if dimension == 3   % For 3D plots
     
     view(3); hold on;
     h = patch(defoX,defoY,defoZ,profile,'EdgeColor',meshcolor,...
-        'DisplayName','Deformed Mesh', 'FaceAlpha',1.0, 'LineWidth', 0.2);
+        'DisplayName','Deformed Mesh', 'FaceAlpha',1.0, 'LineWidth', lineWidth);
     rotate3d on;
 
 elseif dimension == 2           % For 2D plots
@@ -152,21 +152,24 @@ end
 
 end
 
-function [meshcolor,factor,c] = parse_inputs(varargin)
+function [meshcolor,factor,c,lineWidth] = parse_inputs(varargin)
 
 defaultColor = 'k';
 defaultFactor = 1;
 defaultComponent = 'U'; % plot norm of displacement
+defaultLineWidth = 1.0;
 p = inputParser;
 
 addParameter(p,'color',defaultColor)
 addParameter(p,'factor',defaultFactor,@(x)validateattributes(x, ...
     {'numeric'},{'nonempty','positive'}) );
 addParameter(p,'component',defaultComponent);
+addParameter(p,'lineWidth',defaultLineWidth)
 parse(p,varargin{:});
 
 meshcolor = p.Results.color;
 factor = p.Results.factor;
 c = p.Results.component;
+lineWidth = p.Results.lineWidth;
 
 end
