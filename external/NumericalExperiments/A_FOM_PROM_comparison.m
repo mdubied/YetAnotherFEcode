@@ -546,11 +546,11 @@ end
 %% RESULTS ANALYSIS AND PLOTS _____________________________________________
 
 %% Read results from csv
-nElementsForResult = [1272, 4270, 8086, 16009, 24822]; % Number of elements for each input file
+nElementsForResult = [1272, 4272, 8086, 16009, 24822]; % Number of elements for each input file
 % nElementsForResult = [1272, 4270];
 for i=1:length(nElementsForResult)
     nElements = nElementsForResult(i);
-    filename = sprintf('Results/Data/temp_A_results_new_%del.csv', nElements);
+    filename = sprintf('Results/Data/A_results_%del.csv', nElements); % sprintf('Results/Data/temp_A_results_new_%del.csv', nElements);
     if i==1
         resultSummary = readmatrix(filename);
     else
@@ -681,17 +681,36 @@ shading interp
 % Draw zero line
 contour(xq,yq,InterpolatedValues,[0, 0],'LineColor','k','LineWidth',1)
 
+% Draw zero line on colorbar
+cbar_limits = caxis();
+zero_pos = (0 - cbar_limits(1)) / (cbar_limits(2) - cbar_limits(1));
+cbar_pos = cb.Position;
+y_zero = cbar_pos(2) + zero_pos * cbar_pos(4);
+annotation('line', [cbar_pos(1), cbar_pos(1) + cbar_pos(3)], [y_zero, y_zero], 'Color', 'k', 'LineWidth', 1.0);
+
+
+
 % Labels and appearancy
 xlabel('Number of finite elements')
-ylabel('Lateral tail displacement [cm]')
+ylabel('Tail $y$-oscillation [cm]')
 xlim([1700,24000])
 ylim([0.5,2.0])
-title('Relative error in forward displacement [\%]', 'interpreter', 'latex')
+title('Relative error in $x$-position after $t=2$s', 'interpreter', 'latex')
 ax = gca;
 ax.TitleHorizontalAlignment = 'left';
+
+cb.Label.String = '[$x$(ROM)  - $x$(FOM)] / $x$(FOM) [\%]';
+cb.Label.Interpreter = 'latex'; % If you want LaTeX formatting
+
+
+
+
+
 hold off
 
-fig_filename = 'Results/Figures/PDF/A_results_rel_error_forward.pdf';
+
+
+fig_filename = 'Results/Figures/PDF/09_A_results_rel_error_forward.pdf';
 exportgraphics(f, fig_filename, 'Resolution', 600);
 
 

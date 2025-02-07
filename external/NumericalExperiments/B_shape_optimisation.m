@@ -20,7 +20,7 @@ set(groot,'defaultAxesTickLabelInterpreter','latex');
 load('parameters.mat') 
 
 % specify and create FE mesh
-filename ='InputFiles/3d_rectangle_4270el'; % 24822el' ;%'3d_rectangle_8086el';
+filename ='InputFiles/3d_rectangle_8086el'; % 24822el' ;%'3d_rectangle_8086el';
 
 
 %'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 
@@ -28,12 +28,7 @@ filename ='InputFiles/3d_rectangle_4270el'; % 24822el' ;%'3d_rectangle_8086el';
 [Lx, Ly, Lz] = mesh_dimensions_3D(nodes);
 n_elements = size(elements,1);
 
-% plot nominal mesh
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes, elementPlot, 0);
-hold off
-
+muscleBoundaries = [0.83,0.6]; % 0.82 for the plot
 
 %% SHAPE VARIATIONS _______________________________________________________
 
@@ -80,7 +75,7 @@ set(f1,'Units','centimeters');
 %% OPTIMIZATION PARAMETERS
 h = 0.02;
 tmax = 2.0;
-kActu = 4.0e5;    % multiplicative factor for the actuation forces
+kActu = 4.0e5;    % multiplicative factor for the actuation forces 
 
 %% OPTIMISATION SO1 _______________________________________________________
 % Typical results:  -0.4952, 0.3272, 0.2974
@@ -165,7 +160,7 @@ tPerIt_2 = tOpti_2/nIt_2;
 fprintf('Computation time: %.2fmin\n',tOpti_2)
 fprintf('Number of built models and solved EoMs: %5d\n',nIt_2)
 fprintf('Computation time per models/EoMs: %.2f\n',tPerIt_2)
-%%
+
 % Save results
 filename = sprintf('Results/Data/SO2_results_%d_el_kActu_%.3f.mat', n_elements, kActu);
 save(filename,'xiStar_2','xiEvo_2','LEvo_2','LwoBEvo_2','tOpti_2','nIt_2','tPerIt_2')
@@ -181,7 +176,7 @@ A = zeros(2 * nParam, nParam);
 for i = 1:nParam
     A(2*i-1:2*i,i) =[1;-1];
 end
-b = [0.4;0.4;
+b = [0.5;0.5;
     0.4;0.4;
     0.4;0.4;
     0.3;0.3;
@@ -244,12 +239,12 @@ v = reshape(U*xiStar, 3, []).';
 
 % View 1
 ax1 = nexttile(t);
-PlotFieldonDeformedMesh(nodes, elementPlot, v, 'factor', 1);
+PlotFieldonDeformedMesh(nodes, elementPlot, v, 'factor', 1, 'lineWidth',0.2);
 plotcube(L,O,.05,[0 0 0]);
 
 % View 2
 ax2 = nexttile(t);
-PlotFieldonDeformedMesh(nodes, elementPlot, v, 'factor', 1);
+PlotFieldonDeformedMesh(nodes, elementPlot, v, 'factor', 1, 'lineWidth',0.2);
 plotcube(L,O,.05,[0 0 0]);
 view(ax2,[23.28863587057058,35.063216347984103])
 
@@ -270,7 +265,7 @@ xlabel('Iterations')
 legend('SO1','SO2','SO3')
 hold off
 
-exportgraphics(f_cost,'results/figures/SO_cost_evolution.pdf','Resolution',1200)
+exportgraphics(f_cost,'results/figures/14_SO_cost_evolution.pdf','Resolution',1200)
 % exportgraphics(f_cost,'results/figures/SO_cost_evolution.jpg','Resolution',600)
 
 
