@@ -7,6 +7,9 @@
 clear; 
 close all; 
 clc
+if(~isdeployed)
+  cd(fileparts(matlab.desktop.editor.getActiveFilename));
+end
 set(groot,'defaulttextinterpreter','latex');
 set(groot,'defaultLegendInterpreter','latex');
 set(groot,'defaultAxesTickLabelInterpreter','latex'); 

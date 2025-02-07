@@ -1,45 +1,38 @@
 % ------------------------------------------------------------------------ 
-% Creation of a figure containing all shape variation used
+% Creation of Figure 10, containing all shape variation used
 % 
-% Last modified: 27/09/2024, Mathieu Dubied, ETH Zurich
+% Last modified: 07/02/2025, Mathieu Dubied, ETH Zurich
 %
 % ------------------------------------------------------------------------
 clear; 
 close all; 
 clc
+if(~isdeployed)
+  cd(fileparts(matlab.desktop.editor.getActiveFilename));
+end
 set(groot,'defaulttextinterpreter','latex');
 
 %% PREPARE NOMINAL MESH ___________________________________________________                                                   
 
 % load material parameters
-load('parameters.mat') 
+load(fullfile(cd, '..', 'parameters.mat'));
 
 % specify and create FE mesh
-filename ='InputFiles/3d_rectangle_8086el' ;%'3d_rectangle_8086el'; %'3d_rectangle_8086el'
-%'3d_rectangle_1272el';%'3d_rectangle_1272el';%'3d_rectangle_660el'; 
-kActu = 1.0;    % multiplicative factor for the actuation forces, dependent on the mesh
+filename = 'InputFiles/3d_rectangle_8086el';  
 [MeshNominal, nodes, elements, nsetBC, esetBC] = create_mesh(filename, myElementConstructor, propRigid);
 [Lx, Ly, Lz] = mesh_dimensions_3D(nodes);
-
-
-% plot nominal mesh [Can be removed]
-elementPlot = elements(:,1:4); % plot only corners (otherwise it's a mess)
-figure('units','normalized','position',[.2 .1 .6 .8])
-PlotMeshAxis(nodes, elementPlot, 0);
-hold off
 
 %% DEFINE SHAPE VARIATIONS ________________________________________________
 [y_thinFish,z_smallFish,z_tail,z_head,z_linLongTail, z_notch,...
     y_tail,y_head,y_linLongTail,y_ellipseFish, xz_concaveTail] = ...
     shape_variations_3D(nodes,Lx,Ly,Lz);
 
-U = [z_tail, z_head, y_thinFish, ... %z_tail
-    y_linLongTail, y_head,y_ellipseFish, ... % _linLongTail
-    z_smallFish, z_notch,z_notch, xz_concaveTail];
-
-% U = [z_tail,z_tail,z_tail,z_tail,z_tail,z_tail,z_tail,z_tail,z_tail];
+U = [z_tail, z_head, y_thinFish, ... 
+    y_linLongTail, y_head,y_ellipseFish, ... 
+    z_smallFish, z_notch xz_concaveTail];
 
 
+%%
 %  create_subplot(subU,xiPlot,nr_sv,nodes,elementPlot,L,O, textPos)
 
 f1 = figure
@@ -114,7 +107,7 @@ for i = 1:n_shapeVariations
 end
 
 % Set axis limits for all the axes
-axis(axesHandles, [-0.20 0 -0.041 0.041 -0.11 0.11]);
+axis(axesHandles, [-0.23 0 -0.041 0.041 -0.11 0.11]);
 
 % Find boxes size and placement
 x1All = min(xVec(1:3:end));
@@ -143,11 +136,14 @@ widthAll = widthAll + extraHorSpace;
 heightAll = heightAll + extraVertSpace;
 
 
-set(gcf, 'color', 'none');    
-set(gca, 'color', 'none');
-exportgraphics(f1,'transparent.eps',...   % since R2020a
-    'ContentType','vector',...
-    'BackgroundColor','none')
+exportgraphics(f1,'Figures/10_shape_variations.pdf','Resolution',1200)
+
+
+% set(gcf, 'color', 'none');    
+% set(gca, 'color', 'none');
+% exportgraphics(f1,'transparent.eps',...   % since R2020a
+%     'ContentType','vector',...
+%     'BackgroundColor','none')
 
 
 % for i = 1:n_shapeVariations
@@ -197,8 +193,8 @@ exportgraphics(f1,'transparent.eps',...   % since R2020a
 %%
 function create_subplot(subU,xiPlot,nr_sv,nodes,elementPlot,L,O, textPos)
     v = reshape(subU*xiPlot, 3, []).';
-    plotcube(L,O,.0,[0 0 0]);
-    dm = PlotFieldonDeformedMesh(nodes, elementPlot, v, 'factor', 1);
+    plotcube(L,O,.05,[0 0 0]);
+    dm = PlotFieldonDeformedMesh(nodes, elementPlot, v, 'factor', 1, 'lineWidth',0.2);
     
 end
 
