@@ -378,6 +378,86 @@ classdef ContinuumElement < Element
             Df3 = Df3.data;
         end
         
+        function B1=B1(self, actuationDirection)
+            % this function computes the 1-tensor (a vector) corresponding 
+            % to the  0-th order component of the nonlinear actuation force
+            % in global coordinates at the element level.
+            X = self.quadrature.X;
+            m= self.nNodes*self.nDOFPerNode;
+
+            B1 = double(tenzeros(m));
+            for ii = 1:length(self.quadrature.W)
+                Xi = X(:,ii);   % quadrature points
+              
+                [G,~,~] = shape_function_derivatives(self, Xi); % shape function derivative
+                H = self.initialization.H;                      % linear strain matrix
+                
+                B1Ein = tensor(einsum('Ij,jL->IL',H,G));
+                B1 = B1 + double(ttv(B1Ein,actuationDirection,1));
+            end
+            
+            if self.nDim == 2   % 2D case
+                B1 = B1*self.area;
+            else                % 3D case
+                B1 = B1*self.vol;
+            end
+
+        end
+
+
+        function B2=B2(self, actuationDirection)
+            % this function computes the 2-tensor (a matrix) corresponding 
+            % to the linear component in u of the nonlinear actuation force
+            % in global coordinates at the element level.
+            X = self.quadrature.X;
+            m= self.nNodes*self.nDOFPerNode;
+            
+
+            B2 = double(tenzeros([m,m]));
+            for ii = 1:length(self.quadrature.W)
+                Xi = X(:,ii);   % quadrature points
+              
+                [G,~,~] = shape_function_derivatives(self, Xi); % shape function derivative
+                L=L_matrix(self);                               % quadratic strain tensor L 
+                
+                B2Ein = tensor(einsum('Ijk,kL,jN->INL',L,G,G)+einsum('Ijk,kN,jM->INM',L,G,G));
+                B2 = B2 + double(ttv(B2Ein,actuationDirection,1));
+            end
+            
+            if self.nDim == 2   % 2D case
+                B2 = B2*self.area;
+            else                % 3D case
+                B2 = B2*self.vol;
+            end
+             
+        end
+        
+        function B3=B3(self, actuationDirection)
+            % this function computes the 2-tensor (a matrix) corresponding 
+            % to the linear component in ud of the nonlinear actuation 
+            % force in global coordinates at the element level.
+            X = self.quadrature.X;
+            m = self.nNodes*self.nDOFPerNode;    
+
+            B3 = double(tenzeros([m,m]));
+            for ii = 1:length(self.quadrature.W)
+                Xi = X(:,ii);   % quadrature points
+              
+                [G,~,~] = shape_function_derivatives(self, Xi); % shape function derivative
+                L=L_matrix(self);                               % quadratic strain tensor L 
+                
+                B3Ein = tensor(einsum('Ijk,kN,jM->INM',L,G,G)+2*einsum('Ijk,kl,jn->INL',L,G,G));
+                B3 = B3 + double(ttv(B3Ein,actuationDirection,1));
+            end
+            
+            if self.nDim == 2   % 2D case
+                B3 = B3*self.area;
+            else                % 3D case
+                B3 = B3*self.vol;
+            end
+            
+        end
+        
          
         % ANCILLARY FUNCTIONS _____________________________________________
         

@@ -17,6 +17,7 @@ classdef ImplicitNewmark < handle
         hmin = 0        % minimum timestep size (only used when ATS = true)
         NROpt = 3       % Maximum no. of N-R Iterations
         linear = false  % whether system is linear or not
+        combinedSensitivity = false    % solve the sensitivities in combination with the EoMs
     end
     
     methods
@@ -35,7 +36,8 @@ classdef ImplicitNewmark < handle
             addParameter(p,'hmin', TI.hmin, @(x)validateattributes(x, ...
                 {'numeric'},{'nonempty'}) );
             addParameter(p,'ATS', TI.ATS, @(x)validateattributes(x,{'logical'},{'nonempty'}));
-            
+            addParameter(p,'combinedSensitivity', TI.combinedSensitivity, @(x)validateattributes(x,{'logical'},{'nonempty'}));
+                        
             parse(p,varargin{:});
             
             %% Properties assignment
@@ -48,11 +50,29 @@ classdef ImplicitNewmark < handle
             TI.MaxNRit = p.Results.MaxNRit;
             TI.hmin = p.Results.hmin;
             TI.linear = p.Results.linear;
+            TI.combinedSensitivity = p.Results.combinedSensitivity;
         end
-        function Integrate(obj,x0,xd0,xdd0,tmax, Residual)            
+        function Integrate(obj,x0,xd0,xdd0,tmax,Residual,varargin)            
             % Integrates with Initial condition x0,xd0 from [0 tmax]
             % Residual is a function handle that has the following syntax
-            % 
+            %% Input parsing
+            p = inputParser;
+            defaultResidualSens = 0;
+            defaultActuOnly = false;
+            defaultSens0 = 0;
+            addParameter(p,'ResidualSens',defaultResidualSens);
+            addParameter(p,'actuOnly',defaultActuOnly,@(x)validateattributes(x,{'logical'},{'nonempty'}));
+            addParameter(p,'s0',defaultSens0);
+            addParameter(p,'sd0',defaultSens0);
+            addParameter(p,'sdd0',defaultSens0);
+            parse(p,varargin{:});
+            ResidualSens = p.Results.ResidualSens;
+            actuOnly = p.Results.actuOnly;
+            s0 = p.Results.s0;
+            sd0 = p.Results.sd0;
+            sdd0 = p.Results.sdd0;
+
+            %% Initialize
             if obj.h ==0
                 error('Please specify a positive time step')
             end
@@ -62,12 +82,23 @@ classdef ImplicitNewmark < handle
             time = t;
             q = x0;
             qd = xd0;
+            qdd = xdd0;
             q_old = x0;
             qd_old = xd0;
             qdd_old = xdd0;
             NR = 0;
             R = 0;
-            i = 1;            
+            i = 1;
+
+            % sensitivity if solved in the combined set up
+            if obj.combinedSensitivity
+                s = s0;
+                sd = sd0;
+                sdd = sdd0;
+                s_old = s0;
+                sd_old = sd0;
+                sdd_old = sdd0;
+            end
             
             while t < tmax
                 t = t+obj.h;
@@ -75,6 +106,7 @@ classdef ImplicitNewmark < handle
                 [q_new,qd_new,qdd_new] = obj.Prediction(q_old,qd_old,qdd_old);                
                 
                 it = -1; % iteration counter
+                
                 %% linear case
                 if obj.linear 
                     it = it + 1; 
@@ -94,7 +126,9 @@ classdef ImplicitNewmark < handle
                         
                         %% Check convergence
                         epsilon = norm(r)/c0;
-                        disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
+                        if it>cast(0.9*obj.MaxNRit,'int16')
+                            disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
+                        end
                         if (epsilon<obj.tol)  % Error < Tolerance : break
                             break;
                         else % Error >= Tolerance : perform correction
@@ -117,6 +151,7 @@ classdef ImplicitNewmark < handle
                                 obj.Solution.time = time;
                                 obj.Solution.q = q;
                                 obj.Solution.qd = qd;
+                                obj.Solution.qdd = qdd;
                                 obj.Solution.NR = NR;
                                 obj.Solution.R = R;
                                 obj.Solution.soltime = soltime;
@@ -133,27 +168,84 @@ classdef ImplicitNewmark < handle
                 time = [time t];
                 NR = [NR it];
                 R = [R epsilon];
-                disp(['time integration completed: ', num2str(100* t/tmax), '%'])
+                if mod(100* t/tmax,5) < 0.35
+                    disp(['time integration completed: ', num2str(100* t/tmax), '%'])
+                    disp(['Number of iterations: ', num2str(it)])
+                end
+%                 disp(['time integration completed: ', num2str(100* t/tmax), '%'])
                 
-                q = [q q_new];
-                qd = [qd qd_new];
-                q_old = q_new;
-                qd_old = qd_new;
-                qdd_old = qdd_new;
+                % needed when solving sensitivity as a separated linear
+                % problem
+                if size(q_new,2)>1
+                    q = cat(3,q,q_new);
+                    qd = cat(3,qd,qd_new);
+                    qdd = cat(3,qdd,qdd_new);
+                    q_old = q_new;
+                    qd_old = qd_new;
+                    qdd_old = qdd_new;
+                else
+                    q = [q q_new];
+                    qd = [qd qd_new];
+                    qdd = [qdd qdd_new];
+                    q_old = q_new;
+                    qd_old = qd_new;
+                    qdd_old = qdd_new;
+                end
+
+                % solve the sensitivity as a combined problem
+                if obj.combinedSensitivity
+                    [s_new,sd_new,sdd_new] = obj.Prediction(s_old,sd_old,sdd_old); 
+                    if actuOnly  
+                        rSens = ResidualSens(s_new,sd_new,sdd_new,t,q_new,drdqdd, drdqd, drdq);
+                    else
+                        rSens = ResidualSens(s_new,sd_new,sdd_new,q_new,qd_new,qdd_new,drdqdd, drdqd, drdq,t);
+                    end
+
+                    % use the same Jacobian as the one for the EoMs
+                    deltaS = -S\rSens;
+                    [s_new,sd_new,sdd_new] = obj.Correction(s_new,sd_new,sdd_new,deltaS);
+
+                    if size(s_new,2)>1
+                        s = cat(3,s,s_new);
+                        sd = cat(3,sd,sd_new);
+                        sdd = cat(3,sdd,sdd_new);
+                        s_old = s_new;
+                        sd_old = sd_new;
+                        sdd_old = sdd_new;
+                    else
+                        s = [s s_new];
+                        sd = [sd sd_new];
+                        sdd = [sdd sdd_new];
+                        s_old = s_new;
+                        sd_old = sd_new;
+                        sdd_old = sdd_new;
+                    end
+                    
+                end
+
+
+                
                 
             end
             soltime = toc;
             obj.Solution.time = time;
             obj.Solution.q = q;
             obj.Solution.qd = qd;
+            obj.Solution.qdd = qdd; 
             obj.Solution.NR = NR;
             obj.Solution.R = R;
             obj.Solution.soltime = soltime;
+
+            if obj.combinedSensitivity
+                obj.Solution.s = s;
+                obj.Solution.sd = sd;
+                obj.Solution.sdd = sdd;
+            end
         end
         function[q,qd,qdd] = Prediction(obj,q0,qd0,qdd0)
             qd = qd0 + obj.h * (1 - obj.gamma) * qdd0;
             q = q0 + obj.h * qd0 + (0.5-obj.beta) * obj.h^2 * qdd0;
-            qdd = zeros(length(q0),1);
+            qdd = zeros(size(q0));
         end
         function [q,qd,qdd] = Correction(obj,q,qd,qdd,Da)
             q = q + obj.beta * obj.h^2 * Da;
