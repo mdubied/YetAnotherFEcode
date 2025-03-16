@@ -227,12 +227,16 @@ if USEJULIA== 1
     tensors.Q5dd = Q5dd;
     tensors.Q6dd = Q6dd;
     tensors.time = time;
+    tensors.Q3t = tensors.Q3n{1} + permute(tensors.Q3n{1}, [1 3 2]); 
+    tensors.Q4t = tensors.Q4n{1} + permute(tensors.Q4n{1}, [1 3 2 4]) + permute(tensors.Q4n{1}, [1 4 2 3]);
     sftw = 'julia';
 else
     disp([' REDUCED TENSORS (' FORMULATION ' ~ using Matlab):'])
     fprintf(' Assembling %d elements ...', nel)
     tensors = DpROM.Qtensors(FORMULATION, volume);
     tensors.M = DpROM.ParametricMass();
+    tensors.Q3t = tensors.Q3n{1} + permute(tensors.Q3n{1}, [1 3 2]); 
+    tensors.Q4t = tensors.Q4n{1} + permute(tensors.Q4n{1}, [1 3 2 4]) + permute(tensors.Q4n{1}, [1 4 2 3]);
     time = toc(t0);
     sftw = 'matlab';
 end

@@ -186,6 +186,281 @@ classdef ReducedAssembly < Assembly
             [subs, T] = sparsify(T,[],sumDIMS);
             T = sptensor(subs, T, SIZE);
         end
+        
+        % ACTUATION (ROM) - overwrite the functions of Assembly class
+        function [f] = vector_actuation(self,elementMethodName,varargin)
+            % This function assembles a generic finite element vector from
+            % its element level counterpart. It uses a for loop instead of
+            % a parfor loop to allow the elementSet to be a subpart of the
+            % whole elements set.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level vector Fe.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate vector must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+
+            m = size(self.V,2);
+            f = zeros(m,1);
+
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            for j = elementSet 
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                fe = thisElement.(elementMethodName)(inputs{:});
+                f = f + elementWeights(j) * (Ve.' * fe);
+            end
+        end
+
+        function [K] = matrix_actuation(self,elementMethodName,varargin)
+            % This function assembles a generic finite element matrix from
+            % its element level counterpart. It uses a for loop instead of
+            % a parfor loop to allow the elementSet to be a subpart of the
+            % whole elements set.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            K = zeros(m,m);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ke = thisElement.(elementMethodName)(inputs{:});
+                K = K + elementWeights(j) * (Ve.' * Ke * Ve);
+            end
+        end
+        
+        function [K] = matrix_actuation_PROM(self,elementMethodName,U,varargin)
+            % This function assembles a generic finite element matrix from
+            % its element level counterpart. It uses a for loop instead of
+            % a parfor loop to allow the elementSet to be a subpart of the
+            % whole elements set.
+            % elementMethodName is a string input containing the name of
+            % the method that returns the element level matrix Ke.
+            % For this to work, a method named elementMethodName which
+            % returns the appropriate matrix must be defined for all
+            % element types in the FE Mesh.            
+            % NOTE: it is assumed that the input arguments are provided in
+            % the full (unreduced) system
+            
+            m = size(self.V,2);
+            md = size(U,2);
+            K = zeros(m,md);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:);
+                Ue = U(index,:);
+                Ke = thisElement.(elementMethodName)(inputs{:});
+                K = K + elementWeights(j) * (Ve.' * Ke * Ue);
+            end
+        end
+
+        
+        
+        % SPINE MOMENTUM TET4 (ROM)
+        function [T] = tensor_spine_momentum_xx_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;   
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,x0);  % will be of size m x m, as the two last dimensions of 1 will not appear in Ter
+ 
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_xV_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V; 
+            m = size(V,2);
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,x0,Ve); % will be of size m x m x 1 x m
+                
+                if m ~= 0
+                    Ter = ttv(tensor(Ter),1,3);   % bring it in the form m x m x m
+                end
+                
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_Vx_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;   
+                x0 = reshape(thisElement.nodes.',[],1);
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,x0); % will be of size m x m x m, as the forth dimension of 1 will not appear in Ter
+
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+
+        function [T] = tensor_spine_momentum_VV_TET4(self,elementMethodName,SIZE,varargin)
+            % 
+            
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;              
+
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); %#ok<*PFBNS>
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2}(j));
+                Ter = 4*inputs{3}(j)^2*einsum('iI,ijkl,jJ,kK,lL->IJKL',Ve,Te,Ve,Ve,Ve);
+
+                T = T + Ter;
+
+            end
+            T = tensor(T);
+            
+        end
+       
+        % DRAG (ROM) TET4
+        function [T] = tensor_skin(self,elementMethodName,SIZE,varargin)
+                       
+            T = tenzeros(SIZE);
+            Elements = self.Mesh.Elements;
+            V = self.V;
+            
+            % parsing element weights
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            VHead = inputs{3};
+            
+            % extracting elements with nonzero weights
+            elementSet = find(elementWeights);
+            
+            % Computing element level contributions
+
+            for j = elementSet
+                thisElement = Elements(j).Object;
+                index = thisElement.iDOFs;          
+                Ve = V(index,:); 
+                
+                Te = thisElement.(elementMethodName)(inputs{1}(j,:),inputs{2});
+
+                % augment original tensor for head velocity and reduce it
+                TeVHead = ttt(tensor(Te),tensor(VHead'));   % ne x 1 x m x 1
+                TeVHead = ttv(TeVHead,1,4);                 % ne x 1 x m
+                TeVVHead = ttt(TeVHead,tensor(VHead'));     % ne x 1 x m x m x 1
+                Te = ttv(TeVVHead,1,5);                     % ne x 1 x m x m
+                       
+                %Te = tensorprod(tensorprod(double(Te),VHead'),VHead');  % outer product
+                
+                Te = ttv(tensor(Te),1,2);    % from ne x 1 x m x m to ne x m x m
+                Ter = einsum('iI,iJK->IJK',Ve,double(Te));
+
+                T = T + Ter;    
+            end
+
+            T = tensor(T);
+            
+        end
 
     end
 end
