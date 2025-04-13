@@ -32,20 +32,6 @@ F_external = Assembly.constrain_vector(fActu(t,u)) + ...  % factu as function of
     Assembly.constrain_vector(fSpine(u,ud,udd)) + ...
     Assembly.constrain_vector(fDrag(ud));
 
-% fprintf('Max u: %.4f\n',max(u))
-% fprintf('Min u: %.4f\n',min(u))
-
-% fprintf('Max internal force: %.4f\n',norm(F_elastic))
-% fprintf('Max actuation force: %.4f\n',norm(Assembly.constrain_vector(fActu(t,u))))
-% % disp(max(actuSignalRight(t)*Assembly.constrain_matrix(actuRight.B2) - actuSignalLeft(t)*Assembly.constrain_matrix(actuLeft.B2)))
-
-if norm(F_inertial + F_damping + F_elastic)>100
-    disp('Warning')
-end
-
-% disp(norm(Assembly.constrain_vector(fSpine(u,ud,udd))))
-% disp(norm(Assembly.constrain_vector(fActu(t,u))))
-
 % residual
 r = F_inertial + F_damping + F_elastic - F_external ;
 
