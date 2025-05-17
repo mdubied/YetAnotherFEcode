@@ -126,7 +126,7 @@ classdef Assembly < handle
             K = sparse(I, J, K, self.Mesh.nDOFs, self.Mesh.nDOFs);
         end
 
-                function [K] = matrix_actuation(self,elementMethodName,varargin)
+        function [K] = matrix_actuation(self,elementMethodName,varargin)
             % This function assembles a generic finite element matrix from
             % its element level counterpart.
             % elementMethodName is a string input containing the name of
