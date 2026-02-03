@@ -241,7 +241,7 @@ classdef Assembly < handle
             v = sparse(index, ones(length(index),1), v, self.Mesh.nDOFs, 1);
         end
         
-                function [v] = vector_actuation(self,elementMethodName,varargin)
+        function [v] = vector_actuation(self,elementMethodName,varargin)
             % This function assembles a finite element vector from
             % its element level counterpart. The method allows to pass
             % extra argument to access and work with the actuation
@@ -840,6 +840,36 @@ classdef Assembly < handle
                 u = K\f;
             end
         end
+        
+        function out = max_strain_in_structure(self, x, varargin)
+            Elements = self.Mesh.Elements;
+            n_e = self.Mesh.nElements;
+
+            smax_global = -inf;
+            elem_idx = 1;
+            gp_idx = 1;
+            E_at_crit = [];
+
+            for j = 1:n_e
+                thisElement = Elements(j).Object;
+
+                % Call element-level max strain
+                [smax_e, gp_e, E_e] = thisElement.max_strain(x);
+
+                if smax_e > smax_global
+                    smax_global = smax_e;
+                    elem_idx = j;
+                    gp_idx = gp_e;
+                    E_at_crit = E_e;
+                end
+            end
+
+            out.smax = smax_global;
+            out.element = elem_idx;
+            out.gaussPoint = gp_idx;
+            out.E_vector = E_at_crit;
+        end
+
         
         function [weights, input] = parse_inputs(obj,varargin)
             % this function parses the optional argument 'weights' which

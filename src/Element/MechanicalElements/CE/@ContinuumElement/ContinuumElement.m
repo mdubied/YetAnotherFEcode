@@ -197,7 +197,7 @@ classdef ContinuumElement < Element
                 F = F + we*int_F;
             end
         end
-        
+                
         function xe = extract_element_data(self,x)
             % x is a vector of full DOFs
             index = get_index(self.nodeIDs,self.nDOFPerNode);
@@ -458,6 +458,42 @@ classdef ContinuumElement < Element
             
         end
         
+        function [smax, gp_idx, E_at_gp] = max_strain(self, x)
+            displ = self.extract_element_data(x);
+            X = self.quadrature.X;
+            W = self.quadrature.W;
+            C = self.initialization.C;
+            H = self.initialization.H;
+            Afun = self.initialization.Afun;
+
+            smax = -inf;
+            gp_idx = 1;
+            E_at_gp = [];
+
+            for ii = 1:length(W)
+                Xi = X(:,ii);
+                [G,~,~] = shape_function_derivatives(self, Xi);
+
+                th  = G*displ;
+                A   = Afun(th);
+
+                % Green–Lagrange strain (vector form)
+                E = (H + 1/2*A)*th;
+
+                % maximum principal tensor strain, scalar measure
+                Eten = [E(1) E(4) E(6);
+                        E(4) E(2) E(5);
+                        E(6) E(5) E(3)];
+                s = max(eig((Eten + Eten.')/2));  
+
+                if s > smax
+                    smax = s;
+                    gp_idx = ii;
+                    E_at_gp = E;   % store the vector at the critical GP (optional)
+                end
+            end
+        end
+
          
         % ANCILLARY FUNCTIONS _____________________________________________
         
