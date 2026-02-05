@@ -378,10 +378,28 @@ classdef ContinuumElement < Element
             Df3 = Df3.data;
         end
         
-        function B1=B1(self, actuationDirection)
+        function B1=B1(self, actuationDirection, nomVol)
             % this function computes the 1-tensor (a vector) corresponding 
             % to the  0-th order component of the nonlinear actuation force
             % in global coordinates at the element level.
+            
+            % default: use element area/volume
+            if nargin < 3 || isempty(nomVol)
+                useNomVol = false;
+            else
+                useNomVol = true;
+            end
+            % scaling
+            if useNomVol
+                scale = nomVol;         % use provided nominal volume
+            else
+                if self.nDim == 2       % 2D case
+                    scale = self.area;
+                else
+                    scale = self.vol;   % 3D case
+                end
+            end
+    
             X = self.quadrature.X;
             m= self.nNodes*self.nDOFPerNode;
 
@@ -396,19 +414,32 @@ classdef ContinuumElement < Element
                 B1 = B1 + double(ttv(B1Ein,actuationDirection,1));
             end
             
-            if self.nDim == 2   % 2D case
-                B1 = B1*self.area;
-            else                % 3D case
-                B1 = B1*self.vol;
-            end
+            B1 = B1*scale;
 
         end
 
 
-        function B2=B2(self, actuationDirection)
+        function B2=B2(self, actuationDirection, nomVol)
             % this function computes the 2-tensor (a matrix) corresponding 
             % to the linear component in u of the nonlinear actuation force
             % in global coordinates at the element level.
+            % default: use element area/volume
+            if nargin < 3 || isempty(nomVol)
+                useNomVol = false;
+            else
+                useNomVol = true;
+            end
+            % scaling
+            if useNomVol
+                scale = nomVol;         % use provided nominal volume
+            else
+                if self.nDim == 2       % 2D case
+                    scale = self.area;
+                else
+                    scale = self.vol;   % 3D case
+                end
+            end
+            
             X = self.quadrature.X;
             m= self.nNodes*self.nDOFPerNode;
             
@@ -424,18 +455,31 @@ classdef ContinuumElement < Element
                 B2 = B2 + double(ttv(B2Ein,actuationDirection,1));
             end
             
-            if self.nDim == 2   % 2D case
-                B2 = B2*self.area;
-            else                % 3D case
-                B2 = B2*self.vol;
-            end
+            B2 = B2*scale;
              
         end
         
-        function B3=B3(self, actuationDirection)
+        function B3=B3(self, actuationDirection, nomVol)
             % this function computes the 2-tensor (a matrix) corresponding 
             % to the linear component in ud of the nonlinear actuation 
             % force in global coordinates at the element level.
+            % default: use element area/volume
+            if nargin < 3 || isempty(nomVol)
+                useNomVol = false;
+            else
+                useNomVol = true;
+            end
+            % scaling
+            if useNomVol
+                scale = nomVol;         % use provided nominal volume
+            else
+                if self.nDim == 2       % 2D case
+                    scale = self.area;
+                else
+                    scale = self.vol;   % 3D case
+                end
+            end
+            
             X = self.quadrature.X;
             m = self.nNodes*self.nDOFPerNode;    
 
@@ -450,11 +494,7 @@ classdef ContinuumElement < Element
                 B3 = B3 + double(ttv(B3Ein,actuationDirection,1));
             end
             
-            if self.nDim == 2   % 2D case
-                B3 = B3*self.area;
-            else                % 3D case
-                B3 = B3*self.vol;
-            end
+            B3 = B3*scale;
             
         end
         

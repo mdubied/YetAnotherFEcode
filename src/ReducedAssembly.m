@@ -207,17 +207,26 @@ classdef ReducedAssembly < Assembly
             Elements = self.Mesh.Elements;
             V = self.V;
             % parsing element weights
-            [elementWeights,inputs] = self.parse_inputs(varargin{:});
+            [elementWeights,inputs] = self.parse_inputs(varargin{:});               
             
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);
+            
+            % checking if nominal volume is provided
+            if numel(inputs) == 2   
+                nomVolVector = inputs{2};
+            end
             
             % Computing element level contributions
             for j = elementSet 
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
-                fe = thisElement.(elementMethodName)(inputs{:});
+                if numel(inputs) == 2   % nominal volume is provided
+                    fe = thisElement.(elementMethodName)(inputs{1}, nomVolVector(j));
+                else
+                    fe = thisElement.(elementMethodName)(inputs{:});
+                end
                 f = f + elementWeights(j) * (Ve.' * fe);
             end
         end
@@ -245,12 +254,21 @@ classdef ReducedAssembly < Assembly
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);
             
+            % checking if nominal volume is provided
+            if numel(inputs) == 2   
+                nomVolVector = inputs{2};
+            end
+            
             % Computing element level contributions
             for j = elementSet
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
-                Ke = thisElement.(elementMethodName)(inputs{:});
+                if numel(inputs) == 2   % nominal volume is provided
+                    Ke = thisElement.(elementMethodName)(inputs{1}, nomVolVector(j));
+                else
+                    Ke = thisElement.(elementMethodName)(inputs{:});
+                end
                 K = K + elementWeights(j) * (Ve.' * Ke * Ve);
             end
         end
@@ -279,13 +297,22 @@ classdef ReducedAssembly < Assembly
             % extracting elements with nonzero weights
             elementSet = find(elementWeights);
             
+            % checking if nominal volume is provided
+            if numel(inputs) == 2   
+                nomVolVector = inputs{2};
+            end
+            
             % Computing element level contributions
             for j = elementSet
                 thisElement = Elements(j).Object;
                 index = thisElement.iDOFs;          
                 Ve = V(index,:);
                 Ue = U(index,:);
-                Ke = thisElement.(elementMethodName)(inputs{:});
+                if numel(inputs) == 2   % nominal volume is provided
+                    Ke = thisElement.(elementMethodName)(inputs{1}, nomVolVector(j));
+                else
+                    Ke = thisElement.(elementMethodName)(inputs{:});
+                end
                 K = K + elementWeights(j) * (Ve.' * Ke * Ue);
             end
         end
