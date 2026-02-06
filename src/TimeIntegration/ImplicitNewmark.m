@@ -89,6 +89,8 @@ classdef ImplicitNewmark < handle
             NR = 0;
             R = 0;
             i = 1;
+            itVec = [];
+            epsilonVec = [];
 
             % sensitivity if solved in the combined set up
             if obj.combinedSensitivity
@@ -130,6 +132,8 @@ classdef ImplicitNewmark < handle
                             disp(['Iteration ' num2str(it) ', Residual norm = '  num2str(epsilon)])
                         end
                         if (epsilon<obj.tol)  % Error < Tolerance : break
+                            itVec = [itVec,it];
+                            epsilonVec = [epsilonVec, epsilon];
                             break;
                         else % Error >= Tolerance : perform correction
                             S = drdqdd + obj.gamma * obj.h * drdqd + obj.beta * obj.h^2 * drdq;
@@ -234,6 +238,8 @@ classdef ImplicitNewmark < handle
             obj.Solution.NR = NR;
             obj.Solution.R = R;
             obj.Solution.soltime = soltime;
+            obj.Solution.itVec = itVec;
+            obj.Solution.epsilonVec = epsilonVec;
 
             if obj.combinedSensitivity
                 obj.Solution.s = s;
