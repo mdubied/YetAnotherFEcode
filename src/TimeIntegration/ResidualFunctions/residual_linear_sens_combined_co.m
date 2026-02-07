@@ -1,13 +1,13 @@
-% residual_linear_sens_combined
+% residual_linear_sens_combined_co
 %
 % Synthax:
 % r = residual_linear_sens_combined(s,sd,sdd,t, ...
 %       qsol,qdsol,qddsol, drdqdd, drdqd, drdq, ...
 %       pd_fint,pd_tail,pd_spine,pd_drag,pd_actuTop,pd_actuBottom, ...
-%       actuSignalTop,actuSignalBottom)
+%       actuSignalTop,actuSignalBottom,pActu)
 %
 % Description: this residual, passed as a handle to
-% solve_EoMs_and_sensitivties, is used to compute the sensitivities in a
+% solve_EoMs_and_sensitivties_co, is used to compute the sensitivities in a
 % combined fashion at each integration step of the EoMs. Details of the
 % algorithm can be found in "Sensitivity analysis for dynamic mechanical systems
 % with finite rotations" by O. Brüls and P. Eberhard.
@@ -27,19 +27,31 @@
 %                           function handle
 % (12) actuSignalBottom:    actuation signal of bottom/right muscle as a
 %                           function handle
+% (13) pd_actu_signal:      partial derivative of actuation with respect to actuation signal parameter 
+% (14) pActu:               current value of the actuation parameters
 %
 % OUTPUTS:
 % (1) r:                    function handle describing the residual
 %
-% Last modified: 12/11/2023, Mathieu Dubied, ETH Zürich
-function r = residual_linear_sens_combined(s,sd,sdd,t, ...
+% Last modified: 07/02/2026, Mathieu Dubied, ETH Zürich
+function r = residual_linear_sens_combined_co(s,sd,sdd,t, ...
         qsol,qdsol,qddsol, drdqdd, drdqd, drdq, ...
         pd_fint,pd_tail,pd_spine,pd_drag,pd_actuTop,pd_actuBottom, ...
-        actuSignalTop,actuSignalBottom)
+        actuSignalTop,actuSignalBottom, ...
+        pd_actu_signal, pActu)
     
 
     % number of shape variation parameters
-    m = size(pd_fint(qsol(:,1)).dfdp,2);
+    mShape = size(pd_fint(qsol(:,1)).dfdp,2);
+    
+    % number of actuation signal parameters
+    mActu = length(pActu); 
+    
+    % total number of parameters (shape + actuation)
+    mdTot = mShape + mActu;
+    
+    % size of reduced order basis
+    m = size(pd_fint(qsol(:,1)).dfdp,1);
 
     % COLLECT DATA ________________________________________________________   
     qsolIt = qsol;
@@ -47,16 +59,29 @@ function r = residual_linear_sens_combined(s,sd,sdd,t, ...
     qddsolIt = qddsol;
 
     % EVALUATE FUNCTION HANDLE ____________________________________________
+    
+    % with respect to shape parameter
     aTop = actuSignalTop(t);
     aBottom = actuSignalBottom(t);
-    
     der_fint = pd_fint(qsolIt);
     der_tail = pd_tail(qsolIt,qdsolIt);
     der_spine = pd_spine(qsolIt,qdsolIt,qddsolIt);
     der_drag = pd_drag(qdsolIt);
     der_actuTop = pd_actuTop(aTop);
     der_actuBottom = pd_actuBottom(aBottom);
-        
+    % augment partial derivatives with actuation signal dimensions
+    der_fint.dfdp = [der_fint.dfdp,zeros(m,mActu)];
+    der_fint.dMdp(:,:,mShape+1:mdTot) = zeros(m,m,mActu);
+    der_tail.dfdp = [der_tail.dfdp,zeros(m,mActu)];
+    der_spine.dfdp = [der_spine.dfdp,zeros(m,mActu)];
+    der_drag.dfdp = [der_drag.dfdp,zeros(m,mActu)];
+    der_actuTop.dfdp = [der_actuTop.dfdp,zeros(m,mActu)];
+    der_actuBottom.dfdp = [der_actuBottom.dfdp,zeros(m,mActu)];
+    
+    % with respect to actuation signal parameter
+    der_actu = pd_actu_signal(t,qsol,pActu);
+    % augment partial derivative with shape dimension
+    der_actu.dfdp = [zeros(m,mShape),der_actu.dfdp];
 
     % GATHER PARTIAL DERIVATIVES __________________________________________
     % internal forces (only a function of q and not qd)
@@ -83,12 +108,13 @@ function r = residual_linear_sens_combined(s,sd,sdd,t, ...
     % actuation forces
     dfactTopdp = der_actuTop.dfdp;
     dfactBottomdp = der_actuBottom.dfdp;
+    dfactdp = der_actu.dfdp;
 
 
     % COMPUTE RESIDUAL ____________________________________________________
     r =  drdqdd*sdd + drdqd*sd + drdq*s ...
         + double(ttv(tensor(dMdp),qddsolIt,2)) +  dfintdp ...
         -dfTaildp - dfSpinedp - dfDragdp ...
-        -dfactTopdp - dfactBottomdp;
+        -dfactTopdp - dfactBottomdp - dfactdp;
        
 end
